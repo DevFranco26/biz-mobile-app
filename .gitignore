@@ -1,0 +1,17 @@
+# Node.js
+node_modules/
+
+# React Native / Expo
+.expo/
+.expo-shared/
+
+# Build and dist folders
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
