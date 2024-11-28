@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import useThemeStore from '../../store/themeStore';
+import useUserStore from '../../store/userStore';  // Import the user store
+import { Ionicons } from '@expo/vector-icons';
 
 const SigninSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email address').required('Email is required'),
@@ -10,37 +14,59 @@ const SigninSchema = Yup.object().shape({
 });
 
 const Signin = () => {
+  const navigation = useNavigation();
+  const { theme } = useThemeStore();
+  const { setUser } = useUserStore();  // Get the setUser function from the user store
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   const handleSignin = async (values) => {
     const { email, password } = values;
-
+  
     try {
-      const response = await fetch('https://your-api-endpoint.com/signin', {
+      const response = await fetch('http://192.168.100.8:5000/api/auth/sign-in', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await response.json();
-
+      console.log('Signin Response:', data);
+  
       if (response.ok) {
-        Alert.alert('Success', 'Signed in successfully!');
+        // Ensure token and user data are available
+        if (data.token && data.user) {
+          // Store token and user data securely
+          await SecureStore.setItemAsync('token', data.token);
+          await SecureStore.setItemAsync('user', JSON.stringify(data.user));  // Store user data
+  
+          // Set the user data in the store
+          setUser(data.user);
+  
+          navigation.navigate('(tabs)', { screen: 'home' });
+        } else {
+          Alert.alert('Error', 'Missing token or user data in response.');
+        }
       } else {
         Alert.alert('Error', data.message || 'Invalid credentials');
       }
     } catch (error) {
+      console.error('Signin Error:', error);
       Alert.alert('Error', 'An error occurred. Please try again later.');
     }
   };
 
+  const containerStyle = theme === 'light' ? 'bg-slate-50' : 'bg-slate-800';
+  const textStyle = theme === 'light' ? 'text-teal-950' : 'text-teal-400';
+  const buttonStyle = theme === 'light' ? 'bg-teal-700' : 'bg-teal-600';
+  const inputBgStyle = theme === 'light' ? 'bg-white' : 'bg-gray-700';
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={{ flex: 1 }}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView className="flex-1 justify-center items-center p-6">
+        <View className={`flex-1 justify-center items-center p-6 ${containerStyle}`}>
           <Formik
             initialValues={{ email: '', password: '' }}
             validationSchema={SigninSchema}
@@ -48,17 +74,18 @@ const Signin = () => {
           >
             {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
               <>
-                {/* Email Input */}
-                <View className="mb-4 w-full ">
-                  <Text className="text-3xl text-teal-950 font-medium text-center mb-8">Sign in to Biz University</Text>
-                  <Text className="text-lg text-left text-teal-950">Email</Text>
+                <Text className={`text-3xl ${textStyle} font-medium text-center mb-8`}>
+                  Sign in to Biz University
+                </Text>
+
+                <View className="mb-4 w-full">
+                  <Text className={`text-lg ${textStyle} text-left`}>Email</Text>
                   <TextInput
-                    className="w-full p-4 my-2 border border-gray-300 rounded-lg bg-white"
+                    className={`w-full p-4 my-2 rounded-lg ${inputBgStyle} ${theme === 'light' ? 'text-teal-950' : 'text-white'}`} 
                     keyboardType="email-address"
                     value={values.email}
                     onChangeText={handleChange('email')}
                     onBlur={handleBlur('email')}
-                    style={{ fontSize: 16 }}
                     selectionColor="#008080"
                   />
                   {touched.email && errors.email && (
@@ -66,39 +93,51 @@ const Signin = () => {
                   )}
                 </View>
 
-                {/* Password Input */}
                 <View className="mb-6 w-full">
-                  <Text className="text-lg text-left text-teal-950">Password</Text>
-                  <TextInput
-                    className="w-full p-4 my-2 border border-gray-300 rounded-lg bg-white"
-                    secureTextEntry
-                    value={values.password}
-                    onChangeText={handleChange('password')}
-                    onBlur={handleBlur('password')}
-                    style={{ fontSize: 16 }}
-                    selectionColor="#008080"
-                  />
+                  <Text className={`text-lg ${textStyle} text-left`}>Password</Text>
+                  <View className="relative">
+                    <TextInput
+                      className={`w-full p-4 my-2 rounded-lg ${inputBgStyle} ${theme === 'light' ? 'text-teal-950' : 'text-white'}`}
+                      secureTextEntry={!passwordVisible}
+                      value={values.password}
+                      onChangeText={handleChange('password')}
+                      onBlur={handleBlur('password')}
+                      selectionColor="#008080"
+                    />
+                    <Pressable
+                      onPress={() => setPasswordVisible(!passwordVisible)}
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: [{ translateY: -12 }],
+                      }}
+                    >
+                      <Ionicons
+                        name={passwordVisible ? 'eye-off' : 'eye'}
+                        size={24}
+                        color={theme === 'light' ? '#000' : '#fff'}
+                      />
+                    </Pressable>
+                  </View>
                   {touched.password && errors.password && (
                     <Text className="text-red-500 text-sm">{errors.password}</Text>
                   )}
                 </View>
 
-                {/* Sign In Button */}
-                <Pressable
-                  className="w-full py-4 rounded-lg mt-7 bg-teal-700"
-                  onPress={handleSubmit}
-                >
-                  <Text className="text-slate-50 text-center text-lg font-medium ">Submit</Text>
+                <Pressable className={`w-full py-4 rounded-lg mt-7 ${buttonStyle}`} onPress={handleSubmit}>
+                  <Text className="text-slate-50 text-center text-lg font-medium">Submit</Text>
                 </Pressable>
 
-                {/* Forgot Password Link */}
                 <Pressable onPress={() => Alert.alert('Forgot Password')}>
-                  <Text className="text-blue-500 text-sm mt-4 text-center">Forgot Password?</Text>
+                  <Text className={`text-blue-500 text-sm mt-4 text-center ${theme === 'light' ? 'text-teal-700' : 'text-teal-400'}`}>
+                    Forgot Password?
+                  </Text>
                 </Pressable>
               </>
             )}
           </Formik>
-        </SafeAreaView>
+        </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );

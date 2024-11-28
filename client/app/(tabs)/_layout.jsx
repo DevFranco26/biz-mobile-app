@@ -1,23 +1,20 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons'; 
-import { Ionicons } from '@expo/vector-icons';
-import { FontAwesome6 } from '@expo/vector-icons';  
-import { MaterialIcons } from '@expo/vector-icons';  
+import { FontAwesome, FontAwesome6, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import useThemeStore from '../../store/themeStore';
 
 const TabsLayout = () => {
   const { theme } = useThemeStore();
+
   return (
-    <>
     <Tabs
       screenOptions={{
         tabBarStyle: {
           backgroundColor: theme === 'dark' ? '#1E293B' : '#ffffff', // Dark: slate-800, Light: white
-          borderTopColor: 'teal', 
+          borderTopColor: 'teal',
         },
         tabBarActiveTintColor: '#0F766E',
-        tabBarInactiveTintColor: theme === 'dark' ? '#9ca3af' : 'gray', 
+        tabBarInactiveTintColor: theme === 'dark' ? '#9ca3af' : 'gray',
       }}
     >
       <Tabs.Screen
@@ -30,7 +27,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-      
       <Tabs.Screen
         name="leaves"
         options={{
@@ -41,7 +37,6 @@ const TabsLayout = () => {
           ),
         }}
       />
-      
       <Tabs.Screen
         name="payroll"
         options={{
@@ -52,18 +47,17 @@ const TabsLayout = () => {
           ),
         }}
       />
-
       <Tabs.Screen
-        name="shifts"
+        name="(shifts)"
         options={{
           title: 'Shifts',
           headerShown: false,
+          tabBarStyle: { display: 'none' }, 
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="timer" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
-
       <Tabs.Screen
         name="profile"
         options={{
@@ -75,7 +69,6 @@ const TabsLayout = () => {
         }}
       />
     </Tabs>
-  </>
   );
 };
 
