@@ -1,18 +1,40 @@
+// server/src/middlewares/authMiddleware.js
+
 import jwt from 'jsonwebtoken';
+import User from '../models/Users.js'; // Ensure the path is correct
 
-// Middleware to verify the JWT token
-const authenticateToken = (req, res, next) => {
-  const token = req.cookies.token || req.header('Authorization')?.split(' ')[1];
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(403).json({ message: 'Access denied, token missing' });
+  if (!token) {
+    return res.status(401).json({ message: 'Access token missing.' });
+  }
 
-  // Verify the token
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Ensure JWT_SECRET is set
 
-    req.user = user; // Attach user info to request
+    // Fetch the user from the database to attach full user details
+    const user = await User.findOne({ where: { id: decoded.userId } }); // Changed from decoded.id to decoded.userId
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found.' });
+    }
+
+    // Attach user to the request object
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+      // Add other necessary fields
+    };
+
     next();
-  });
+  } catch (error) {
+    console.error('Authentication Error:', error);
+    return res.status(403).json({ message: 'Invalid or expired token.' });
+  }
 };
 
 export default authenticateToken;

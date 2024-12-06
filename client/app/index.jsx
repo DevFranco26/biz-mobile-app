@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, StatusBar } from 'react-native';
+// File: app/index.jsx
+
+import React, { useEffect } from 'react';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../store/themeStore';
 import * as SecureStore from 'expo-secure-store';
@@ -7,7 +9,6 @@ import useUserStore from '../store/userStore';
 import { useRouter } from 'expo-router';
 
 export default function Index() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { theme } = useThemeStore();
   const { setUser } = useUserStore();
   const router = useRouter();
@@ -15,25 +16,19 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Retrieve token and user data
         const token = await SecureStore.getItemAsync('token');
-        const user = await SecureStore.getItemAsync('user');  // Retrieve user data from SecureStore
-
-        console.log("Token:", token);
-        console.log("User Data:", user);
+        const user = await SecureStore.getItemAsync('user');
 
         if (token && user) {
-          // If token and user data are available, set them in the store
-          setUser(JSON.parse(user));  // Set user data in the store
-          setIsLoggedIn(true);
-          router.push('/home');  // Redirect to Home page if logged in
+          setUser(JSON.parse(user));
+          router.replace('(tabs)/profile');
         } else {
-          setIsLoggedIn(false);
-          router.push('/signin');  // Redirect to Sign-In page if not logged in
+          router.replace('(auth)/signin');
         }
       } catch (error) {
         console.error('Error checking auth:', error);
-        setIsLoggedIn(false);
-        router.push('/signin');  // In case of an error, redirect to Sign-In
+        router.replace('(auth)/signin');
       }
     };
 
@@ -41,10 +36,11 @@ export default function Index() {
   }, [setUser, router]);
 
   return (
-    <SafeAreaView className={`h-full ${theme === 'light' ? 'bg-slate-50' : 'bg-slate-800 flex-1'}`}>
-      <StatusBar barStyle={theme === 'light' ? 'dark-content' : 'light-content'} />
-      {/* We don't need conditional rendering anymore */}
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 0 }}></ScrollView>
+    <SafeAreaView className={`flex-1 ${theme === 'light' ? 'bg-white' : 'bg-gray-900'} justify-center items-center`}>
+      <ActivityIndicator size="large" color="#0f766e" />
+      <Text className={`mt-4 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+        Checking authentication...
+      </Text>
     </SafeAreaView>
   );
 }

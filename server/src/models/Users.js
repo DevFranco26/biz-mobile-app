@@ -1,6 +1,7 @@
+// src/models/Users.js
+
 import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js'; // Import your sequelize instance
-import Company from './Company.js'; // Import the Company model
+import sequelize from '../config/database.js';
 
 const User = sequelize.define('User', {
   email: {
@@ -42,8 +43,5 @@ const User = sequelize.define('User', {
   timestamps: true, // Automatically add createdAt and updatedAt fields
   tableName: 'Users', // Explicitly set table name
 });
-
-// Define the relationship with Company
-User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 
 export default User;

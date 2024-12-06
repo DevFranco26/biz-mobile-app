@@ -1,3 +1,5 @@
+// File: app/(tabs)/leaves.jsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -14,11 +16,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
-import LeavesRequests from '../../components/leavesRequests';
 import useThemeStore from '../../store/themeStore';
 
-const Create = () => {
+const Leaves = () => {
   const { theme } = useThemeStore();
+  const isLightTheme = theme === 'light';
 
   // Form states
   const [leaveType, setLeaveType] = useState(null);
@@ -63,6 +65,7 @@ const Create = () => {
     };
 
     setLeaveRequests((prevRequests) => [...prevRequests, newRequest]);
+    // Reset form fields
     setLeaveType(null);
     setLeaveReason('');
     setLeaveFromDate(new Date());
@@ -92,44 +95,23 @@ const Create = () => {
         animationType="fade"
         onRequestClose={() => setCurrentPicker(null)}
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: theme === 'light' ? '#fff' : '#333',
-              padding: 20,
-              borderRadius: 10,
-            }}
-          >
+        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
+          <View className={`bg-${isLightTheme ? 'white' : 'gray-800'} p-6 rounded-lg`}>
             <DateTimePicker
               {...dateProps}
               mode={currentPicker.includes('Date') ? 'date' : 'time'}
               is24Hour={true}
               display={Platform.OS === 'ios' ? 'spinner' : 'spinner'}
               style={{
-                backgroundColor: theme === 'light' ? '#fff' : '#333',
+                backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
               }}
-              textColor={theme === 'light' ? '#038C8C' : '#2DD4BF'}
+              textColor={isLightTheme ? '#0f766e' : '#2dd4bf'}
             />
             <Pressable
               onPress={() => setCurrentPicker(null)}
-              style={{
-                backgroundColor: theme === 'light' ? '#ddd' : '#555',
-                padding: 10,
-                marginTop: 10,
-                borderRadius: 5,
-                alignItems: 'center',
-              }}
+              className={`mt-4 p-3 rounded-lg bg-${isLightTheme ? 'gray-200' : 'gray-700'} items-center`}
             >
-                <Text className={theme === 'light' ? 'text-teal-950' : 'text-white'}>
-                  Confirm
-              </Text>
+              <Text className={isLightTheme ? 'text-gray-800' : 'text-gray-100'}>Confirm</Text>
             </Pressable>
           </View>
         </View>
@@ -162,25 +144,44 @@ const Create = () => {
 
   // Render leave requests if `showLeaves` is true
   if (showLeaves) {
-    return <LeavesRequests leaveRequests={leaveRequests} onBack={() => setShowLeaves(false)} />;
+    return (
+      <View className={`flex-1 p-6 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
+        <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+          Leave Requests
+        </Text>
+        {/* Map over leaveRequests and display them */}
+        {leaveRequests.map((request) => (
+          <View key={request.id} className={`p-4 mb-2 rounded-lg ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+            <Text className={`font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+              {request.type}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>
+              From: {request.fromDate}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>
+              To: {request.toDate}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>Reason: {request.reason}</Text>
+            <Text className={`${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>Status: {request.status}</Text>
+          </View>
+        ))}
+        <Pressable className="mt-4 p-4 rounded-lg bg-teal-700" onPress={() => setShowLeaves(false)}>
+          <Text className="text-white text-center">Back</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView className={`h-full ${theme === 'light' ? 'bg-slate-50' : 'bg-slate-800'} flex-1`}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
       {/* Form Header */}
       <View className="bg-teal-700 rounded-xl p-6 mb-4 mx-5 mt-5">
         <Text className="text-2xl font-bold text-white mb-2">Leave</Text>
-        <Text className="text-white text-base">
-          Note: Vacation leave should be requested 2 weeks ahead.
-        </Text>
+        <Text className="text-white text-base">Note: Vacation leave should be requested 2 weeks ahead.</Text>
       </View>
 
       {/* Leave Type Dropdown */}
-      <Text
-        className={`text-xl font-semibold mx-5 ${
-          theme === 'light' ? 'text-teal-950' : 'text-teal-400'
-        } mb-2 mt-5`}
-      >
+      <Text className={`text-xl font-semibold mx-5 mb-2 mt-5 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
         Leave Type
       </Text>
       <DropDownPicker
@@ -192,20 +193,20 @@ const Create = () => {
         setItems={setLeaveTypeItems}
         placeholder="Select Leave Type"
         textStyle={{
-          color: theme === 'light' ? '#334155' : '#94a3b8', 
+          color: isLightTheme ? '#374151' : '#9ca3af',
         }}
         style={{
-          backgroundColor: theme === 'light' ? 'white' : '#334155',
-          borderColor: theme === 'light' ? 'white' : '#334155',
+          backgroundColor: isLightTheme ? '#ffffff' : '#374151',
+          borderColor: isLightTheme ? '#e5e7eb' : '#374151',
           borderWidth: 1,
           borderRadius: 8,
           marginHorizontal: 24,
           alignSelf: 'center',
-          width: '93%'
+          width: '93%',
         }}
         dropDownContainerStyle={{
-          backgroundColor: theme === 'light' ? 'white' : '#334155',
-          borderColor: theme === 'light' ? 'white' : '#334155',
+          backgroundColor: isLightTheme ? '#ffffff' : '#374151',
+          borderColor: isLightTheme ? '#e5e7eb' : '#374151',
           borderWidth: 1,
           borderRadius: 8,
           marginHorizontal: 24,
@@ -214,105 +215,83 @@ const Create = () => {
         }}
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
             {/* Leave Reason */}
-            <Text className={`text-xl font-semibold ${theme === 'light' ? 'text-teal-950' : 'text-teal-400'} mt-2 mb-2`}>
+            <Text className={`text-xl font-semibold mb-2 mt-2 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
               Reason
             </Text>
             <TextInput
-              className={` ${theme === 'light' ? 'bg-white text-black' : 'bg-slate-700 text-slate-400'} p-4 rounded-lg mb-4`}
+              className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-gray-100 text-gray-800' : 'bg-gray-800 text-gray-100'}`}
               placeholder="Enter leave reason"
               value={leaveReason}
               onChangeText={setLeaveReason}
               multiline
-              placeholderTextColor={theme === 'light' ? '#000000' : '#94a3b8'} 
-              style={{
-                borderColor: theme === 'light' ? 'white' : '#334155', 
-                borderWidth: 1,
-              }}
+              placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
             />
 
-
             {/* From Date & Time */}
-            <Text className={`text-xl font-semibold ${theme === 'light' ? 'text-teal-950' : 'text-teal-400'} mb-2 mt-2`}>
+            <Text className={`text-xl font-semibold mb-2 mt-2 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
               Leave From
             </Text>
-            <View className="w-full flex-row justify-between">
-            <Pressable
-              className={`p-4 rounded-lg mb-4 flex-1 mr-2 ${
-                theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-700 border-slate-500'
-              }`}
-              onPress={() => setCurrentPicker('fromDate')}
-            >
-              <Text
-               className= {` text-center ${theme === 'light' ? 'text-black' : 'text-slate-400'}`}
+            <View className="flex-row justify-between">
+              <Pressable
+                className={`p-4 rounded-lg mb-4 flex-1 mr-2 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}
+                onPress={() => setCurrentPicker('fromDate')}
               >
-                {leaveFromDate.toDateString()}
-              </Text>
-            </Pressable>
+                <Text className={`text-center ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  {leaveFromDate.toDateString()}
+                </Text>
+              </Pressable>
 
-            <Pressable
-              className={`p-4 rounded-lg mb-4 flex-1 ${
-                theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-700 border-slate-500'
-              }`}
-              onPress={() => setCurrentPicker('fromTime')}
-            >
-              <Text
-                className= {` text-center ${theme === 'light' ? 'text-black' : 'text-slate-400'}`}
+              <Pressable
+                className={`p-4 rounded-lg mb-4 flex-1 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}
+                onPress={() => setCurrentPicker('fromTime')}
               >
-                {leaveFromTime.toLocaleTimeString()}
-              </Text>
-            </Pressable>
-
+                <Text className={`text-center ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  {leaveFromTime.toLocaleTimeString()}
+                </Text>
+              </Pressable>
             </View>
+
             {/* To Date & Time */}
-            <Text className={`text-xl font-semibold ${theme === 'light' ? 'text-teal-950' : 'text-teal-400'} mb-2 mt-2`}>
+            <Text className={`text-xl font-semibold mb-2 mt-2 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
               Leave To
             </Text>
-            <View className="w-full flex-row justify-between">
-            <Pressable
-                className={`p-4 rounded-lg mb-4 flex-1 mr-2 ${
-                  theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-700 border-slate-500'
-                }`}
+            <View className="flex-row justify-between">
+              <Pressable
+                className={`p-4 rounded-lg mb-4 flex-1 mr-2 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}
                 onPress={() => setCurrentPicker('toDate')}
               >
-                <Text
-                  className={`text-center ${theme === 'light' ? 'text-black' : 'text-slate-400'}`}
-                >
+                <Text className={`text-center ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
                   {leaveToDate.toDateString()}
                 </Text>
               </Pressable>
 
               <Pressable
-                className={`p-4 rounded-lg mb-4 flex-1 ${
-                  theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-700 border-slate-500'
-                }`}
+                className={`p-4 rounded-lg mb-4 flex-1 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}
                 onPress={() => setCurrentPicker('toTime')}
               >
-                <Text
-                  className= {` text-center ${theme === 'light' ? 'text-black' : 'text-slate-400'}`}
-                >
+                <Text className={`text-center ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
                   {leaveToTime.toLocaleTimeString()}
                 </Text>
               </Pressable>
             </View>
 
             {/* Submit Button */}
-            <Pressable
-              onPress={handleRequestLeave}
-             className='bg-teal-700 py-4 px-5 rounded-lg w-full mb-4 mt-auto'
-            >
-              <Text className=" text-center text-white">Request Leave</Text>
+            <Pressable onPress={handleRequestLeave} className="bg-teal-700 py-4 px-5 rounded-lg w-full mb-4 mt-auto">
+              <Text className="text-white text-center text-lg font-medium">Request Leave</Text>
             </Pressable>
 
             {/* View Leave Requests Button */}
             <Pressable
               onPress={() => setShowLeaves(true)}
-              className={`py-4 px-5 rounded-lg w-full ${theme === 'light' ? 'bg-white': 'bg-slate-700'}`}
+              className={`py-4 px-5 rounded-lg w-full ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}
             >
-              <Text className={`${theme === 'light'? 'text-slate-800': 'text-slate-400' } text-center`}>Leave Requests</Text>
+              <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} text-center text-lg font-medium`}>
+                View Leave Requests
+              </Text>
             </Pressable>
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -324,4 +303,4 @@ const Create = () => {
   );
 };
 
-export default Create;
+export default Leaves;

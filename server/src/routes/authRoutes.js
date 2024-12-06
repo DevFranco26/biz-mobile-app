@@ -1,3 +1,4 @@
+// src/routes/authRoutes.js
 import express from 'express';
 import { signIn, signOut } from '../controllers/authController.js';
 

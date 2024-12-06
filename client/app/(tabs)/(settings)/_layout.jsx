@@ -1,21 +1,18 @@
-// File: app/(tabs)/(shifts)/_layout.jsx
+// File: app/(tabs)/(settings)/_layout.jsx
 
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Slot } from 'expo-router';
 
-const ShiftsTabsLayout = () => {
+const SettingsTabsLayout = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
 
   return (
     <Tabs
-      initialRouteName="Punch"
       screenOptions={{
         tabBarStyle: {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
@@ -25,7 +22,7 @@ const ShiftsTabsLayout = () => {
           left: 0,
           right: 0,
           height: 60, 
-         
+       
         },
         tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#fb923c', 
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
@@ -44,28 +41,30 @@ const ShiftsTabsLayout = () => {
         headerShown: false,
       }}
     >
-      {/* Punch Screen */}
+      {/* Admin Screen */}
       <Tabs.Screen
-        name="Punch"
+        name="Admin"
         options={{
-          tabBarLabel: 'Punch',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="time" size={20} color={color} />
+          title: 'Admin',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="shield-checkmark" size={size} color={color} />
           ),
         }}
       />
-      {/* TimeCard Screen */}
+      {/* Subscription Screen */}
       <Tabs.Screen
-        name="TimeCard"
+        name="Subscription"
         options={{
-          tabBarLabel: 'Time Card',
-          tabBarIcon: ({ color }) => (
-            <FontAwesome5 name="calendar-alt" size={18} color={color} />
+          title: 'Subscription',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="subscriptions" size={size} color={color} />
           ),
         }}
       />
+
+      
     </Tabs>
   );
 };
 
-export default ShiftsTabsLayout;
+export default SettingsTabsLayout;

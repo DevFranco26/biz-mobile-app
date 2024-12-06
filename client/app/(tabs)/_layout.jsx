@@ -1,71 +1,69 @@
+// File: app/(tabs)/_layout.jsx
+
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { FontAwesome, FontAwesome6, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import useThemeStore from '../../store/themeStore';
 
 const TabsLayout = () => {
   const { theme } = useThemeStore();
+  const isLightTheme = theme === 'light';
 
   return (
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: theme === 'dark' ? '#1E293B' : '#ffffff', // Dark: slate-800, Light: white
-          borderTopColor: 'teal',
+          backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
+          borderTopColor:  isLightTheme ? '#ffffff' : '#0f172a',
         },
-        tabBarActiveTintColor: '#0F766E',
-        tabBarInactiveTintColor: theme === 'dark' ? '#9ca3af' : 'gray',
+        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#fb923c',
+        tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="leaves"
-        options={{
-          title: 'Leaves',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome6 name="stopwatch" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="payroll"
-        options={{
-          title: 'Payroll',
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="payments" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="(shifts)"
-        options={{
-          title: 'Shifts',
-          headerShown: false,
-          tabBarStyle: { display: 'none' }, 
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
-          ),
-        }}
-      />
+      {/* Profile Screen */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <FontAwesome name="user" size={size} color={color} />,
+        }}
+      />
+      {/* Leaves Screen */}
+      <Tabs.Screen
+        name="leaves"
+        options={{
+          title: 'Leaves',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <FontAwesome5 name="calendar-alt" size={size} color={color} />,
+        }}
+      />
+      {/* Payroll Screen */}
+      <Tabs.Screen
+        name="payroll"
+        options={{
+          title: 'Payroll',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="payments" size={size} color={color} />,
+        }}
+      />
+      {/* Shifts Screen */}
+      <Tabs.Screen
+        name="(shifts)"
+        options={{
+          title: 'Shifts',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} />,
+        }}
+        dis
+      />
+      {/* Settings Screen */}
+      <Tabs.Screen
+        name="(settings)"
+        options={{
+          title: 'Settings',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
         }}
       />
     </Tabs>
