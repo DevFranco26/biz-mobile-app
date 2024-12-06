@@ -5,6 +5,7 @@ import User from '../models/Users.js'; // Ensure the path is correct
 
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
+  console.log('Authenticate Token Auth Header:', authHeader)
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
@@ -12,10 +13,10 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Ensure JWT_SECRET is set
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch the user from the database to attach full user details
-    const user = await User.findOne({ where: { id: decoded.userId } }); // Changed from decoded.id to decoded.userId
+    const user = await User.findOne({ where: { id: decoded.userId } }); 
 
     if (!user) {
       return res.status(401).json({ message: 'User not found.' });

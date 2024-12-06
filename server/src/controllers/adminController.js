@@ -1,7 +1,7 @@
 // src/controllers/adminController.js
 
 import User from '../models/Users.js';
-import Company from '../models/Company.js';
+
 import { Op } from 'sequelize';
 
 export const getCompanyUsers = async (req, res) => {
