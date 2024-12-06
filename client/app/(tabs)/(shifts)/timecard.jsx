@@ -10,13 +10,14 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import useThemeStore from '../../../store/themeStore';
 import useUserStore from '../../../store/userStore';
-import axios from 'axios';
+import axios from 'axios'; // Using axios directly
 import {
   format,
   startOfMonth,
@@ -32,6 +33,7 @@ import {
 } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform as RNPlatform } from 'react-native';
+import * as SecureStore from 'expo-secure-store'; // Import SecureStore to retrieve the token
 
 const TimeCard = () => {
   const { user } = useUserStore();
@@ -58,6 +60,9 @@ const TimeCard = () => {
   // Temporary States for iOS
   const [tempStartDate, setTempStartDate] = useState(customStartDate);
   const [tempEndDate, setTempEndDate] = useState(customEndDate);
+
+  // State for RefreshControl
+  const [refreshing, setRefreshing] = useState(false);
 
   // Format Date with Day
   const formatDateWithDay = (dateString) => {
@@ -156,16 +161,41 @@ const TimeCard = () => {
           endDate = endOfMonth(selectedDate);
       }
 
-      const response = await axios.get(
-        'http://192.168.100.8:5000/api/timelogs/range-logs', // Update API endpoint to handle range
-        {
-          params: {
-            userId: user.id,
-            startDate: format(startDate, 'yyyy-MM-dd'),
-            endDate: format(endDate, 'yyyy-MM-dd'),
-          },
-        }
-      );
+      // Retrieve the token from SecureStore
+      const token = await SecureStore.getItemAsync('token');
+
+      if (!token) {
+        Alert.alert(
+          'Authentication Error',
+          'You are not logged in. Please sign in again.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Handle navigation to sign-in screen
+                // For example:
+                // useUserStore.getState().clearUser();
+                // router.replace('(auth)/signin');
+              },
+            },
+          ]
+        );
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      // Make the Axios request with Authorization header
+      const response = await axios.get('http://192.168.100.8:5000/api/timelogs/range', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        params: {
+          // userId: user.id, // Removed to enhance security; backend uses token's userId
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
+        },
+      });
 
       const sortedLogs = (response.data.data || []).sort(
         (a, b) => b.id - a.id
@@ -173,9 +203,28 @@ const TimeCard = () => {
       setShiftLogs(sortedLogs);
     } catch (error) {
       console.error('Error fetching time logs:', error);
-      Alert.alert('Error', 'Failed to fetch time logs. Please try again later.');
+      if (error.response && error.response.status === 401) {
+        Alert.alert(
+          'Authentication Error',
+          'Your session has expired. Please sign in again.',
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                // Clear user data and navigate to sign-in screen
+                await SecureStore.deleteItemAsync('token');
+                useUserStore.getState().setUser(null);
+                router.replace('(auth)/SignIn'); // Ensure this path matches your routing
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to fetch time logs. Please try again later.');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -309,13 +358,9 @@ const TimeCard = () => {
         onRequestClose={() => setCurrentPicker(null)}
       >
         <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
-          <View className="flex-1 justify-center items-center bg-slate-950/80 ">
+          <View className="flex-1 justify-center items-center bg-black/50">
             <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 p-4 rounded-lg ${
-                  isLightTheme ? 'bg-white' : 'bg-gray-800'
-                }`}
-              >
+              <View className={`w-11/12 p-5 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-gray-800'}`}>
                 <DateTimePicker
                   value={
                     currentPicker === 'startDate'
@@ -344,25 +389,14 @@ const TimeCard = () => {
                       }
                     }
                   }}
-                  textColor={isLightTheme ? '#000' : '#fff'}
-                  className="w-full"
+                  textColor={isLightTheme ? '#000000' : '#FFFFFF'}
                 />
-                <View className="flex-row justify-end mt-4">
+                <View className="flex-row justify-end mt-5">
                   <Pressable
                     onPress={() => setCurrentPicker(null)}
-                    className={`px-4 py-2 rounded ${
-                      isLightTheme
-                        ? 'bg-gray-200'
-                        : 'bg-gray-700'
-                    } mr-2`}
+                    className={`px-4 py-2 mr-2 rounded ${isLightTheme ? 'bg-gray-300' : 'bg-gray-600'}`}
                   >
-                    <Text
-                      className={`text-sm ${
-                        isLightTheme ? 'text-gray-800' : 'text-gray-100'
-                      }`}
-                    >
-                      Cancel
-                    </Text>
+                    <Text className={`${isLightTheme ? 'text-black' : 'text-white'}`}>Cancel</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -382,19 +416,9 @@ const TimeCard = () => {
                       }
                       setCurrentPicker(null);
                     }}
-                    className={`px-4 py-2 rounded ${
-                      isLightTheme
-                        ? 'bg-gray-200'
-                        : 'bg-gray-700'
-                    }`}
+                    className={`px-4 py-2 rounded ${isLightTheme ? 'bg-teal-600' : 'bg-teal-400'}`}
                   >
-                    <Text
-                      className={`text-sm ${
-                        isLightTheme ? 'text-gray-800' : 'text-gray-100'
-                      }`}
-                    >
-                      Confirm
-                    </Text>
+                    <Text className="text-white">Confirm</Text>
                   </Pressable>
                 </View>
               </View>
@@ -434,64 +458,54 @@ const TimeCard = () => {
           }
           setCurrentPicker(null); // Close the picker
         }}
-        textColor={isLightTheme ? '#000' : '#fff'}
+        textColor={isLightTheme ? '#000000' : '#FFFFFF'}
       />
     );
   };
 
   return (
     <View
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
-      style={{ paddingTop: insets.top + 60 }} // Adjust paddingTop to account for the tab bar height
+      className="flex-1 bg-slate-900"
+      style={{ paddingTop: insets.top + 60 }} // Restore paddingTop to prevent overlap with top tab bar
     >
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16, // Apply horizontal padding inside ScrollView
-          paddingBottom: 16,
-          paddingTop: 10,
-        }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchTimeLogs}
+            colors={['#F97316']} // Orange color
+            tintColor={isLightTheme ? '#F97316' : '#F97316'}
+          />
+        }
       >
         {/* Total Hours */}
-        <View
-          className={`p-4 rounded-lg mb-6 ${
-            isLightTheme ? 'bg-orange-600' : 'bg-orange-500'
-          }`}
-        >
-          <View className="flex-row justify-between items-center">
-            <Text className="text-lg text-white font-semibold">
-              Total Hours
-            </Text>
-            <Text className="text-xl text-white font-bold">
-              {formatTotalDuration(totalDurationMs)}
-            </Text>
-          </View>
+        <View className="p-4 rounded-lg mb-6 bg-orange-500 flex-row justify-between items-center">
+          <Text className="text-lg text-white font-semibold">
+            Total Hours
+          </Text>
+          <Text className="text-xl text-white font-bold">
+            {formatTotalDuration(totalDurationMs)}
+          </Text>
         </View>
 
         {/* Range Selection */}
         <View className="mb-6">
-          <Text
-            className={`text-md mb-2 ${
-              isLightTheme ? 'text-gray-800' : 'text-gray-100'
-            }`}
-          >
+          <Text className="text-base mb-2 text-white">
             Select Range:
           </Text>
-          <View
-            className={`rounded-lg ${
-              isLightTheme ? 'bg-gray-200' : 'bg-gray-700'
-            }`}
-          >
+          <View className="rounded-lg bg-gray-700">
             <Picker
               selectedValue={rangeType}
               onValueChange={(itemValue) => setRangeType(itemValue)}
-              dropdownIconColor={isLightTheme ? '#1E293B' : '#F1F5F9'}
+              dropdownIconColor={isLightTheme ? '#1f2937' : '#f9fafb'}
               style={{
                 height: 50,
-                color: isLightTheme ? '#1E293B' : '#F1F5F9',
+                color: isLightTheme ? '#1f2937' : '#f9fafb',
               }}
               itemStyle={{
                 height: 50,
-                color: isLightTheme ? '#1E293B' : '#F1F5F9',
+                color: isLightTheme ? '#1f2937' : '#f9fafb',
               }}
             >
               <Picker.Item label="Monthly" value="Monthly" />
@@ -503,19 +517,13 @@ const TimeCard = () => {
 
           {/* Custom Date Pickers */}
           {rangeType === 'Custom' && (
-            <View className="mt-4 space-y-4">
+            <View className="mt-4">
               {/* Start Date */}
               <Pressable
                 onPress={() => openPicker('startDate')}
-                className={`p-4 rounded-lg my-1 ${
-                  isLightTheme ? 'bg-gray-100' : 'bg-gray-800'
-                }`}
+                className="p-4 rounded-lg bg-gray-700 mb-3"
               >
-                <Text
-                  className={`text-center ${
-                    isLightTheme ? 'text-gray-800' : 'text-gray-100'
-                  }`}
-                >
+                <Text className="text-white">
                   Start Date: {format(customStartDate, 'MMMM d, yyyy')}
                 </Text>
               </Pressable>
@@ -523,15 +531,9 @@ const TimeCard = () => {
               {/* End Date */}
               <Pressable
                 onPress={() => openPicker('endDate')}
-                className={`p-4 rounded-lg my-1 ${
-                  isLightTheme ? 'bg-gray-100' : 'bg-gray-800'
-                }`}
+                className="p-4 rounded-lg bg-gray-700"
               >
-                <Text
-                  className={`text-center ${
-                    isLightTheme ? 'text-gray-800' : 'text-gray-100'
-                  }`}
-                >
+                <Text className="text-white">
                   End Date: {format(customEndDate, 'MMMM d, yyyy')}
                 </Text>
               </Pressable>
@@ -545,33 +547,29 @@ const TimeCard = () => {
             {/* Previous Button */}
             <Pressable
               onPress={handlePrev}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
+              className="p-2 rounded-full bg-gray-600"
             >
               <FontAwesome5
                 name="arrow-left"
                 size={20}
-                color={isLightTheme ? '#1E293B' : '#F1F5F9'}
+                color="#FFFFFF"
               />
             </Pressable>
 
             {/* Date Range Text */}
-            <Text
-              className={`text-lg font-medium ${
-                isLightTheme ? 'text-gray-800' : 'text-gray-100'
-              }`}
-            >
+            <Text className="text-base font-medium text-white">
               {getDateRange()}
             </Text>
 
             {/* Next Button */}
             <Pressable
               onPress={handleNext}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
+              className="p-2 rounded-full bg-gray-600"
             >
               <FontAwesome5
                 name="arrow-right"
                 size={20}
-                color={isLightTheme ? '#1E293B' : '#F1F5F9'}
+                color="#FFFFFF"
               />
             </Pressable>
           </View>
@@ -580,11 +578,7 @@ const TimeCard = () => {
         {/* Display Custom Range if selected */}
         {rangeType === 'Custom' && (
           <View className="mb-6">
-            <Text
-              className={`text-lg font-medium ${
-                isLightTheme ? 'text-gray-800' : 'text-gray-100'
-              }`}
-            >
+            <Text className="text-base font-medium text-white">
               {getDateRange()}
             </Text>
           </View>
@@ -594,46 +588,28 @@ const TimeCard = () => {
         {loading ? (
           <ActivityIndicator
             size="large"
-            color={isLightTheme ? '#F97316' : '#fb923c'}
-            className="mt-8"
+            color="#F97316" // Orange color
+            className="mt-12"
           />
         ) : logsWithDuration.length > 0 ? (
           logsWithDuration.map((log, index) => (
             <View
               key={index}
-              className={`p-4 rounded-lg mb-4 ${
-                isLightTheme ? 'bg-gray-100' : 'bg-gray-800'
-              } shadow-md`}
+              className={`p-4 rounded-lg ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'} shadow-md mb-4`}
             >
-              <Text
-                className={`text-lg font-bold mb-2 ${
-                  isLightTheme ? 'text-gray-800' : 'text-gray-200'
-                }`}
-              >
+              <Text className={`text-xl font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
                 {formatDateWithDay(log.date)}
               </Text>
-              <Text
-                className={`text-md ${
-                  isLightTheme ? 'text-gray-600' : 'text-gray-400'
-                }`}
-              >
+              <Text className={`text-md ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
                 {log.timeIn} - {log.timeOut}
               </Text>
-              <Text
-                className={`text-right text-base mt-2 ${
-                  isLightTheme ? 'text-orange-700' : 'text-slate-400'
-                }`}
-              >
+              <Text className={`text-md mt-2 text-right ${log.duration.includes('h') ? 'text-green-500' : 'text-red-500'}`}>
                 {log.duration}
               </Text>
             </View>
           ))
         ) : (
-          <Text
-            className={`text-center mt-8 ${
-              isLightTheme ? 'text-gray-500' : 'text-gray-400'
-            }`}
-          >
+          <Text className="text-center mt-12 text-md text-gray-400">
             No logs available for this range.
           </Text>
         )}

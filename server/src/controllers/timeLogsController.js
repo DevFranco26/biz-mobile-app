@@ -204,14 +204,43 @@ export const getMonthlyLogs = async (req, res) => {
   }
 };
 
+// Get Range Logs with Enhanced Security
 export const getRangeLogs = async (req, res) => {
-  const { userId, startDate, endDate } = req.query;
-
-  if (!userId || !startDate || !endDate) {
-    return res.status(400).json({ message: 'Missing required parameters.' });
-  }
+  let { userId, startDate, endDate } = req.query;
 
   try {
+    // Determine if the requesting user is an admin
+    const requestingUser = await User.findOne({ where: { id: req.user.id } });
+
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found.' });
+    }
+
+    if (requestingUser.role !== 'admin' && requestingUser.role !== 'superAdmin') {
+      // For regular users, ignore any userId passed and use their own id
+      userId = req.user.id;
+    } else {
+      // For admins, allow specifying userId or default to their own id
+      if (!userId) {
+        userId = req.user.id;
+      } else {
+        // Verify that the specified user exists and belongs to the same company
+        const targetUser = await User.findOne({ where: { id: userId } });
+        if (!targetUser) {
+          return res.status(404).json({ message: 'Target user not found.' });
+        }
+
+        if (targetUser.companyId !== requestingUser.companyId) {
+          return res.status(403).json({ message: 'Access denied: User belongs to a different company.' });
+        }
+      }
+    }
+
+    // Validate date parameters
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required.' });
+    }
+
     const logs = await TimeLogs.findAll({
       where: {
         userId,
