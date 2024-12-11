@@ -24,7 +24,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps'; // Import MapView and Marker
+import MapView, { Marker } from 'react-native-maps'; 
 
 const ManageLocations = () => {
   const { theme } = useThemeStore();
@@ -33,15 +33,15 @@ const ManageLocations = () => {
 
   const { locations, loading, error, fetchLocations, createLocation, updateLocation, deleteLocation } = useLocationsStore();
 
-  // Define state variables
+  // State variables
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState(null); // For editing
+  const [currentLocation, setCurrentLocation] = useState(null); 
   const [label, setLabel] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [radius, setRadius] = useState('');
-  const [selectedCoordinate, setSelectedCoordinate] = useState(null); // For map selection
+  const [selectedCoordinate, setSelectedCoordinate] = useState(null);
 
   useEffect(() => {
     const initialize = async () => {
@@ -83,7 +83,7 @@ const ManageLocations = () => {
     setLatitude('');
     setLongitude('');
     setRadius('');
-    setSelectedCoordinate(null); // Reset selected coordinate
+    setSelectedCoordinate(null);
     setModalVisible(true);
   };
 
@@ -96,7 +96,7 @@ const ManageLocations = () => {
     setSelectedCoordinate({
       latitude: parseFloat(location.latitude),
       longitude: parseFloat(location.longitude),
-    }); // Set initial coordinate
+    });
     setModalVisible(true);
   };
 
@@ -121,24 +121,24 @@ const ManageLocations = () => {
     };
 
     try {
+      let result;
       if (currentLocation) {
         // Edit existing location
-        const result = await updateLocation(currentLocation.id, locationData, token);
-        if (result.success) {
-          Alert.alert('Success', 'Location updated successfully.');
-          setModalVisible(false);
-        } else {
-          Alert.alert('Error', result.message || 'Failed to update location.');
-        }
+        result = await updateLocation(currentLocation.id, locationData, token);
       } else {
         // Add new location
-        const result = await createLocation(locationData, token);
-        if (result.success) {
-          Alert.alert('Success', 'Location created successfully.');
-          setModalVisible(false);
-        } else {
-          Alert.alert('Error', result.message || 'Failed to create location.');
-        }
+        result = await createLocation(locationData, token);
+      }
+
+      if (result.success) {
+        Alert.alert('Success', currentLocation ? 'Location updated successfully.' : 'Location created successfully.');
+        setModalVisible(false);
+
+        // Re-fetch locations to update UI and show updatedBy properly
+        await fetchLocations(token);
+
+      } else {
+        Alert.alert('Error', result.message || (currentLocation ? 'Failed to update location.' : 'Failed to create location.'));
       }
     } catch (err) {
       console.error('Error saving location:', err);
@@ -153,6 +153,8 @@ const ManageLocations = () => {
         const result = await deleteLocation(locationId, token);
         if (result.success) {
           Alert.alert('Success', 'Location deleted successfully.');
+          // Re-fetch to ensure UI updates if necessary
+          await fetchLocations(token);
         } else {
           Alert.alert('Error', result.message || 'Failed to delete location.');
         }
@@ -169,35 +171,47 @@ const ManageLocations = () => {
   const handleMapPress = (e) => {
     const { latitude, longitude } = e.nativeEvent.coordinate;
     setSelectedCoordinate({ latitude, longitude });
-    setLatitude(latitude.toFixed(6)); // Update latitude state with formatted value
-    setLongitude(longitude.toFixed(6)); // Update longitude state with formatted value
+    setLatitude(latitude.toFixed(6));
+    setLongitude(longitude.toFixed(6));
   };
 
-  const renderItem = ({ item }) => (
-    <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
-      <View className="flex-row items-center flex-1">
-        <Ionicons name="location-outline" size={40} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
-        <View className="ml-3 flex-1">
-          <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
-            {item.label}
-          </Text>
-          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Latitude: {item.latitude}
-          </Text>
-          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Longitude: {item.longitude}
-          </Text>
-          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Radius: {item.radius} meters
-          </Text>
+  const renderItem = ({ item }) => {
+    const creator = item.admin ? item.admin.email : 'Unknown';
+    const editor = item.lastEditor ? item.lastEditor.email : 'Not edited';
+  
+    return (
+      <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+        <View className="flex-row items-center flex-1">
+          <Ionicons name="location-outline" size={40} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
+          <View className="ml-3 flex-1">
+            <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+              {item.label}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+              Latitude: {item.latitude}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+              Longitude: {item.longitude}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+              Radius: {item.radius} meters
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+              Created By: {creator}
+            </Text>
+            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+              Last Edited By: {editor}
+            </Text>
+          </View>
         </View>
+        <Pressable onPress={() => handleLocationAction(item)} className="p-2">
+          <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
+        </Pressable>
       </View>
-      <Pressable onPress={() => handleLocationAction(item)} className="p-2">
-        <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
-      </Pressable>
-    </View>
-  );
-
+    );
+  };
+  
+  
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
       {/* Custom Header */}
@@ -305,7 +319,7 @@ const ManageLocations = () => {
                         latitudeDelta: 0.005,
                         longitudeDelta: 0.005,
                       }}
-                      onPress={handleMapPress} // Called when the user taps on the map
+                      onPress={handleMapPress}
                       showsUserLocation={true}
                       showsMyLocationButton={true}
                     >
@@ -323,7 +337,6 @@ const ManageLocations = () => {
                       )}
                     </MapView>
                   </View>
-
 
                   {/* Latitude */}
                   <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
@@ -350,7 +363,7 @@ const ManageLocations = () => {
                     placeholder="e.g., -122.4194"
                     keyboardType="numeric"
                     placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
-                    editable={false} 
+                    editable={false}
                   />
 
                   {/* Radius */}
@@ -371,8 +384,6 @@ const ManageLocations = () => {
                     <TouchableOpacity
                       onPress={() => setModalVisible(false)}
                       className="mr-4"
-                      accessibilityLabel="Cancel"
-                      accessibilityHint="Closes the modal without saving changes"
                     >
                       <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-700' : 'text-slate-400'}`}>
                         Cancel
@@ -381,8 +392,6 @@ const ManageLocations = () => {
                     <TouchableOpacity
                       onPress={handleSaveLocation}
                       className="bg-slate-700 p-3 rounded-lg"
-                      accessibilityLabel="Save Location"
-                      accessibilityHint="Saves the location details"
                     >
                       <Text className="text-white font-semibold">Save</Text>
                     </TouchableOpacity>

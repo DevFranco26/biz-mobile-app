@@ -1,28 +1,19 @@
-// server/src/routes/locationRoutes.js
-
 import express from 'express';
 import { createLocation, getLocations, updateLocation, deleteLocation } from '../controllers/locationController.js';
 import authenticateToken from '../middlewares/authMiddleware.js';
-import { authorizeRoles } from '../middlewares/roleMiddleware.js'; // Correct import source
+// import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes in this router
+// Apply authentication middleware
 router.use(authenticateToken);
 
-// Apply authorization middleware to ensure only admins can access these routes
-router.use(authorizeRoles('admin')); // Adjust roles as needed
+// Temporarily remove role checks to ensure it's not blocking
+router.use(authorizeRoles('admin'));
 
-// Create a new location
 router.post('/create', createLocation);
-
-// Get all locations for an admin
 router.get('/all', getLocations);
-
-// Update a location
 router.put('/update/:locationId', updateLocation);
-
-// Delete a location
 router.delete('/delete/:locationId', deleteLocation);
 
 export default router;

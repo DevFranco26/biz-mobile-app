@@ -12,8 +12,7 @@ const Location = sequelize.define('Location', {
   adminId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'adminid', // Map to lowercase column
-    // Define associations elsewhere
+    field: 'adminid',
   },
   label: {
     type: DataTypes.STRING,
@@ -30,13 +29,18 @@ const Location = sequelize.define('Location', {
   radius: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 100, // meters
+    defaultValue: 100,
   },
+  updatedBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'updatedBy'
+  }
 }, {
   timestamps: true,
   tableName: 'Locations',
-  createdAt: 'createdat', // Map to lowercase column
-  updatedAt: 'updatedat', // Map to lowercase column
+  createdAt: 'createdat',
+  updatedAt: 'updatedat',
 });
 
 export default Location;

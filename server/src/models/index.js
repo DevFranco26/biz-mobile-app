@@ -16,6 +16,10 @@ Company.hasMany(User, { foreignKey: 'companyId', as: 'users' });
 User.hasMany(Location, { foreignKey: 'adminId', as: 'locations' });
 Location.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
+// Add the lastEditor association for updatedBy
+User.hasMany(Location, { foreignKey: 'updatedBy', as: 'editedLocations' });
+Location.belongsTo(User, { foreignKey: 'updatedBy', as: 'lastEditor' });
+
 // User <-> TimeLogs
 User.hasMany(TimeLogs, { foreignKey: 'userId', as: 'timeLogs' });
 TimeLogs.belongsTo(User, { foreignKey: 'userId', as: 'user' });

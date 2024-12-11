@@ -1,37 +1,34 @@
-// server/src/controllers/locationController.js
-
 import Location from '../models/Location.js';
-import UserSettings from '../models/UserSettings.js';
 import User from '../models/Users.js';
-import { Op } from 'sequelize';
 
-// Create a new location
 export const createLocation = async (req, res) => {
-  // Extract adminId from the authenticated user
   const adminId = req.user?.id;
-
-  // Extract other fields from the request body
   const { label, latitude, longitude, radius } = req.body;
 
-  // Validate adminId
   if (!adminId) {
     return res.status(401).json({ message: 'Unauthorized: Admin ID not found.' });
   }
-
-  // Validate required fields
   if (!label || !latitude || !longitude || !radius) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
   try {
     const location = await Location.create({
-      adminId,      // Use the extracted adminId
+      adminId,
       label,
       latitude,
       longitude,
       radius,
     });
 
+    await location.reload({
+      include: [
+        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
+        { model: User, as: 'lastEditor', attributes: ['id', 'email'] }
+      ]
+    });
+
+    console.log('createLocation - Created location:', location.toJSON());
     res.status(201).json({ message: 'Location created successfully.', data: location });
   } catch (error) {
     console.error('Error creating location:', error);
@@ -41,21 +38,39 @@ export const createLocation = async (req, res) => {
 
 export const getLocations = async (req, res) => {
   try {
-    // Extract adminId from the authenticated user
-    const adminId = req.user?.id;
-
-    console.log('Admin ID:', adminId);
-
-    if (!adminId) {
-      return res.status(400).json({ message: 'Admin ID is required.' });
+    console.log('getLocations - req.user:', req.user);
+    const { companyId } = req.user;
+    if (!companyId) {
+      console.log('getLocations - No companyId in req.user');
+      return res.status(400).json({ message: 'Company ID is required.' });
     }
 
-    // Fetch locations from the database
+    // Only fetch locations where the admin user is in the same company
     const locations = await Location.findAll({
-      where: { adminId },
+      include: [
+        {
+          model: User,
+          as: 'admin',
+          attributes: ['id', 'email', 'companyId'],
+          required: true,
+          where: { companyId } // Filter by the same companyId
+        },
+        {
+          model: User,
+          as: 'lastEditor',
+          attributes: ['id', 'email'],
+          required: false
+        }
+      ]
     });
 
-    console.log('Locations Retrieved:', locations);
+    console.log('getLocations - Found locations:', locations.map(loc => ({
+      id: loc.id,
+      label: loc.label,
+      adminEmail: loc.admin?.email,
+      adminCompanyId: loc.admin?.companyId
+    })));
+
     res.status(200).json({ message: 'Locations retrieved successfully.', data: locations });
   } catch (error) {
     console.error('Error fetching locations:', error);
@@ -63,25 +78,38 @@ export const getLocations = async (req, res) => {
   }
 };
 
-// Update a location
 export const updateLocation = async (req, res) => {
   const { locationId } = req.params;
   const { label, latitude, longitude, radius } = req.body;
 
   try {
-    const location = await Location.findByPk(locationId);
+    console.log('UpdateLocation - req.user:', req.user);
+
+    const location = await Location.findByPk(locationId, {
+      include: { model: User, as: 'admin' }
+    });
 
     if (!location) {
       return res.status(404).json({ message: 'Location not found.' });
     }
 
-    // Ensure that the location belongs to the authenticated admin
-    if (location.adminId !== req.user.id) {
-      return res.status(403).json({ message: 'Forbidden: You do not have permission to update this location.' });
+    const { companyId, id: userId } = req.user;
+    console.log('UpdateLocation - userId:', userId, 'companyId:', companyId);
+
+    const adminUser = await User.findOne({ where: { id: location.adminId } });
+    if (!adminUser || adminUser.companyId !== companyId) {
+      return res.status(403).json({ message: 'Forbidden: Different company.' });
     }
 
-    await location.update({ label, latitude, longitude, radius });
+    await location.update({ label, latitude, longitude, radius, updatedBy: userId });
+    await location.reload({
+      include: [
+        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
+        { model: User, as: 'lastEditor', attributes: ['id', 'email'] }
+      ]
+    });
 
+    console.log('Updated Location after reload:', location.toJSON());
     res.status(200).json({ message: 'Location updated successfully.', data: location });
   } catch (error) {
     console.error('Error updating location:', error);
@@ -89,7 +117,6 @@ export const updateLocation = async (req, res) => {
   }
 };
 
-// Delete a location
 export const deleteLocation = async (req, res) => {
   const { locationId } = req.params;
 
@@ -100,12 +127,12 @@ export const deleteLocation = async (req, res) => {
       return res.status(404).json({ message: 'Location not found.' });
     }
 
-    // Ensure that the location belongs to the authenticated admin
     if (location.adminId !== req.user.id) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to delete this location.' });
     }
 
     await location.destroy();
+    console.log('deleteLocation - Deleted location id:', locationId);
 
     res.status(200).json({ message: 'Location deleted successfully.' });
   } catch (error) {
