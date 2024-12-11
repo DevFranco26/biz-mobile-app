@@ -37,7 +37,7 @@ const User = sequelize.define('User', {
   status: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: false, // Default to false (not timed-in/active)
+    defaultValue: false, 
   },
 }, {
   timestamps: true, // Automatically add createdAt and updatedAt fields

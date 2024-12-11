@@ -2,7 +2,7 @@
 
 import User from '../models/Users.js';
 
-import { Op } from 'sequelize';
+
 
 export const getCompanyUsers = async (req, res) => {
   try {
@@ -25,7 +25,7 @@ export const getCompanyUsers = async (req, res) => {
     const users = await User.findAll({
       where: {
         companyId,
-        id: { [Op.ne]: adminId }, // Optionally exclude the admin from the list
+        // id: { [Op.ne]: adminId }, 
       },
       attributes: ['id', 'email', 'firstName', 'middleName', 'lastName', 'phone', 'role', 'status', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']],

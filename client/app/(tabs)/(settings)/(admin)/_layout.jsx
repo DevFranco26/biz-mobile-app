@@ -1,12 +1,12 @@
-// File: app/(tabs)/(settings)/_layout.jsx
+// File: app/(tabs)/(settings)/(admin)/_layout.jsx
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Slot } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import useThemeStore from '../../../store/themeStore';
+import useThemeStore from '../../../../store/themeStore';
 
-const SettingsLayout = () => {
+const AdminLayout = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
@@ -31,4 +31,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SettingsLayout;
+export default AdminLayout;

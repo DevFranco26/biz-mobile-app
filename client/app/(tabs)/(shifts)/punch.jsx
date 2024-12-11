@@ -87,7 +87,7 @@ const Punch = () => {
     loadQueue();
   }, []); // Run only once
 
-  // Define syncPunchQueue with useCallback to prevent recreation
+  // Define syncPunchQueue with useCallback
   const syncPunchQueue = useCallback(async () => {
     if (isSyncingRef.current || punchQueueRef.current.length === 0) {
       console.log('No sync needed or already syncing.');
@@ -103,11 +103,12 @@ const Punch = () => {
 
     for (const punchData of newQueue) {
       try {
+        // IMPORTANT: Corrected logic here
         const apiEndpoint = punchData.isTimeIn
-          ? 'http://192.168.100.8:5000/api/timelogs/time-out'
-          : 'http://192.168.100.8:5000/api/timelogs/time-in';
+          ? 'http://192.168.100.8:5000/api/timelogs/time-in'
+          : 'http://192.168.100.8:5000/api/timelogs/time-out';
 
-        console.log(`Syncing punchData to ${apiEndpoint}:`, punchData); // **Console Log**
+        console.log(`Syncing punchData to ${apiEndpoint}:`, punchData);
 
         // Retrieve token from SecureStore
         const token = await SecureStore.getItemAsync('token');
@@ -119,7 +120,7 @@ const Punch = () => {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // Include the token
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(punchData),
         });
@@ -135,7 +136,7 @@ const Punch = () => {
         }
       } catch (error) {
         console.error('Sync Error:', error);
-        // Optionally, implement retry logic or notify the user
+        // Optionally handle failed sync items differently
       }
     }
 
@@ -179,7 +180,7 @@ const Punch = () => {
     return () => {
       unsubscribe();
     };
-  }, [syncPunchQueue]); // Added syncPunchQueue as a dependency
+  }, [syncPunchQueue]); 
 
   // Function to notify the user
   const notifyUser = (title, message) => {
@@ -234,11 +235,11 @@ const Punch = () => {
 
     // Get current date and time in UTC
     const currentDateTime = new Date();
-    const date = currentDateTime.toISOString().split('T')[0]; // '2024-12-06'
+    const date = currentDateTime.toISOString().split('T')[0]; // 'YYYY-MM-DD'
     const time =
       currentDateTime.getUTCHours().toString().padStart(2, '0') + ':' +
       currentDateTime.getUTCMinutes().toString().padStart(2, '0') + ':' +
-      currentDateTime.getUTCSeconds().toString().padStart(2, '0'); // '13:35:16'
+      currentDateTime.getUTCSeconds().toString().padStart(2, '0'); // 'HH:MM:SS'
 
     // Data to store locally
     const punchData = {
@@ -248,7 +249,7 @@ const Punch = () => {
       date,
       time,
       timeZone,
-      isTimeIn: !isTimeIn, // **Send the intended action**
+      isTimeIn: !isTimeIn, // Send the intended action
     };
 
     console.log('Handle Punch:', punchData);
@@ -272,7 +273,7 @@ const Punch = () => {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // **Include the token**
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(punchData),
         });
@@ -288,13 +289,11 @@ const Punch = () => {
           // Handle Time Out
           clearInterval(timer);
           setTimer(null);
-          setTimeElapsed(0); // Reset elapsed time to 0
+          setTimeElapsed(0);
           setPunchedInTime('Not Time In');
         } else {
           // Handle Time In
           const [hour, minute, second] = time.split(':');
-
-          // Create a UTC Date object
           const dateForPunchedInTime = new Date(Date.UTC(
             currentDateTime.getUTCFullYear(),
             currentDateTime.getUTCMonth(),
@@ -305,7 +304,6 @@ const Punch = () => {
             0
           ));
 
-          // Convert UTC time to local time string
           const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
@@ -330,14 +328,15 @@ const Punch = () => {
       try {
         let updatedQueue = [...punchQueueRef.current];
 
-        // **Restrict to one time-in and one time-out**
+        // Restrict to one time-in and one time-out at a time if desired:
+        // Remove any existing queued item with the same isTimeIn state
         updatedQueue = updatedQueue.filter(item => item.isTimeIn !== punchData.isTimeIn);
         updatedQueue.push(punchData);
 
         setPunchQueue(updatedQueue);
         await AsyncStorage.setItem('punchQueue', JSON.stringify(updatedQueue));
         console.log('Punch added to queue:', punchData);
-        console.log('Updated punchQueue:', updatedQueue); // **Console Log**
+        console.log('Updated punchQueue:', updatedQueue);
 
         notifyUser('Offline', 'Your punch has been saved and will sync when online.');
 
@@ -345,8 +344,6 @@ const Punch = () => {
         if (!isTimeIn) {
           // Handling Time In while offline
           const [hour, minute, second] = time.split(':');
-
-          // Create a UTC Date object
           const dateForPunchedInTime = new Date(Date.UTC(
             currentDateTime.getUTCFullYear(),
             currentDateTime.getUTCMonth(),
@@ -357,7 +354,6 @@ const Punch = () => {
             0
           ));
 
-          // Convert UTC time to local time string
           const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
@@ -370,10 +366,10 @@ const Punch = () => {
           const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
           setTimer(intervalId);
         } else {
-          // **Handling Time Out while offline**
+          // Handling Time Out while offline
           clearInterval(timer);
           setTimer(null);
-          setTimeElapsed(0); // Reset elapsed time to 0
+          setTimeElapsed(0);
           setPunchedInTime('Not Time In');
         }
 
@@ -396,9 +392,9 @@ const Punch = () => {
   return (
     <View
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
-      style={{ paddingTop: insets.top + 60 }} // Adjust paddingTop to account for the tab bar height
+      style={{ paddingTop: insets.top + 60 }}
     >
-      {/* Status Boxes with Square Shape and Two Per Row */}
+      {/* Status Boxes */}
       <View className="mt-4 flex-row flex-wrap justify-around px-4 gap-5">
         {/* Date Box */}
         <View
@@ -409,7 +405,6 @@ const Punch = () => {
           <MaterialIcons name="date-range" size={35} color="#fff" className="mr-2" />
           <View>
             <Text className="text-white font-semibold">Date</Text>
-            {/* Changed to display local date */}
             <Text className="text-white">{new Date().toLocaleDateString('en-CA')}</Text>
           </View>
         </View>
@@ -489,7 +484,6 @@ const Punch = () => {
           >
             {formatTime(timeElapsed)}
           </Text>
-          {/* Display punchedInTime in local time below the timer */}
           <Text
             className={`text-lg text-right mt-4 ${
               isLightTheme ? 'text-gray-600' : 'text-gray-400'

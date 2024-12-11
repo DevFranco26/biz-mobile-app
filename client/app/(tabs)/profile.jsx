@@ -62,14 +62,14 @@ const Profile = () => {
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Profile Header */}
-        <View className="bg-teal-700 rounded-xl p-6 mb-6 flex-row items-center">
+        <View className="bg-slate-600 rounded-xl p-6 mb-6 flex-row items-center">
           {userData.profileImage ? (
             <Image
               source={{ uri: userData.profileImage }}
               className="w-20 h-20 rounded-full"
             />
           ) : (
-            <View className="w-20 h-20 rounded-full bg-teal-800 justify-center items-center">
+            <View className="w-20 h-20 rounded-full bg-slate-700 justify-center items-center">
               <Text className="text-white text-2xl font-bold">
                 {getInitials(userData.firstName + ' ' + userData.lastName)}
               </Text>
@@ -103,7 +103,7 @@ const Profile = () => {
         </View>
 
         {/* Edit Profile Button */}
-        <Pressable className="bg-teal-700 p-4 rounded-lg mb-6" onPress={() => Alert.alert('Edit Profile')}>
+        <Pressable className="bg-orange-500 p-4 rounded-lg mb-6" onPress={() => Alert.alert('Edit Profile')}>
           <Text className="text-white text-center font-medium">Edit Profile</Text>
         </Pressable>
 

@@ -1,22 +1,24 @@
-// File: app/(tabs)/(settings)/subscription.jsx
+// File: app/(tabs)/(settings)/(admin)/Subscription.jsx
 
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import useThemeStore from '../../../store/themeStore';
+import useThemeStore from '../../../../store/themeStore';
 
 const Subscription = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
 
+  const handleUpgrade = () => {
+    // Navigate to the upgrade subscription screen
+    router.push('upgrade-subscription');
+  };
+
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
-      edges={['top']}
-    >
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
       {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
@@ -45,10 +47,8 @@ const Subscription = () => {
 
         {/* Upgrade Button */}
         <Pressable
-          onPress={() => router.push('upgrade-subscription')}
-          className={`mt-6 py-4 rounded-lg items-center ${
-            isLightTheme ? 'bg-orange-700' : 'bg-orange-600'
-          }`}
+          onPress={handleUpgrade}
+          className={`mt-6 py-4 rounded-lg items-center ${isLightTheme ? 'bg-orange-700' : 'bg-orange-600'}`}
         >
           <Text className="text-white text-lg font-semibold">Upgrade Plan</Text>
         </Pressable>

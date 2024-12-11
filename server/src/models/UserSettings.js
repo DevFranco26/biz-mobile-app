@@ -26,7 +26,7 @@ const UserSettings = sequelize.define('UserSettings', {
   },
   // ... other fields ...
 }, {
-  tableName: 'UserSettings', // Ensure correct table name
+  tableName: 'UserSettings', 
   timestamps: true,
 });
 
