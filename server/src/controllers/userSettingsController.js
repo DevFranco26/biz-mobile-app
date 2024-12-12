@@ -1,10 +1,10 @@
-// src/controllers/userSettingsController.js
+// File: src/controllers/userSettingsController.js
 
 import UserSettings from '../models/UserSettings.js';
 import Location from '../models/Location.js';
 import User from '../models/Users.js';
 
-// Assign a location restriction to a user
+// Assign or update location restriction for a user
 export const assignLocationToUser = async (req, res) => {
   const { userId, locationId, restrictionEnabled } = req.body;
 
@@ -15,24 +15,45 @@ export const assignLocationToUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Check if the location exists
-    const location = await Location.findByPk(locationId);
-    if (!location) {
-      return res.status(404).json({ message: 'Location not found.' });
+    // If restriction is enabled, locationId is required
+    if (restrictionEnabled && !locationId) {
+      return res.status(400).json({ message: 'Location ID is required when enabling restriction.' });
     }
 
-    // Create or update the user setting
-    const [setting, created] = await UserSettings.findOrCreate({
-      where: { userId, locationId },
-      defaults: { restrictionEnabled },
-    });
+    // If restriction is enabled, verify the location exists
+    let location = null;
+    if (restrictionEnabled && locationId) {
+      location = await Location.findByPk(locationId);
+      if (!location) {
+        return res.status(404).json({ message: 'Location not found.' });
+      }
+    }
 
-    if (!created) {
+    // Find existing user settings for this user
+    let setting = await UserSettings.findOne({ where: { userId } });
+
+    if (setting) {
       // Update existing setting
-      await setting.update({ restrictionEnabled });
-    }
+      await setting.update({
+        restrictionEnabled,
+        locationId: restrictionEnabled ? locationId : null
+      });
+      return res.status(200).json({ message: 'User setting updated successfully.', data: setting });
+    } else {
+      if (!restrictionEnabled) {
+        // If restriction is not enabled and no setting exists, no action needed
+        return res.status(400).json({ message: 'Cannot disable restriction without an existing setting.' });
+      }
 
-    res.status(200).json({ message: 'User setting updated successfully.', data: setting });
+      // Create a new user setting
+      setting = await UserSettings.create({
+        userId,
+        restrictionEnabled,
+        locationId
+      });
+
+      return res.status(201).json({ message: 'User setting created successfully.', data: setting });
+    }
   } catch (error) {
     console.error('Error assigning location to user:', error);
     res.status(500).json({ message: 'Internal server error.' });
@@ -41,18 +62,15 @@ export const assignLocationToUser = async (req, res) => {
 
 // Toggle location restriction for a user
 export const toggleLocationRestriction = async (req, res) => {
-  const { userId, locationId } = req.body;
+  const { userId } = req.body;
 
   try {
-    const setting = await UserSettings.findOne({
-      where: { userId, locationId },
-    });
-
+    const setting = await UserSettings.findOne({ where: { userId } });
     if (!setting) {
-      return res.status(404).json({ message: 'User setting not found.' });
+      return res.status(404).json({ message: 'User setting not found. Cannot toggle restriction without an existing setting.' });
     }
 
-    // Toggle the restriction
+    // Toggle the restrictionEnabled flag
     await setting.update({ restrictionEnabled: !setting.restrictionEnabled });
 
     res.status(200).json({ message: 'Location restriction toggled successfully.', data: setting });

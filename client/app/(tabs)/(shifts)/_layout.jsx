@@ -5,29 +5,40 @@ import { Tabs } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Slot } from 'expo-router';
 
 const ShiftsTabsLayout = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
 
+  // Helper function to generate tab icons
+  const getTabBarIcon = (iconName, IconComponent = Ionicons, size = 20, accessibilityLabel = '') => ({ color }) => (
+    <IconComponent
+      name={iconName}
+      size={size}
+      color={color}
+      accessibilityLabel={accessibilityLabel}
+    />
+  );
+
   return (
     <Tabs
       initialRouteName="Punch"
       screenOptions={{
+        // Position the tab bar at the top
         tabBarStyle: {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
-          borderTopColor:  isLightTheme ? '#ffffff' : '#0f172a',
+          borderBottomColor: isLightTheme ? '#e5e7eb' : '#0f172a',
+          borderTopWidth: 0,
           position: 'absolute',
           top: insets.top,
           left: 0,
           right: 0,
-          height: 60, 
-         
+          height: 60,
+          elevation: 0, // Remove shadow on Android
+          shadowOpacity: 0, // Remove shadow on iOS
         },
-        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316', 
+        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316',
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
         tabBarShowIcon: true,
         tabBarLabelStyle: {
@@ -42,6 +53,7 @@ const ShiftsTabsLayout = () => {
           flexDirection: 'column',
         },
         headerShown: false,
+        tabBarLabelPosition: 'below-icon', // Ensures labels are below icons
       }}
     >
       {/* Punch Screen */}
@@ -49,19 +61,25 @@ const ShiftsTabsLayout = () => {
         name="Punch"
         options={{
           tabBarLabel: 'Punch',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="time" size={20} color={color} />
-          ),
+          tabBarIcon: getTabBarIcon('time', Ionicons, 20, 'Punch Tab Icon'),
         }}
       />
+      
       {/* TimeCard Screen */}
       <Tabs.Screen
         name="TimeCard"
         options={{
           tabBarLabel: 'Time Card',
-          tabBarIcon: ({ color }) => (
-            <FontAwesome5 name="calendar-alt" size={18} color={color} />
-          ),
+          tabBarIcon: getTabBarIcon('clipboard-list', FontAwesome5, 18, 'Time Card Tab Icon'),
+        }}
+      />
+      
+      {/* Schedule Screen */}
+      <Tabs.Screen
+        name="Schedules"
+        options={{
+          tabBarLabel: 'Shift Schedule',
+          tabBarIcon: getTabBarIcon('calendar', Ionicons, 18, 'Shift Schedule Tab Icon'),
         }}
       />
     </Tabs>

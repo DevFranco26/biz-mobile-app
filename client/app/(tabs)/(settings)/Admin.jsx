@@ -30,7 +30,7 @@ const Admin = () => {
     >
       {/* Header Section */}
       <View
-        className={`rounded-lg py-6 px-4 my-4 mx-4 ${headerBg}`}
+        className={`rounded-xl py-6 px-4 my-4 mx-4 ${headerBg}`}
       >
         <View className="flex-row items-center mb-3">
           <Ionicons
@@ -81,6 +81,29 @@ const Admin = () => {
           {/* Manage Leaves */}
           <Pressable
             onPress={() => navigateToFeature('./ManageLeaves')}
+            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+            accessibilityLabel="Manage Leaves"
+            accessibilityHint="Navigate to Manage Leaves screen"
+          >
+            <MaterialIcons
+              name="event-note"
+              size={28}
+              color={accentColor}
+              style={{ marginRight: 12 }}
+            />
+            <View>
+              <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                Manage Leaves
+              </Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Approve leave requests and assign approvers.
+              </Text>
+            </View>
+          </Pressable>
+
+           {/* Manage Schedules */}
+           <Pressable
+            onPress={() => navigateToFeature('./ManageSchedules')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Leaves"
             accessibilityHint="Navigate to Manage Leaves screen"

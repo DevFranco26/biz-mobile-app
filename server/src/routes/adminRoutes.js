@@ -1,17 +1,24 @@
-// server/src/routes/adminRoutes.js
-
+// File: src/routes/adminRoutes.js
 import express from 'express';
-import { getCompanyUsers } from '../controllers/adminController.js';
-import authenticateToken from '../middlewares/authMiddleware.js';
-import { authorizeRoles } from '../middlewares/roleMiddleware.js'; // Correct import source
+import { 
+  getAllUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser 
+} from '../controllers/usersController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
-// Protect all admin routes
-router.use(authenticateToken);
-router.use(authorizeRoles('admin', 'superAdmin')); // Adjust roles as needed
+// Apply authentication middleware to all admin routes
+router.use(authMiddleware);
 
-// GET /api/admin/users
-router.get('/users', getCompanyUsers);
+// Only allow admins or superAdmins to manage users
+// Adjust roles as needed.
+router.get('/users', authorizeRoles('admin', 'superAdmin'), getAllUsers);
+router.post('/users', authorizeRoles('admin', 'superAdmin'), createUser);
+router.put('/users/:id', authorizeRoles('admin', 'superAdmin'), updateUser);
+router.delete('/users/:id', authorizeRoles('admin', 'superAdmin'), deleteUser);
 
 export default router;

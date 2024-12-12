@@ -1,12 +1,21 @@
 // File: app/(tabs)/(shifts)/Punch.jsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Pressable, Alert, ToastAndroid, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Pressable, 
+  Alert, 
+  ToastAndroid, 
+  Platform, 
+  ScrollView, 
+  ActivityIndicator 
+} from 'react-native';
 import { MaterialIcons, Ionicons, Entypo } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store'; // Import SecureStore
+import * as SecureStore from 'expo-secure-store';
 import useUserStore from '../../../store/userStore';
 import useThemeStore from '../../../store/themeStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +38,7 @@ const Punch = () => {
   const [currentTime, setCurrentTime] = useState('');
   const [isConnected, setIsConnected] = useState(true);
   const [punchQueue, setPunchQueue] = useState([]);
+  const [isLoading, setIsLoading] = useState(false); // New Loading State
 
   // Refs to track the latest punchQueue and syncing status
   const punchQueueRef = useRef([]);
@@ -82,10 +92,30 @@ const Punch = () => {
         }
       } catch (error) {
         console.error('Failed to load punch queue:', error);
+        Alert.alert('Error', 'Failed to load queued punches.');
       }
     };
     loadQueue();
   }, []); // Run only once
+
+  // Helper function to get GMT offset
+  const getGMTOffset = () => {
+    const offsetInMinutes = new Date().getTimezoneOffset();
+    const offsetInHours = -offsetInMinutes / 60;
+    const sign = offsetInHours >= 0 ? '+' : '-';
+    const absoluteOffset = Math.abs(offsetInHours);
+    return `GMT${sign}${absoluteOffset}`;
+  };
+
+  // Helper function to get local date
+  const getLocalDate = () => {
+    return new Date().toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
+  };
+
+  // Helper function to get day name
+  const getDayName = () => {
+    return new Date().toLocaleDateString('en-US', { weekday: 'long' }); // e.g., Monday
+  };
 
   // Define syncPunchQueue with useCallback
   const syncPunchQueue = useCallback(async () => {
@@ -100,10 +130,11 @@ const Punch = () => {
 
     const newQueue = [...punchQueueRef.current];
     const successfullySynced = [];
+    const errorMessages = [];
 
     for (const punchData of newQueue) {
       try {
-        // IMPORTANT: Corrected logic here
+        // Define API endpoint based on punch type
         const apiEndpoint = punchData.isTimeIn
           ? 'http://192.168.100.8:5000/api/timelogs/time-in'
           : 'http://192.168.100.8:5000/api/timelogs/time-out';
@@ -136,6 +167,7 @@ const Punch = () => {
         }
       } catch (error) {
         console.error('Sync Error:', error);
+        errorMessages.push(error.message);
         // Optionally handle failed sync items differently
       }
     }
@@ -150,12 +182,18 @@ const Punch = () => {
         console.log('Updated punchQueue after sync:', remainingQueue);
       } catch (error) {
         console.error('Failed to update punch queue after sync:', error);
+        errorMessages.push('Failed to update local punch queue.');
       }
 
       // Notify the user once after syncing
       notifyUser('Sync Success', 'Your offline data has been synced.');
     } else {
       console.log('No punches were successfully synced.');
+    }
+
+    if (errorMessages.length > 0) {
+      const combinedErrors = errorMessages.join('\n');
+      notifyUser('Sync Errors', combinedErrors);
     }
 
     isSyncingRef.current = false;
@@ -210,7 +248,9 @@ const Punch = () => {
         Alert.alert('Permission Denied', 'Location permission is required.');
         return null;
       }
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest, // Ensure high accuracy
+      });
       return {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -223,162 +263,172 @@ const Punch = () => {
 
   // Handle punch action
   const handlePunch = async () => {
-    const deviceInfo = {
-      deviceName: Device.deviceName,
-      systemName: Device.osName,
-      systemVersion: Device.osVersion,
-      model: Device.modelName,
-    };
+    setIsLoading(true); // Start loading
+    try {
+      const deviceInfo = {
+        deviceName: Device.deviceName,
+        systemName: Device.osName,
+        systemVersion: Device.osVersion,
+        model: Device.modelName,
+      };
 
-    const loc = await fetchLocation();
-    if (!loc) return;
-
-    // Get current date and time in UTC
-    const currentDateTime = new Date();
-    const date = currentDateTime.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-    const time =
-      currentDateTime.getUTCHours().toString().padStart(2, '0') + ':' +
-      currentDateTime.getUTCMinutes().toString().padStart(2, '0') + ':' +
-      currentDateTime.getUTCSeconds().toString().padStart(2, '0'); // 'HH:MM:SS'
-
-    // Data to store locally
-    const punchData = {
-      userId: user.id,
-      deviceInfo,
-      location: loc,
-      date,
-      time,
-      timeZone,
-      isTimeIn: !isTimeIn, // Send the intended action
-    };
-
-    console.log('Handle Punch:', punchData);
-
-    if (isConnected) {
-      // Send to server
-      try {
-        const apiEndpoint = !isTimeIn
-          ? 'http://192.168.100.8:5000/api/timelogs/time-in'
-          : 'http://192.168.100.8:5000/api/timelogs/time-out';
-
-        console.log(`Sending punch to server at ${apiEndpoint}:`, punchData); // **Console Log**
-
-        // Retrieve token from SecureStore
-        const token = await SecureStore.getItemAsync('token');
-        if (!token) {
-          throw new Error('Authentication token not found. Please sign in again.');
-        }
-
-        const response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(punchData),
-        });
-
-        const result = await response.json();
-        console.log('API Response:', result);
-
-        if (!response.ok) throw new Error(result.message || 'Failed to punch.');
-
-        notifyUser('Success', result.message);
-
-        if (isTimeIn) {
-          // Handle Time Out
-          clearInterval(timer);
-          setTimer(null);
-          setTimeElapsed(0);
-          setPunchedInTime('Not Time In');
-        } else {
-          // Handle Time In
-          const [hour, minute, second] = time.split(':');
-          const dateForPunchedInTime = new Date(Date.UTC(
-            currentDateTime.getUTCFullYear(),
-            currentDateTime.getUTCMonth(),
-            currentDateTime.getUTCDate(),
-            parseInt(hour),
-            parseInt(minute),
-            parseInt(second),
-            0
-          ));
-
-          const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          });
-          setPunchedInTime(localPunchedInTime);
-
-          // Start timer
-          const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
-          setTimer(intervalId);
-        }
-
-        setIsTimeIn(!isTimeIn);
-        console.log('Punch status updated to:', !isTimeIn);
-      } catch (error) {
-        console.error('Punch Error:', error);
-        Alert.alert('Error', error.message);
+      const loc = await fetchLocation();
+      if (!loc) {
+        setIsLoading(false);
+        return;
       }
-    } else {
-      // Add to queue
-      try {
-        let updatedQueue = [...punchQueueRef.current];
 
-        // Restrict to one time-in and one time-out at a time if desired:
-        // Remove any existing queued item with the same isTimeIn state
-        updatedQueue = updatedQueue.filter(item => item.isTimeIn !== punchData.isTimeIn);
-        updatedQueue.push(punchData);
+      // Get current date and time in UTC
+      const currentDateTime = new Date();
+      const date = currentDateTime.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const time =
+        currentDateTime.getUTCHours().toString().padStart(2, '0') + ':' +
+        currentDateTime.getUTCMinutes().toString().padStart(2, '0') + ':' +
+        currentDateTime.getUTCSeconds().toString().padStart(2, '0'); // 'HH:MM:SS'
 
-        setPunchQueue(updatedQueue);
-        await AsyncStorage.setItem('punchQueue', JSON.stringify(updatedQueue));
-        console.log('Punch added to queue:', punchData);
-        console.log('Updated punchQueue:', updatedQueue);
+      // Data to store locally
+      const punchData = {
+        userId: user.id,
+        deviceInfo,
+        location: loc,
+        date,
+        time,
+        timeZone,
+        isTimeIn: !isTimeIn, // Send the intended action
+      };
 
-        notifyUser('Offline', 'Your punch has been saved and will sync when online.');
+      console.log('Handle Punch:', punchData);
 
-        // Update UI accordingly
-        if (!isTimeIn) {
-          // Handling Time In while offline
-          const [hour, minute, second] = time.split(':');
-          const dateForPunchedInTime = new Date(Date.UTC(
-            currentDateTime.getUTCFullYear(),
-            currentDateTime.getUTCMonth(),
-            currentDateTime.getUTCDate(),
-            parseInt(hour),
-            parseInt(minute),
-            parseInt(second),
-            0
-          ));
+      if (isConnected) {
+        // Send to server
+        try {
+          const apiEndpoint = !isTimeIn
+            ? 'http://192.168.100.8:5000/api/timelogs/time-in'
+            : 'http://192.168.100.8:5000/api/timelogs/time-out';
 
-          const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
+          console.log(`Sending punch to server at ${apiEndpoint}:`, punchData); // **Console Log**
+
+          // Retrieve token from SecureStore
+          const token = await SecureStore.getItemAsync('token');
+          if (!token) {
+            throw new Error('Authentication token not found. Please sign in again.');
+          }
+
+          const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(punchData),
           });
-          setPunchedInTime(localPunchedInTime);
 
-          // Start timer
-          const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
-          setTimer(intervalId);
-        } else {
-          // Handling Time Out while offline
-          clearInterval(timer);
-          setTimer(null);
-          setTimeElapsed(0);
-          setPunchedInTime('Not Time In');
+          const result = await response.json();
+          console.log('API Response:', result);
+
+          if (!response.ok) throw new Error(result.message || 'Failed to punch.');
+
+          notifyUser('Success', result.message);
+
+          if (isTimeIn) {
+            // Handle Time Out
+            clearInterval(timer);
+            setTimer(null);
+            setTimeElapsed(0);
+            setPunchedInTime('Not Time In');
+          } else {
+            // Handle Time In
+            const [hour, minute, second] = time.split(':');
+            const dateForPunchedInTime = new Date(Date.UTC(
+              currentDateTime.getUTCFullYear(),
+              currentDateTime.getUTCMonth(),
+              currentDateTime.getUTCDate(),
+              parseInt(hour),
+              parseInt(minute),
+              parseInt(second),
+              0
+            ));
+
+            const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true,
+            });
+            setPunchedInTime(localPunchedInTime);
+
+            // Start timer
+            const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
+            setTimer(intervalId);
+          }
+
+          setIsTimeIn(!isTimeIn);
+          console.log('Punch status updated to:', !isTimeIn);
+        } catch (error) {
+          console.error('Punch Error:', error);
+          Alert.alert('Error', error.message);
         }
+      } else {
+        // Add to queue
+        try {
+          let updatedQueue = [...punchQueueRef.current];
 
-        setIsTimeIn(!isTimeIn);
-        console.log('Punch status updated to:', !isTimeIn);
-      } catch (error) {
-        console.error('Queue Error:', error);
-        Alert.alert('Error', 'Failed to queue punch. Please try again.');
+          // Remove any existing queued item with the same isTimeIn state
+          updatedQueue = updatedQueue.filter(item => item.isTimeIn !== punchData.isTimeIn);
+          updatedQueue.push(punchData);
+
+          setPunchQueue(updatedQueue);
+          await AsyncStorage.setItem('punchQueue', JSON.stringify(updatedQueue));
+          console.log('Punch added to queue:', punchData);
+          console.log('Updated punchQueue:', updatedQueue);
+
+          notifyUser('Offline', 'Your punch has been saved and will sync when online.');
+
+          // Update UI accordingly
+          if (!isTimeIn) {
+            // Handling Time In while offline
+            const [hour, minute, second] = time.split(':');
+            const dateForPunchedInTime = new Date(Date.UTC(
+              currentDateTime.getUTCFullYear(),
+              currentDateTime.getUTCMonth(),
+              currentDateTime.getUTCDate(),
+              parseInt(hour),
+              parseInt(minute),
+              parseInt(second),
+              0
+            ));
+
+            const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true,
+            });
+            setPunchedInTime(localPunchedInTime);
+
+            // Start timer
+            const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
+            setTimer(intervalId);
+          } else {
+            // Handling Time Out while offline
+            clearInterval(timer);
+            setTimer(null);
+            setTimeElapsed(0);
+            setPunchedInTime('Not Time In');
+          }
+
+          setIsTimeIn(!isTimeIn);
+          console.log('Punch status updated to:', !isTimeIn);
+        } catch (error) {
+          console.error('Queue Error:', error);
+          Alert.alert('Error', 'Failed to queue punch. Please try again.');
+        }
       }
+    } catch (error) {
+      console.error('Unexpected Error:', error);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false); // End loading
     }
   };
 
@@ -389,127 +439,178 @@ const Punch = () => {
     };
   }, [timer]);
 
+  // Retrieve day name once to avoid re-render issues
+  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
   return (
-    <View
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
-      style={{ paddingTop: insets.top + 60 }}
-    >
-      {/* Status Boxes */}
-      <View className="mt-4 flex-row flex-wrap justify-around px-4 gap-5">
-        {/* Date Box */}
-        <View
-          className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isLightTheme ? 'bg-blue-500/80' : 'bg-blue-600/80'
-          } flex-row items-center justify-center`}
-        >
-          <MaterialIcons name="date-range" size={35} color="#fff" className="mr-2" />
-          <View>
-            <Text className="text-white font-semibold">Date</Text>
-            <Text className="text-white">{new Date().toLocaleDateString('en-CA')}</Text>
-          </View>
-        </View>
-
-        {/* Timezone Box */}
-        <View
-          className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isLightTheme ? 'bg-green-500/80' : 'bg-green-600/80'
-          } flex-row items-center justify-center`}
-        >
-          <Ionicons name="location" size={35} color="#fff" className="mr-2" />
-          <View>
-            <Text className="text-white font-semibold">Timezone</Text>
-            <Text className="text-white">{timeZone}</Text>
-          </View>
-        </View>
-
-        {/* Status Box */}
-        <View
-          className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isTimeIn
-              ? isLightTheme
-                ? 'bg-red-500/80'
-                : 'bg-red-600/80'
-              : isLightTheme
-              ? 'bg-yellow-500/80'
-              : 'bg-yellow-600/80'
-          } flex-row items-center justify-center`}
-        >
-          <Entypo
-            name={isTimeIn ? 'controller-record' : 'controller-play'}
-            size={35}
-            color="#fff"
-            className="mr-2"
-          />
-          <View>
-            <Text className="text-white font-semibold">Status</Text>
-            <Text className="text-white">{isTimeIn ? 'On the Clock' : 'Off the Clock'}</Text>
-          </View>
-        </View>
-
-        {/* Network Status Box */}
-        <View
-          className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isConnected
-              ? isLightTheme
-                ? 'bg-purple-500/80'
-                : 'bg-purple-600/80'
-              : isLightTheme
-              ? 'bg-gray-500/80'
-              : 'bg-gray-600/80'
-          } flex-row items-center justify-center`}
-        >
-          {isConnected ? (
-            <MaterialIcons name="wifi" size={35} color="#fff" className="mr-2" />
-          ) : (
-            <MaterialIcons name="wifi-off" size={35} color="#fff" className="mr-2" />
-          )}
-          <View>
-            <Text className="text-white font-semibold">Network</Text>
-            <Text className="text-white">{isConnected ? 'Online' : 'Offline'}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Timer Section */}
-      <View className="flex-1 justify-center items-center">
-        <View
-          className={`w-[90%] max-w-md justify-center items-center rounded-lg py-12 ${
-            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-          } shadow-sm`}
-        >
-          <Text
-            className={`text-7xl font-bold ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-400'
-            }`}
+    <View className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} style={{ paddingTop: insets.top }}>
+      {/* Separate Status Boxes with Vertical Spacing */}
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+        className="mx-4 mt-20"
+      >
+        <View className="space-y-4">
+          {/* Date Box */}
+          <View
+            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            } shadow-md`}
           >
-            {formatTime(timeElapsed)}
-          </Text>
-          <Text
-            className={`text-lg text-right mt-4 ${
-              isLightTheme ? 'text-gray-600' : 'text-gray-400'
-            }`}
-          >
-            {isTimeIn ? punchedInTime : 'Not Time In'}
-          </Text>
-        </View>
-      </View>
+            <View className="flex-row items-center">
+              <MaterialIcons 
+                name="date-range" 
+                size={30} 
+                color="#3B82F6" // Blue color for Date Icon
+                className="mr-4" 
+                accessibilityLabel="Date Icon"
+              />
+              <View>
+                <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Date</Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
+                  {dayName}
+                </Text>
+              </View>
+            </View>
+            <View className="flex-col items-end">
+              <Text
+                className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}
+              >
+                {getLocalDate()}
+              </Text>
+            </View>
+          </View>
 
-      {/* Punch Button */}
+          {/* Timezone Box */}
+          <View
+            className={`flex-row items-center p-4 rounded-xl my-2 ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            } shadow-md`}
+          >
+            <Ionicons 
+              name="location" 
+              size={30} 
+              color="#10B981" // Green color for Timezone Icon
+              className="mr-4" 
+              accessibilityLabel="Timezone Icon"
+            />
+            <View>
+              <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Timezone</Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
+                {timeZone} ({getGMTOffset()})
+              </Text>
+            </View>
+          </View>
+
+          {/* Modified Status Box */}
+          <View
+            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            } shadow-md`}
+          >
+            <View className="flex-row items-center">
+              <Entypo
+                name={isTimeIn ? 'controller-record' : 'controller-play'}
+                size={30}
+                color={isTimeIn ? '#F59E0B' : '#EF4444'} // Orange for "On the Clock", Red for "Off the Clock"
+                className="mr-4"
+                accessibilityLabel="Status Icon"
+              />
+              <View>
+                <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Status</Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
+                  {isTimeIn ? 'On the Clock' : 'Off the Clock'}
+                </Text>
+              </View>
+            </View>
+            {/* Moved Text Component to the Right */}
+            <View className="flex-col items-end">
+              <Text
+                className={`text-md ${
+                  isLightTheme ? 'text-gray-600' : 'text-gray-400'
+                }`}
+              >
+                {isTimeIn ? punchedInTime : '00:00:00'}
+              </Text>
+
+            </View>
+          </View>
+
+          {/* Network Status Box */}
+          <View
+            className={`flex-row items-center p-4 rounded-xl my-2 ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            } shadow-md`}
+          >
+            {isConnected ? (
+              <MaterialIcons 
+                name="wifi" 
+                size={30} 
+                color="#8B5CF6" // Purple for Online
+                className="mr-4" 
+                accessibilityLabel="Network Icon Online"
+              />
+            ) : (
+              <MaterialIcons 
+                name="wifi-off" 
+                size={30} 
+                color="#6B7280" // Gray for Offline
+                className="mr-4" 
+                accessibilityLabel="Network Icon Offline"
+              />
+            )}
+            <View>
+              <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Network</Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
+                {isConnected ? 'Online' : 'Offline'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Timer Section */}
+        <View className="flex-1 justify-center items-center mt-8">
+          <View
+            className={`w-full p-6 rounded-xl ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-900'
+            } `}
+          >
+            <Text
+              className={`text-6xl font-bold text-center ${
+                isLightTheme ? 'text-gray-700' : 'text-gray-300'
+              }`}
+            >
+              {formatTime(timeElapsed)}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Punch Button at the Bottom */}
       <Pressable
         onPress={handlePunch}
-        className={`py-4 rounded-lg mb-6 mx-4 ${
+        disabled={isLoading} 
+        className={`mx-4 mb-6 py-4 rounded-xl ${
           isTimeIn
             ? isLightTheme
-              ? 'bg-red-600/80'
-              : 'bg-red-500/80'
+              ? 'bg-red-600'
+              : 'bg-red-500'
             : isLightTheme
-            ? 'bg-orange-600/80'
-            : 'bg-orange-500/90'
-        }`}
+            ? 'bg-orange-600'
+            : 'bg-orange-500'
+        } shadow-md ${isLoading ? 'opacity-50' : 'opacity-100'}`}
       >
-        <Text className="text-center text-white text-xl font-semibold">
-          {isTimeIn ? 'Time Out' : 'Time In'}
-        </Text>
+        <View className="flex-row items-center justify-center">
+          {isLoading && (
+            <ActivityIndicator 
+              size="small" 
+              color="#FFFFFF" 
+              className="mr-2" 
+            />
+          )}
+          <Text className="text-center text-white text-xl font-semibold">
+            {isTimeIn ? 'Time Out' : 'Time In'}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );

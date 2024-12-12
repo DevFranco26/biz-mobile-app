@@ -16,7 +16,7 @@ const UserSettings = sequelize.define('UserSettings', {
   },
   locationId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     // Define associations elsewhere
   },
   restrictionEnabled: {
