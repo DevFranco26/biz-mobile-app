@@ -1,7 +1,7 @@
 import express from 'express';
 import { createLocation, getLocations, updateLocation, deleteLocation } from '../controllers/locationController.js';
 import authenticateToken from '../middlewares/authMiddleware.js';
-// import { authorizeRoles } from '../middlewares/roleMiddleware.js';
+import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 

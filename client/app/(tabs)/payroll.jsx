@@ -27,7 +27,7 @@ const Payroll = () => {
         {/* Payroll Header */}
         <View
           className={`rounded-lg p-4 mb-4 ${
-            isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
         >
           <Text className="text-2xl font-bold text-white mb-2">Payroll</Text>
@@ -39,7 +39,7 @@ const Payroll = () => {
         {/* Payroll Details */}
         <View
           className={`rounded-lg p-4 mb-4 ${
-            isLightTheme ? 'bg-white' : 'bg-slate-700'
+            isLightTheme ? 'bg-white' : 'bg-slate-800'
           }`}
         >
           <Text
@@ -69,7 +69,7 @@ const Payroll = () => {
         {/* Action Button (e.g., Print or Export) */}
         <View className="mb-4">
           <Pressable
-            className="bg-orange-500 p-4 rounded-lg items-center"
+            className="bg-orange-500/90 border p-4 rounded-lg items-center"
             onPress={() => {
               // Handle print action
               console.log('Print Payroll Details');

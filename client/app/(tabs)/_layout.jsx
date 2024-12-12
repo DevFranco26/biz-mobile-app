@@ -16,7 +16,7 @@ const TabsLayout = () => {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
           borderTopColor:  isLightTheme ? '#ffffff' : '#0f172a',
         },
-        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#fb923c',
+        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316',
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
       }}
     >

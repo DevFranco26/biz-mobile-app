@@ -27,7 +27,7 @@ const ShiftsTabsLayout = () => {
           height: 60, 
          
         },
-        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#fb923c', 
+        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316', 
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
         tabBarShowIcon: true,
         tabBarLabelStyle: {

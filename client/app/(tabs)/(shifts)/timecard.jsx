@@ -394,7 +394,7 @@ const TimeCard = () => {
                 <View className="flex-row justify-end mt-5">
                   <Pressable
                     onPress={() => setCurrentPicker(null)}
-                    className={`px-4 py-2 mr-2 rounded ${isLightTheme ? 'bg-gray-300' : 'bg-gray-600'}`}
+                    className={`px-4 py-3 mr-2 rounded ${isLightTheme ? 'bg-gray-300' : 'bg-gray-600'}`}
                   >
                     <Text className={`${isLightTheme ? 'text-black' : 'text-white'}`}>Cancel</Text>
                   </Pressable>
@@ -416,7 +416,7 @@ const TimeCard = () => {
                       }
                       setCurrentPicker(null);
                     }}
-                    className={`px-4 py-2 rounded ${isLightTheme ? 'bg-teal-600' : 'bg-teal-400'}`}
+                    className={`px-4 py-3 rounded bg-orange-500/90 `}
                   >
                     <Text className="text-white">Confirm</Text>
                   </Pressable>
@@ -474,13 +474,13 @@ const TimeCard = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={fetchTimeLogs}
-            colors={['#F97316']} // Orange color
-            tintColor={isLightTheme ? '#F97316' : '#F97316'}
+            colors={['#475569']} 
+            tintColor={isLightTheme ? '#475569' : '#94a3b8'}
           />
         }
       >
         {/* Total Hours */}
-        <View className="p-4 rounded-lg mb-6 bg-orange-500 flex-row justify-between items-center">
+        <View className="p-4 rounded-lg mb-6 bg-slate-800 flex-row justify-between items-center">
           <Text className="text-lg text-white font-semibold">
             Total Hours
           </Text>
@@ -494,7 +494,7 @@ const TimeCard = () => {
           <Text className="text-base mb-2 text-white">
             Select Range:
           </Text>
-          <View className="rounded-lg bg-gray-700">
+          <View className="rounded-lg bg-gray-900">
             <Picker
               selectedValue={rangeType}
               onValueChange={(itemValue) => setRangeType(itemValue)}
@@ -588,7 +588,7 @@ const TimeCard = () => {
         {loading ? (
           <ActivityIndicator
             size="large"
-            color="#F97316" // Orange color
+            color="#475569"
             className="mt-12"
           />
         ) : logsWithDuration.length > 0 ? (
@@ -603,7 +603,7 @@ const TimeCard = () => {
               <Text className={`text-md ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
                 {log.timeIn} - {log.timeOut}
               </Text>
-              <Text className={`text-md mt-2 text-right ${log.duration.includes('h') ? 'text-green-500' : 'text-red-500'}`}>
+              <Text className={`text-md mt-2 text-right ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
                 {log.duration}
               </Text>
             </View>

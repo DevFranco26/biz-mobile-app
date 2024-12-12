@@ -235,7 +235,7 @@ const ManageUsers = () => {
             <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
               Role: {item.role.charAt(0).toUpperCase() + item.role.slice(1)}
             </Text>
-            <Text className={`${item.status ? 'text-green-500' : 'text-red-500'}`}>
+            <Text className={`${item.status ? 'text-green-400/80' : 'text-red-400/80'}`}>
               Status: {item.status ? 'Active' : 'Inactive'}
             </Text>
             <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
@@ -265,11 +265,7 @@ const ManageUsers = () => {
           Manage Users
         </Text>
       </View>
-
-      <Text className={`text-2xl font-bold text-center mb-4 ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
-        Company Users
-      </Text>
-
+      
       {loading ? (
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
@@ -320,8 +316,8 @@ const ManageUsers = () => {
                   <Switch
                     value={restrictionEnabled}
                     onValueChange={setRestrictionEnabled}
-                    trackColor={{ true: '#2563eb', false: '#9ca3af' }}
-                    thumbColor={restrictionEnabled ? '#2563eb' : (isLightTheme ? '#f4f4f5' : '#374151')}
+                    trackColor={{ true: '#f97316', false: '#9ca3af' }}
+                    thumbColor={restrictionEnabled ? '#1e293b' : (isLightTheme ? '#f4f4f5' : '#1e293b')}
                   />
                 </View>
 
@@ -351,16 +347,16 @@ const ManageUsers = () => {
                 )}
 
                 <View className="flex-row justify-end">
-                  <TouchableOpacity onPress={() => setUserSettingsModalVisible(false)} className="mr-4">
+                  <TouchableOpacity onPress={() => setUserSettingsModalVisible(false)} className="mr-4 my-auto">
                     <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-700' : 'text-slate-400'}`}>
                       Cancel
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleSaveUserSettings}
-                    className="bg-slate-700 p-3 rounded-lg"
+                    className="bg-orange-500/90 px-4 py-3 rounded-lg"
                   >
-                    <Text className="text-white font-semibold">Save</Text>
+                    <Text className="text-white font-semibold">Confirm</Text>
                   </TouchableOpacity>
                 </View>
               </>

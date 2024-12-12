@@ -62,15 +62,15 @@ const Profile = () => {
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Profile Header */}
-        <View className="bg-slate-600 rounded-xl p-6 mb-6 flex-row items-center">
+        <View className="bg-slate-800 rounded-xl p-6 mb-6 flex-row items-center">
           {userData.profileImage ? (
             <Image
               source={{ uri: userData.profileImage }}
               className="w-20 h-20 rounded-full"
             />
           ) : (
-            <View className="w-20 h-20 rounded-full bg-slate-700 justify-center items-center">
-              <Text className="text-white text-2xl font-bold">
+            <View className="w-20 h-20 rounded-full bg-slate-900 justify-center items-center">
+              <Text className="text-white text-2xl font-bold tracking-widest">
                 {getInitials(userData.firstName + ' ' + userData.lastName)}
               </Text>
             </View>
@@ -84,7 +84,7 @@ const Profile = () => {
         </View>
 
         {/* Contact Information */}
-        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? 'bg-gray-100' : 'bg-slate-800'}`}>
           <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
             Contact Information
           </Text>
@@ -102,29 +102,32 @@ const Profile = () => {
           </Text>
         </View>
 
-        {/* Edit Profile Button */}
-        <Pressable className="bg-orange-500 p-4 rounded-lg mb-6" onPress={() => Alert.alert('Edit Profile')}>
-          <Text className="text-white text-center font-medium">Edit Profile</Text>
-        </Pressable>
-
         {/* Account Settings */}
-        <View className={`rounded-lg p-6 ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
-          <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+        <View className={`rounded-lg p-6 ${isLightTheme ? 'bg-gray-100' : 'bg-slate-800'}`}>
+          <Text className={`text-xl font-semibold mb-6 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
             Account Settings
           </Text>
           <Pressable
-            className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-gray-700'}`}
+            className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
             onPress={() => Alert.alert('Change Password')}
           >
-            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium`}>
+            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center` } onPress={() => Alert.alert('Change pass feature: on going')}>
               Change Password
             </Text>
           </Pressable>
           <Pressable
-            className={`p-4 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-gray-700'}`}
+            className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
+            onPress={() => Alert.alert('Change Password')}
+          >
+            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`} onPress={() => Alert.alert('Edit profile feature: on going')}>
+            Edit Profile
+            </Text>
+          </Pressable>
+          <Pressable
+            className={`p-4 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
             onPress={logout}
           >
-            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium`}>
+            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`}>
               Logout
             </Text>
           </Pressable>

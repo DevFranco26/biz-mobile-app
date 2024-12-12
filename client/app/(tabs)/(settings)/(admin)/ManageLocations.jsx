@@ -391,9 +391,9 @@ const ManageLocations = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={handleSaveLocation}
-                      className="bg-slate-700 p-3 rounded-lg"
+                      className="bg-orange-500/90 p-3 rounded-lg"
                     >
-                      <Text className="text-white font-semibold">Save</Text>
+                      <Text className="text-white font-semibold">Confirm</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

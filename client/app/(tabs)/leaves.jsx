@@ -165,7 +165,7 @@ const Leaves = () => {
             <Text className={`${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>Status: {request.status}</Text>
           </View>
         ))}
-        <Pressable className="mt-4 p-4 rounded-lg bg-teal-700" onPress={() => setShowLeaves(false)}>
+        <Pressable className="mt-4 p-4 rounded-lg bg-orange-500/90" onPress={() => setShowLeaves(false)}>
           <Text className="text-white text-center">Back</Text>
         </Pressable>
       </View>
@@ -175,7 +175,7 @@ const Leaves = () => {
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
       {/* Form Header */}
-      <View className="bg-teal-700 rounded-xl p-6 mb-4 mx-5 mt-5">
+      <View className="bg-slate-800 rounded-xl p-6 mb-4 mx-5 mt-5">
         <Text className="text-2xl font-bold text-white mb-2">Leave</Text>
         <Text className="text-white text-base">Note: Vacation leave should be requested 2 weeks ahead.</Text>
       </View>
@@ -196,13 +196,14 @@ const Leaves = () => {
           color: isLightTheme ? '#374151' : '#9ca3af',
         }}
         style={{
-          backgroundColor: isLightTheme ? '#ffffff' : '#374151',
-          borderColor: isLightTheme ? '#e5e7eb' : '#374151',
+          backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
+          borderColor: isLightTheme ? '#e5e7eb' : '#1e293b',
           borderWidth: 1,
           borderRadius: 8,
           marginHorizontal: 24,
           alignSelf: 'center',
-          width: '93%',
+          width: '92%',
+       
         }}
         dropDownContainerStyle={{
           backgroundColor: isLightTheme ? '#ffffff' : '#374151',
@@ -280,7 +281,7 @@ const Leaves = () => {
             </View>
 
             {/* Submit Button */}
-            <Pressable onPress={handleRequestLeave} className="bg-teal-700 py-4 px-5 rounded-lg w-full mb-4 mt-auto">
+            <Pressable onPress={handleRequestLeave} className="bg-orange-500/90 py-4 px-5 rounded-lg w-full mb-4 mt-auto">
               <Text className="text-white text-center text-lg font-medium">Request Leave</Text>
             </Pressable>
 

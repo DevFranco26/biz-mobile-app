@@ -16,7 +16,7 @@ const SettingsLayout = () => {
       style={[
         styles.container,
         {
-          backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
+          backgroundColor: isLightTheme ? '#ffffff' : '#fb923c',
         },
       ]}
     >

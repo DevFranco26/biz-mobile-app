@@ -399,7 +399,7 @@ const Punch = () => {
         {/* Date Box */}
         <View
           className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isLightTheme ? 'bg-blue-500' : 'bg-blue-600'
+            isLightTheme ? 'bg-blue-500/80' : 'bg-blue-600/80'
           } flex-row items-center justify-center`}
         >
           <MaterialIcons name="date-range" size={35} color="#fff" className="mr-2" />
@@ -412,7 +412,7 @@ const Punch = () => {
         {/* Timezone Box */}
         <View
           className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
-            isLightTheme ? 'bg-green-500' : 'bg-green-600'
+            isLightTheme ? 'bg-green-500/80' : 'bg-green-600/80'
           } flex-row items-center justify-center`}
         >
           <Ionicons name="location" size={35} color="#fff" className="mr-2" />
@@ -427,11 +427,11 @@ const Punch = () => {
           className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
             isTimeIn
               ? isLightTheme
-                ? 'bg-red-500'
-                : 'bg-red-600'
+                ? 'bg-red-500/80'
+                : 'bg-red-600/80'
               : isLightTheme
-              ? 'bg-yellow-500'
-              : 'bg-yellow-600'
+              ? 'bg-yellow-500/80'
+              : 'bg-yellow-600/80'
           } flex-row items-center justify-center`}
         >
           <Entypo
@@ -451,11 +451,11 @@ const Punch = () => {
           className={`w-[45%] aspect-square py-10 mb-4 rounded-lg ${
             isConnected
               ? isLightTheme
-                ? 'bg-purple-500'
-                : 'bg-purple-600'
+                ? 'bg-purple-500/80'
+                : 'bg-purple-600/80'
               : isLightTheme
-              ? 'bg-gray-500'
-              : 'bg-gray-600'
+              ? 'bg-gray-500/80'
+              : 'bg-gray-600/80'
           } flex-row items-center justify-center`}
         >
           {isConnected ? (
@@ -500,11 +500,11 @@ const Punch = () => {
         className={`py-4 rounded-lg mb-6 mx-4 ${
           isTimeIn
             ? isLightTheme
-              ? 'bg-red-600'
-              : 'bg-red-500'
+              ? 'bg-red-600/80'
+              : 'bg-red-500/80'
             : isLightTheme
-            ? 'bg-orange-600'
-            : 'bg-orange-500'
+            ? 'bg-orange-600/80'
+            : 'bg-orange-500/90'
         }`}
       >
         <Text className="text-center text-white text-xl font-semibold">

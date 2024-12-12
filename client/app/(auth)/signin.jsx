@@ -128,7 +128,7 @@ const Signin = () => {
                 </View>
 
                 {/* Sign In Button */}
-                <Pressable className="w-full py-4 rounded-lg mt-7 bg-teal-700" onPress={handleSubmit}>
+                <Pressable className="w-full py-4 rounded-lg mt-7 bg-orange-500/90" onPress={handleSubmit}>
                   <Text className="text-white text-center text-lg font-medium">Sign In</Text>
                 </Pressable>
 
