@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/admin.jsx
+// File: app/(tabs)/(settings)/Admin.jsx
 
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
@@ -105,8 +105,8 @@ const Admin = () => {
            <Pressable
             onPress={() => navigateToFeature('./ManageSchedules')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Leaves"
-            accessibilityHint="Navigate to Manage Leaves screen"
+            accessibilityLabel="Manage Schedules"
+            accessibilityHint="Navigate to Manage Schedules screen"
           >
             <MaterialIcons
               name="event-note"
@@ -116,7 +116,7 @@ const Admin = () => {
             />
             <View>
               <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Manage Leaves
+              Manage Schedules
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
                 Approve leave requests and assign approvers.
