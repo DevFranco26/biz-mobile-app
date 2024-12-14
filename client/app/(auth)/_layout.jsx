@@ -13,6 +13,13 @@ const AuthLayout = () => {
           headerShown: false,
         }}
       />
+       <Stack.Screen
+        name="get-started"
+        options={{
+          title: 'Get Started',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 };

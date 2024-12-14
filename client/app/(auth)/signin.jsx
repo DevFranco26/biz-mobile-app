@@ -132,6 +132,14 @@ const Signin = () => {
                   <Text className="text-white text-center text-lg font-medium">Sign In</Text>
                 </Pressable>
 
+                {/* Get Started Button */}
+                <Pressable
+                  className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
+                  onPress={() => router.push('(auth)/get-started')} // Updated route
+                >
+                  <Text className="text-orange-500/90 text-center text-lg font-medium">Get Started</Text>
+                </Pressable>
+
                 {/* Forgot Password */}
                 <Pressable onPress={() => Alert.alert('Forgot Password')}>
                   <Text className={`text-blue-500 text-sm mt-4 text-center ${theme === 'light' ? 'text-blue-700' : 'text-blue-400'}`}>
