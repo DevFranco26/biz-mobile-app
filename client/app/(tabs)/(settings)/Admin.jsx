@@ -55,6 +55,52 @@ const Admin = () => {
       >
         <View className="space-y-5">
           
+           {/* Manage Users */}
+           <Pressable
+            onPress={() => navigateToFeature('./ManageUsers')}
+            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+            accessibilityLabel="Manage Users"
+            accessibilityHint="Navigate to Manage Users screen"
+          >
+            <Ionicons
+              name="people-outline"
+              size={28}
+              color={accentColor}
+              style={{ marginRight: 12 }}
+            />
+            <View>
+              <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                Manage Users
+              </Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                View, edit, and track real-time punch-in status.
+              </Text>
+            </View>
+          </Pressable>
+
+                    {/* Manage TimeLogs */}
+                    <Pressable
+            onPress={() => navigateToFeature('./ManageSubscription')}
+            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+            accessibilityLabel="Manage Subscription"
+            accessibilityHint="Navigate to Manage Subscription screen"
+          >
+            <Ionicons
+              name="time-outline"
+              size={28}
+              color={accentColor}
+              style={{ marginRight: 12 }}
+            />
+            <View>
+              <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                Manage TimeLogs
+              </Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Manage company employees time logs.
+              </Text>
+            </View>
+          </Pressable>
+
           {/* Manage Locations */}
           <Pressable
             onPress={() => navigateToFeature('./ManageLocations')}
@@ -167,52 +213,6 @@ const Admin = () => {
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
                 Configure rates and generate salary reports.
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Manage Users */}
-          <Pressable
-            onPress={() => navigateToFeature('./ManageUsers')}
-            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Users"
-            accessibilityHint="Navigate to Manage Users screen"
-          >
-            <Ionicons
-              name="people-outline"
-              size={28}
-              color={accentColor}
-              style={{ marginRight: 12 }}
-            />
-            <View>
-              <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Manage Users
-              </Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                View, edit, and track real-time punch-in status.
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Manage TimeLogs */}
-          <Pressable
-            onPress={() => navigateToFeature('./ManageSubscription')}
-            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Subscription"
-            accessibilityHint="Navigate to Manage Subscription screen"
-          >
-            <Ionicons
-              name="time-outline"
-              size={28}
-              color={accentColor}
-              style={{ marginRight: 12 }}
-            />
-            <View>
-              <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Manage TimeLogs
-              </Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Manage company employees time logs.
               </Text>
             </View>
           </Pressable>

@@ -57,6 +57,16 @@ const User = sequelize.define('User', {
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
   },
+  // New fields for presence:
+  presenceStatus: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'offline', // 'active', 'away', or 'offline'
+  },
+  lastActiveAt: {
+    type: DataTypes.DATE, // TIMESTAMP WITH TIME ZONE
+    allowNull: true,
+  },
 }, {
   tableName: 'Users',
   timestamps: true,

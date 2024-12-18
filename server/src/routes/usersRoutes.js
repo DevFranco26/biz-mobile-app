@@ -5,7 +5,8 @@ import {
   getAllUsers, 
   createUser, 
   updateUser, 
-  deleteUser 
+  deleteUser,
+  updateUserPresence // Add this line
 } from '../controllers/usersController.js';
 import authenticate from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
@@ -22,5 +23,8 @@ router.get('/', authorizeRoles('admin', 'superAdmin', 'supervisor'), getAllUsers
 router.post('/', authorizeRoles('admin', 'superAdmin'), createUser);
 router.put('/:id', authorizeRoles('admin', 'superAdmin'), updateUser);
 router.delete('/:id', authorizeRoles('admin', 'superAdmin'), deleteUser);
+
+// New route to update the current user's presence
+router.put('/me/presence', updateUserPresence);
 
 export default router;

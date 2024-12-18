@@ -1,41 +1,53 @@
-// File: app/(tabs)/profile.jsx
-
-import React from 'react';
-import { View, Text, Image, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Image, Pressable, ScrollView, Alert, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../../store/themeStore';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import useUserStore from '../../store/userStore';
+import { Ionicons } from '@expo/vector-icons';
+
+const API_BASE_URL = 'http://192.168.100.8:5000/api';
 
 const Profile = () => {
   const { theme } = useThemeStore();
-  const { user, clearUser } = useUserStore();
+  const { user, clearUser, setUser } = useUserStore();
   const router = useRouter();
   const isLightTheme = theme === 'light';
 
-  // User data
-  const userData = {
-    firstName: user.firstName,
-    lastName: user.lastName,
-    position: 'Software Engineer',
-    email: user.email,
-    phone: user.phone,
-    companyId: user.companyId + 1000,
-    role: user.role,
-    profileImage: null,
+  const [presenceStatus, setPresenceStatus] = useState(user.presenceStatus || 'offline');
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+
+  // Profile edit modal states
+  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(user.firstName || '');
+  const [editMiddleName, setEditMiddleName] = useState(user.middleName || '');
+  const [editLastName, setEditLastName] = useState(user.lastName || '');
+  const [editPhone, setEditPhone] = useState(user.phone || '');
+
+  const iconRef = useRef(null);
+  const [iconLayout, setIconLayout] = useState({ x: 0, y: 0 });
+
+  const presenceColors = {
+    active: '#10b981',
+    away: '#f97316',
+    offline: '#d1d5db',
   };
 
-  // Function to get initials
+  const presenceIcon = {
+    active: 'checkmark-circle',
+    away: 'time',
+    offline: 'close-circle',
+  }[presenceStatus];
+
   const getInitials = (name) => {
     const nameArray = name.split(' ');
     return nameArray.map((n) => n[0]).join('').toUpperCase();
   };
 
-  // Logout function
   const logout = async () => {
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/auth/sign-out', {
+      const response = await fetch(`${API_BASE_URL}/auth/sign-out`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,28 +70,183 @@ const Profile = () => {
     }
   };
 
+  const updatePresenceStatus = async (newStatus) => {
+    const token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      Alert.alert('Authentication Error', 'Please sign in again.');
+      router.replace('(auth)/signin');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/me/presence`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ presenceStatus: newStatus }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.data);
+        setPresenceStatus(data.data.presenceStatus);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to update presence status.');
+        // Revert if fail
+        setPresenceStatus(user.presenceStatus || 'offline');
+      }
+    } catch (error) {
+      console.error('Update presence error:', error);
+      Alert.alert('Error', 'An unexpected error occurred while updating your presence status.');
+      setPresenceStatus(user.presenceStatus || 'offline');
+    }
+  };
+
+  const handleStatusSelect = (status) => {
+    updatePresenceStatus(status);
+    setIsDropdownVisible(false);
+  };
+
+  const measureIconPosition = () => {
+    if (iconRef.current) {
+      iconRef.current.measureInWindow((x, y, width, height) => {
+        setIconLayout({ x, y: y + height });
+      });
+    }
+  };
+
+  useEffect(() => {
+    setTimeout(() => {
+      measureIconPosition();
+    }, 300);
+  }, [isDropdownVisible, presenceStatus]);
+
+  // Periodically re-fetch user data to update presence and details
+  useEffect(() => {
+    let intervalId;
+    const startInterval = async () => {
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) return; 
+      intervalId = setInterval(async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/user`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.user) {
+              setUser(data.user);
+              setPresenceStatus(data.user.presenceStatus || 'offline');
+              // Update edit fields if user changed their profile elsewhere
+              setEditFirstName(data.user.firstName || '');
+              setEditMiddleName(data.user.middleName || '');
+              setEditLastName(data.user.lastName || '');
+              setEditPhone(data.user.phone || '');
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching user data periodically:', err);
+        }
+      }, 60000); // every 60 seconds
+    };
+    startInterval();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [setUser]);
+
+  const handleOpenEditProfile = () => {
+    setEditFirstName(user.firstName || '');
+    setEditMiddleName(user.middleName || '');
+    setEditLastName(user.lastName || '');
+    setEditPhone(user.phone || '');
+    setEditProfileModalVisible(true);
+  };
+
+  const handleSaveProfileEdits = async () => {
+    const token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      Alert.alert('Authentication Error', 'Please sign in again.');
+      router.replace('(auth)/signin');
+      return;
+    }
+
+    try {
+      const payload = {
+        firstName: editFirstName,
+        middleName: editMiddleName,
+        lastName: editLastName,
+        phone: editPhone
+      };
+
+      const response = await fetch(`${API_BASE_URL}/auth/user`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.data);
+        setPresenceStatus(data.data.presenceStatus || 'offline');
+        setEditProfileModalVisible(false);
+        Alert.alert('Success', 'Profile updated successfully.');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to update profile.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    }
+  };
+
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
+
         {/* Profile Header */}
-        <View className="bg-slate-800 rounded-xl p-6 mb-6 flex-row items-center">
-          {userData.profileImage ? (
+        <View className="bg-slate-800 rounded-xl p-6 mb-6 flex-row items-center relative">
+          {user.profileImage ? (
             <Image
-              source={{ uri: userData.profileImage }}
+              source={{ uri: user.profileImage }}
               className="w-20 h-20 rounded-full"
             />
           ) : (
             <View className="w-20 h-20 rounded-full bg-slate-900 justify-center items-center">
               <Text className="text-white text-2xl font-bold tracking-widest">
-                {getInitials(userData.firstName + ' ' + userData.lastName)}
+                {getInitials(`${user.firstName} ${user.lastName}`)}
               </Text>
             </View>
           )}
+
+          {/* Presence Icon at the top-right of avatar */}
+          <View style={{ position: 'absolute', top: 10, right: 10 }}>
+            <Pressable
+              ref={iconRef}
+              onPress={() => {
+                setIsDropdownVisible(true);
+                measureIconPosition();
+              }}
+            >
+              <Ionicons
+                name={presenceIcon}
+                size={24}
+                color={presenceColors[presenceStatus]}
+              />
+            </Pressable>
+          </View>
+
           <View className="ml-4">
             <Text className="text-2xl font-bold text-white">
-              {userData.firstName} {userData.lastName}
+              {user.firstName} {user.lastName}
             </Text>
-            <Text className="text-white">{userData.position}</Text>
+            <Text className="text-white">{user.position || 'Software Engineer'}</Text>
           </View>
         </View>
 
@@ -88,17 +255,17 @@ const Profile = () => {
           <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
             Contact Information
           </Text>
-          <Text className={`mb-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Company ID: {userData.companyId}
+          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'} mb-2`}>
+            Company ID: {user.companyId + 1000}
           </Text>
-          <Text className={`mb-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Email: {userData.email}
+          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'} mb-2`}>
+            Email: {user.email}
           </Text>
-          <Text className={`mb-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Role: {userData.role}
+          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'} mb-2`}>
+            Role: {user.role}
           </Text>
-          <Text className={`mb-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-            Phone: {userData.phone}
+          <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'} mb-2`}>
+            Phone: {user.phone}
           </Text>
         </View>
 
@@ -109,18 +276,18 @@ const Profile = () => {
           </Text>
           <Pressable
             className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
-            onPress={() => Alert.alert('Change Password')}
+            onPress={() => Alert.alert('Change Password feature: on going')}
           >
-            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center` } onPress={() => Alert.alert('Change pass feature: on going')}>
+            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`}>
               Change Password
             </Text>
           </Pressable>
           <Pressable
             className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
-            onPress={() => Alert.alert('Change Password')}
+            onPress={handleOpenEditProfile}
           >
-            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`} onPress={() => Alert.alert('Edit profile feature: on going')}>
-            Edit Profile
+            <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`}>
+              Edit Profile
             </Text>
           </Pressable>
           <Pressable
@@ -133,6 +300,188 @@ const Profile = () => {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Presence Dropdown Modal */}
+      <Modal
+        visible={isDropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+          activeOpacity={1}
+          onPressOut={() => setIsDropdownVisible(false)}
+        >
+          <View style={{
+            position: 'absolute',
+            top: iconLayout.y,
+            left: iconLayout.x - 90,
+            backgroundColor: isLightTheme ? '#fff' : '#374151',
+            borderRadius: 8,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            width: 110, 
+            shadowColor: '#000',
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            elevation: 5
+          }}>
+            <TouchableOpacity onPress={() => handleStatusSelect('active')} style={{flexDirection:'row', alignItems:'center', marginBottom:8}}>
+              <Ionicons name="checkmark-circle" size={20} color={presenceColors.active} style={{marginRight:8}}/>
+              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Active</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleStatusSelect('away')} style={{flexDirection:'row', alignItems:'center', marginBottom:8}}>
+              <Ionicons name="time" size={20} color={presenceColors.away} style={{marginRight:8}}/>
+              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Away</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleStatusSelect('offline')} style={{flexDirection:'row', alignItems:'center'}}>
+              <Ionicons name="close-circle" size={20} color={presenceColors.offline} style={{marginRight:8}}/>
+              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Offline</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={editProfileModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setEditProfileModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ width: '90%' }}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
+            >
+              <ScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View
+                  style={{
+                    padding: 16,
+                    backgroundColor: isLightTheme ? '#fff' : '#1f2937',
+                    borderRadius: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: isLightTheme ? '#1f2937' : '#fff' }}>
+                    Edit Profile
+                  </Text>
+
+                  {/* First Name */}
+                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                    First Name
+                  </Text>
+                  <TextInput
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
+                      color: isLightTheme ? '#1f2937' : '#d1d5db',
+                      fontSize: 14,
+                    }}
+                    value={editFirstName}
+                    onChangeText={setEditFirstName}
+                    placeholder="e.g., John"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Middle Name */}
+                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                    Middle Name
+                  </Text>
+                  <TextInput
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
+                      color: isLightTheme ? '#1f2937' : '#d1d5db',
+                      fontSize: 14,
+                    }}
+                    value={editMiddleName}
+                    onChangeText={setEditMiddleName}
+                    placeholder="e.g., A."
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Last Name */}
+                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                    Last Name
+                  </Text>
+                  <TextInput
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
+                      color: isLightTheme ? '#1f2937' : '#d1d5db',
+                      fontSize: 14,
+                    }}
+                    value={editLastName}
+                    onChangeText={setEditLastName}
+                    placeholder="e.g., Doe"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Phone */}
+                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                    Phone
+                  </Text>
+                  <TextInput
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      marginBottom: 8,
+                      borderRadius: 8,
+                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
+                      color: isLightTheme ? '#1f2937' : '#d1d5db',
+                      fontSize: 14,
+                    }}
+                    value={editPhone}
+                    onChangeText={setEditPhone}
+                    placeholder="e.g., +1 234 567 890"
+                    keyboardType="phone-pad"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop:12 }}>
+                    <TouchableOpacity
+                      onPress={() => setEditProfileModalVisible(false)}
+                      style={{ marginRight: 12 }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: isLightTheme ? '#374151' : '#d1d5db' }}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSaveProfileEdits}
+                      style={{
+                        backgroundColor: '#10b981',
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
+                        Save
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -16,8 +16,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   RefreshControl,
-  Switch,
   ScrollView,
+  Switch
 } from 'react-native';
 import useThemeStore from '../../../../store/themeStore';
 import useUsersStore from '../../../../store/usersStore';
@@ -28,29 +28,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 
-// Define your API base URL
 const API_BASE_URL = 'http://192.168.100.8:5000/api';
 
-// Helper function to capitalize the first letter
 const capitalizeFirstLetter = (string) => {
   if (!string) return '';
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
-// Helper function to get color based on role
 const getRoleColor = (role) => {
   switch(role.toLowerCase()) {
     case 'admin':
-      return '#ef4444'; // Red
+      return '#ef4444'; 
     case 'supervisor':
-      return '#10b981'; // Green
+      return '#10b981'; 
     case 'user':
     default:
-      return '#3b82f6'; // Blue
+      return '#3b82f6'; 
   }
 };
 
-// Helper function to get role icon based on role
 const getRoleIcon = (role) => {
   switch(role.toLowerCase()) {
     case 'admin':
@@ -63,6 +59,19 @@ const getRoleIcon = (role) => {
   }
 };
 
+// Determine the icon and color based on final presence status
+const getPresenceIconInfo = (presenceStatus) => {
+  switch (presenceStatus) {
+    case 'active':
+      return { icon: 'ellipse', color: '#10b981' }; // green
+    case 'away':
+      return { icon: 'ellipse', color: '#f97316' }; // orange
+    case 'offline':
+    default:
+      return { icon: 'ellipse-outline', color: '#d1d5db' }; // gray
+  }
+};
+
 const ManageUsers = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
@@ -71,16 +80,13 @@ const ManageUsers = () => {
   const { users, loading, error, fetchUsers, deleteUser } = useUsersStore();
   const { locations, fetchLocations } = useLocationsStore();
 
-  // State to store user settings
   const [userSettingsByUserId, setUserSettingsByUserId] = useState({});
-
-  // Modal states
   const [editUserModalVisible, setEditUserModalVisible] = useState(false);
   const [userSettingsModalVisible, setUserSettingsModalVisible] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Edit/Create user state
+  // Fields for add/edit user modal
   const [editFirstName, setEditFirstName] = useState('');
   const [editMiddleName, setEditMiddleName] = useState('');
   const [editLastName, setEditLastName] = useState('');
@@ -90,14 +96,12 @@ const ManageUsers = () => {
   const [editPassword, setEditPassword] = useState('');
   const [editStatus, setEditStatus] = useState(false);
 
-  // User settings state
+  // Fields for user settings modal
   const [restrictionEnabled, setRestrictionEnabled] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [userSettingsLoading, setUserSettingsLoading] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
-
-  // Token state
   const [token, setToken] = useState(null);
 
   useEffect(() => {
@@ -158,10 +162,7 @@ const ManageUsers = () => {
         }
       } catch (err) {
         console.error('Error fetching user settings:', err);
-        results[user.id] = {
-          restrictionEnabled: false,
-          locationLabel: '-'
-        };
+        results[user.id] = { restrictionEnabled: false, locationLabel: '-' };
       }
     }
     setUserSettingsByUserId(results);
@@ -175,7 +176,7 @@ const ManageUsers = () => {
     setEditPhone(user.phone || '');
     setEditRole(user.role);
     setEditEmail(user.email || '');
-    setEditPassword(''); // Password is optional during edit
+    setEditPassword('');
     setEditStatus(user.status || false);
     setEditUserModalVisible(true);
   };
@@ -200,7 +201,6 @@ const ManageUsers = () => {
       return;
     }
 
-    // Validation
     if (!editEmail) {
       Alert.alert('Validation Error', 'Email is required.');
       return;
@@ -229,7 +229,7 @@ const ManageUsers = () => {
       let res, data;
       if (selectedUser) {
         // Editing existing user
-        res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, { // Updated endpoint
+        res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -240,7 +240,7 @@ const ManageUsers = () => {
         data = await res.json();
       } else {
         // Creating new user
-        res = await fetch(`${API_BASE_URL}/users`, { // Updated endpoint
+        res = await fetch(`${API_BASE_URL}/users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -282,11 +282,9 @@ const ManageUsers = () => {
           style: 'destructive', 
           onPress: async () => {
             try {
-              const res = await fetch(`${API_BASE_URL}/users/${userId}`, { // Updated endpoint
+              const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
                 method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
               });
               const data = await res.json();
               if (res.ok) {
@@ -315,7 +313,7 @@ const ManageUsers = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${user.id}`, { // Updated endpoint
+      const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -359,7 +357,7 @@ const ManageUsers = () => {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/assign`, { // Ensure this route exists and is correct
+      const res = await fetch(`${API_BASE_URL}/usersettings/assign`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -401,33 +399,39 @@ const ManageUsers = () => {
       restrictionText = `${userSettings.locationLabel}`;
     }
 
-    // Determine user status
-    const isOnline = item.status; // true = Online, false = Offline
+    // item.presenceStatus and item.presenceTooltip are now precomputed by the backend
+    const { icon: presenceIcon, color: presenceColor } = getPresenceIconInfo(item.presenceStatus);
+    const presenceTooltip = item.presenceTooltip; // Provided by the backend
+
+    const isOnline = item.status;
 
     return (
       <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
-        {/* User Information */}
         <View className="flex-row items-center flex-1">
-          {/* User Icon */}
           <Ionicons name="person-circle" size={50} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
 
-          {/* User Details */}
           <View className="ml-3 flex-1">
-            {/* Full Name and Status Icon */}
-            <View className="flex-row items-center">
+            <View className="flex-row items-center gap-1">
               <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
                 {item.firstName} {item.middleName ? `${item.middleName} ` : ''}{item.lastName}
               </Text>
-              {/* Status Icon Beside Name */}
-              <Ionicons 
-                name={isOnline ? 'ellipse' : 'ellipse-outline'} 
-                size={12} 
-                color={isOnline ? '#10b981' : '#d1d5db'} 
+              {/* Presence status icon */}
+              <Ionicons
+                name={presenceIcon}
+                size={12}
+                color={presenceColor}
                 style={{ marginLeft: 6 }}
               />
+
+              {/* Display tooltip */}
+              {presenceTooltip && (
+                <Text className={`my-auto text-sm mt-1 ${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>
+                  {presenceTooltip}
+                </Text>
+              )}
             </View>
 
-            {/* Email with Icon */}
+            {/* Email */}
             <View className="flex-row items-center mt-1">
               <Ionicons 
                 name="mail-outline" 
@@ -440,7 +444,7 @@ const ManageUsers = () => {
               </Text>
             </View>
 
-            {/* Role with Icon and Color-Coding */}
+            {/* Role */}
             <View className="flex-row items-center mt-1">
               <Ionicons 
                 name={getRoleIcon(item.role)} 
@@ -448,15 +452,12 @@ const ManageUsers = () => {
                 color={getRoleColor(item.role)} 
                 style={{ marginRight: 4 }}
               />
-              <Text style={{ 
-                color: getRoleColor(item.role), 
-                fontWeight: '600' 
-              }}>
+              <Text style={{ color: getRoleColor(item.role), fontWeight: '600' }}>
                 {capitalizeFirstLetter(item.role)}
               </Text>
             </View>
 
-            {/* Restriction with Location Icon */}
+            {/* Location Restriction */}
             <View className="flex-row items-center mt-1">
               <Ionicons 
                 name="location-outline" 
@@ -468,10 +469,22 @@ const ManageUsers = () => {
                 {restrictionText}
               </Text>
             </View>
+
+            {/* Punch In/Out Status */}
+            <View className="flex-row items-center mt-1">
+              <Ionicons
+                name={isOnline ? 'checkmark-circle' : 'close-circle'}
+                size={16}
+                color={isOnline ? '#10b981' : '#d1d5db'}
+                style={{ marginRight: 4 }}
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                {isOnline ? 'Punched In' : 'Punched Out'}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Action Menu */}
         <Pressable onPress={() => handleUserAction(item)} className="p-2">
           <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
         </Pressable>
@@ -481,7 +494,7 @@ const ManageUsers = () => {
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
-      {/* Custom Header */}
+      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -510,7 +523,6 @@ const ManageUsers = () => {
         </Pressable>
       </View>
 
-      {/* User List */}
       {loading ? (
         <ActivityIndicator size="large" color="#475569" style={{ marginTop: 48 }} />
       ) : (
@@ -555,7 +567,7 @@ const ManageUsers = () => {
               >
                 <View
                   style={{
-                    padding: 16, // Reduced from 24 to 16
+                    padding: 16,
                     backgroundColor: isLightTheme ? '#fff' : '#1f2937',
                     borderRadius: 12,
                   }}
@@ -571,12 +583,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editEmail}
                     onChangeText={setEditEmail}
@@ -593,12 +605,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editPassword}
                     onChangeText={setEditPassword}
@@ -614,12 +626,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editFirstName}
                     onChangeText={setEditFirstName}
@@ -634,12 +646,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editMiddleName}
                     onChangeText={setEditMiddleName}
@@ -654,12 +666,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editLastName}
                     onChangeText={setEditLastName}
@@ -674,12 +686,12 @@ const ManageUsers = () => {
                   <TextInput
                     style={{
                       width: '100%',
-                      padding: 10, // Reduced from 12 to 10
-                      marginBottom: 8, // Reduced from 12 to 8
+                      padding: 10,
+                      marginBottom: 8,
                       borderRadius: 8,
                       backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                       color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14, // Reduced font size
+                      fontSize: 14,
                     }}
                     value={editPhone}
                     onChangeText={setEditPhone}
@@ -710,7 +722,6 @@ const ManageUsers = () => {
                     </Picker>
                   </View>
 
-                  {/* Action Buttons */}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
                     <TouchableOpacity
                       onPress={() => setEditUserModalVisible(false)}
@@ -724,8 +735,8 @@ const ManageUsers = () => {
                       onPress={handleSaveUserEdits}
                       style={{
                         backgroundColor: '#10b981',
-                        paddingVertical: 8, // Reduced from 10 to 8
-                        paddingHorizontal: 16, // Reduced from 20 to 16
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
                         borderRadius: 8,
                       }}
                     >
