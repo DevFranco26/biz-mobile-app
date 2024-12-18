@@ -14,8 +14,6 @@ const port = process.env.PORT || 5000;
 // Use the centralized routes
 app.use('/api', router);
 
-
-
 app.use(errorHandler);
 
 // Test DB connection and start the server

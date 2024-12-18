@@ -21,7 +21,7 @@ const SettingsIndex = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white dark:bg-gray-900">
+      <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900">
         <ActivityIndicator size="large" color="#0f766e" />
       </View>
     );
@@ -29,7 +29,7 @@ const SettingsIndex = () => {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-white dark:bg-gray-900 px-4">
+      <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
         <Text className="text-red-500 text-lg text-center">{error}</Text>
         <Pressable
           onPress={() => {
@@ -47,7 +47,7 @@ const SettingsIndex = () => {
 
   if (!user) {
     return (
-      <View className="flex-1 justify-center items-center bg-white dark:bg-gray-900 px-4">
+      <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
         <Text className="text-gray-700 text-lg text-center mb-4">
           You are not signed in.
         </Text>
@@ -75,7 +75,7 @@ const SettingsIndex = () => {
       return <User />;
     default:
       return (
-        <View className="flex-1 justify-center items-center bg-white dark:bg-gray-900 px-4">
+        <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
           <Text className="text-red-500 text-lg text-center">
             Unknown user role.
           </Text>

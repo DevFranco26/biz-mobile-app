@@ -12,7 +12,7 @@ const useUsersStore = create((set) => ({
   fetchUsers: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/admin/users', {
+      const response = await fetch('http://192.168.100.8:5000/api/users', { // Updated endpoint
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -34,7 +34,7 @@ const useUsersStore = create((set) => ({
   // Action to delete a user
   deleteUser: async (userId, token) => {
     try {
-      const response = await fetch(`http://192.168.100.8:5000/api/admin/users/${userId}`, {
+      const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}`, { // Updated endpoint
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

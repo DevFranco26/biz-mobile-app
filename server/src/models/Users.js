@@ -4,44 +4,62 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
 const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   email: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     unique: true,
     allowNull: false,
+    validate: {
+      isEmail: true,
+    },
   },
   password: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('superAdmin', 'admin', 'user'),
+    type: DataTypes.ENUM('superAdmin', 'admin', 'supervisor', 'user'),
     defaultValue: 'user',
     allowNull: false,
   },
   firstName: {
-    type: DataTypes.STRING,
-    allowNull: true,
+    type: DataTypes.STRING(255),
+    allowNull: false,
   },
   middleName: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: true,
   },
   lastName: {
-    type: DataTypes.STRING,
-    allowNull: true,
+    type: DataTypes.STRING(255),
+    allowNull: false,
   },
   phone: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: true,
   },
   status: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: false, 
+    defaultValue: false,
+  },
+  companyId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Companies',
+      key: 'id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
   },
 }, {
-  timestamps: true, // Automatically add createdAt and updatedAt fields
-  tableName: 'Users', // Explicitly set table name
+  tableName: 'Users',
+  timestamps: true,
 });
 
 export default User;

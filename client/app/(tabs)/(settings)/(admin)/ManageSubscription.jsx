@@ -18,7 +18,7 @@ const Subscription = () => {
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
       {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
@@ -36,7 +36,7 @@ const Subscription = () => {
       {/* Subscription Content */}
       <View className="flex-1 px-4 py-6">
         {/* Subscription Plan */}
-        <View className={`p-4 rounded-lg ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+        <View className={`p-4 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
           <Text className={`text-xl font-bold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
             Current Plan: Professional
           </Text>

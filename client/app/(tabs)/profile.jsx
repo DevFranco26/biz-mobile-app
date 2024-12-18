@@ -59,7 +59,7 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Profile Header */}
         <View className="bg-slate-800 rounded-xl p-6 mb-6 flex-row items-center">
@@ -84,7 +84,7 @@ const Profile = () => {
         </View>
 
         {/* Contact Information */}
-        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? 'bg-gray-100' : 'bg-slate-800'}`}>
+        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
           <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
             Contact Information
           </Text>
@@ -103,7 +103,7 @@ const Profile = () => {
         </View>
 
         {/* Account Settings */}
-        <View className={`rounded-lg p-6 ${isLightTheme ? 'bg-gray-100' : 'bg-slate-800'}`}>
+        <View className={`rounded-lg p-6 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
           <Text className={`text-xl font-semibold mb-6 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
             Account Settings
           </Text>

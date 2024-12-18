@@ -42,8 +42,6 @@ const getRoleColor = (role) => {
   switch(role.toLowerCase()) {
     case 'admin':
       return '#ef4444'; // Red
-    case 'superadmin':
-      return '#8b5cf6'; // Purple
     case 'supervisor':
       return '#10b981'; // Green
     case 'user':
@@ -57,8 +55,6 @@ const getRoleIcon = (role) => {
   switch(role.toLowerCase()) {
     case 'admin':
       return 'shield-checkmark-outline';
-    case 'superadmin':
-      return 'star-outline';
     case 'supervisor':
       return 'briefcase-outline';
     case 'user':
@@ -233,7 +229,7 @@ const ManageUsers = () => {
       let res, data;
       if (selectedUser) {
         // Editing existing user
-        res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
+        res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, { // Updated endpoint
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -244,7 +240,7 @@ const ManageUsers = () => {
         data = await res.json();
       } else {
         // Creating new user
-        res = await fetch(`${API_BASE_URL}/admin/users`, {
+        res = await fetch(`${API_BASE_URL}/users`, { // Updated endpoint
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -286,7 +282,7 @@ const ManageUsers = () => {
           style: 'destructive', 
           onPress: async () => {
             try {
-              const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+              const res = await fetch(`${API_BASE_URL}/users/${userId}`, { // Updated endpoint
                 method: 'DELETE',
                 headers: {
                   'Authorization': `Bearer ${token}`
@@ -319,7 +315,7 @@ const ManageUsers = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${user.id}`, { // Updated endpoint
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -363,7 +359,7 @@ const ManageUsers = () => {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/assign`, {
+      const res = await fetch(`${API_BASE_URL}/usersettings/assign`, { // Ensure this route exists and is correct
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -409,7 +405,7 @@ const ManageUsers = () => {
     const isOnline = item.status; // true = Online, false = Offline
 
     return (
-      <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+      <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
         {/* User Information */}
         <View className="flex-row items-center flex-1">
           {/* User Icon */}
@@ -484,7 +480,7 @@ const ManageUsers = () => {
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
       {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
@@ -700,7 +696,7 @@ const ManageUsers = () => {
                     borderWidth: 1,
                     borderColor: isLightTheme ? '#d1d5db' : '#4b5563',
                     borderRadius: 8,
-                    marginBottom: 8, // Reduced from 12 to 8
+                    marginBottom: 8, 
                     backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
                   }}>
                     <Picker
@@ -710,7 +706,6 @@ const ManageUsers = () => {
                     >
                       <Picker.Item label="User" value="user" />
                       <Picker.Item label="Admin" value="admin" />
-                      <Picker.Item label="SuperAdmin" value="superAdmin" />
                       <Picker.Item label="Supervisor" value="supervisor" />
                     </Picker>
                   </View>
@@ -719,7 +714,7 @@ const ManageUsers = () => {
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
                     <TouchableOpacity
                       onPress={() => setEditUserModalVisible(false)}
-                      style={{ marginRight: 12 }} // Reduced from 16 to 12
+                      style={{ marginRight: 12 }}
                     >
                       <Text style={{ fontSize: 14, fontWeight: '600', color: isLightTheme ? '#374151' : '#d1d5db' }}>
                         Cancel

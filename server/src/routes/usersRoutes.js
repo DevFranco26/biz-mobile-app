@@ -15,8 +15,10 @@ const router = express.Router();
 // Apply authentication middleware to all user routes
 router.use(authenticate);
 
-// Only allow admins or superAdmins to manage users
-router.get('/', authorizeRoles('admin', 'superAdmin'), getAllUsers);
+// Only allow admins, superAdmins, and supervisors to view users
+router.get('/', authorizeRoles('admin', 'superAdmin', 'supervisor'), getAllUsers);
+
+// Only allow admins and superAdmins to manage users
 router.post('/', authorizeRoles('admin', 'superAdmin'), createUser);
 router.put('/:id', authorizeRoles('admin', 'superAdmin'), updateUser);
 router.delete('/:id', authorizeRoles('admin', 'superAdmin'), deleteUser);

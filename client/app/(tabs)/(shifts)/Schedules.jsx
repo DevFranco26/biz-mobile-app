@@ -77,7 +77,7 @@ const Schedule = () => {
   const renderShiftItem = ({ item }) => (
     <View
       className={`p-4 rounded-lg mb-3 ${
-        isLightTheme ? 'bg-white shadow' : 'bg-gray-800 shadow-lg'
+        isLightTheme ? 'bg-white shadow' : 'bg-slate-800 shadow-lg'
       }`}
     >
       <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
@@ -97,7 +97,7 @@ const Schedule = () => {
 
   return (
     <View
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       style={{ paddingTop: insets.top + 60, paddingHorizontal: 16 }}
     >
       {/* Header */}
@@ -115,8 +115,8 @@ const Schedule = () => {
                   ? 'bg-blue-500'
                   : 'bg-blue-600'
                 : isLightTheme
-                ? 'bg-gray-200'
-                : 'bg-gray-700'
+                ? 'bg-slate-200'
+                : 'bg-slate-700'
             }`}
           >
             <Text
@@ -139,8 +139,8 @@ const Schedule = () => {
                   ? 'bg-blue-500'
                   : 'bg-blue-600'
                 : isLightTheme
-                ? 'bg-gray-200'
-                : 'bg-gray-700'
+                ? 'bg-slate-200'
+                : 'bg-slate-700'
             }`}
           >
             <Text

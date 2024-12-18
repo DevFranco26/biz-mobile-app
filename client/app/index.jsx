@@ -36,7 +36,7 @@ export default function Index() {
   }, [setUser, router]);
 
   return (
-    <SafeAreaView className={`flex-1 ${theme === 'light' ? 'bg-white' : 'bg-gray-900'} justify-center items-center`}>
+    <SafeAreaView className={`flex-1 ${theme === 'light' ? 'bg-white' : 'bg-slate-900'} justify-center items-center`}>
       <ActivityIndicator size="large" color="#0f766e" />
       <Text className={`mt-4 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
         Checking authentication...

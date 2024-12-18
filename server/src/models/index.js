@@ -5,6 +5,7 @@ import Company from './Company.js';
 import Location from './Location.js';
 import TimeLogs from './TimeLogs.js';
 import UserSettings from './UserSettings.js';
+import Leave from './Leave.js'; // Import Leave model
 
 // Define Associations
 
@@ -15,10 +16,6 @@ Company.hasMany(User, { foreignKey: 'companyId', as: 'users' });
 // User <-> Location
 User.hasMany(Location, { foreignKey: 'adminId', as: 'locations' });
 Location.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
-
-// Add the lastEditor association for updatedBy
-User.hasMany(Location, { foreignKey: 'updatedBy', as: 'editedLocations' });
-Location.belongsTo(User, { foreignKey: 'updatedBy', as: 'lastEditor' });
 
 // User <-> TimeLogs
 User.hasMany(TimeLogs, { foreignKey: 'userId', as: 'timeLogs' });
@@ -31,10 +28,23 @@ User.hasMany(UserSettings, { foreignKey: 'userId', as: 'settings' });
 UserSettings.belongsTo(Location, { foreignKey: 'locationId', as: 'location' });
 Location.hasMany(UserSettings, { foreignKey: 'locationId', as: 'userSettings' });
 
+// User <-> Leave (Requester)
+User.hasMany(Leave, { foreignKey: 'userId', as: 'leaveRequests' });
+Leave.belongsTo(User, { foreignKey: 'userId', as: 'requester' });
+
+// User <-> Leave (Approver)
+User.hasMany(Leave, { foreignKey: 'approverId', as: 'approvals' });
+Leave.belongsTo(User, { foreignKey: 'approverId', as: 'approver' });
+
+// Company <-> Leave
+Company.hasMany(Leave, { foreignKey: 'companyId', as: 'leaves' });
+Leave.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
 export {
   User,
   Company,
   Location,
   TimeLogs,
   UserSettings,
+  Leave,
 };

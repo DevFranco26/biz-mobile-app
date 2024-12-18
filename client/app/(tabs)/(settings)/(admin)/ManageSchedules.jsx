@@ -93,7 +93,7 @@ const ManageSchedules = () => {
   const renderItem = ({ item }) => (
     <View
       className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
-        isLightTheme ? 'bg-gray-100' : 'bg-gray-800'
+        isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
       }`}
     >
       <View className="flex-row items-center flex-1">
@@ -142,7 +142,7 @@ const ManageSchedules = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
       {/* Custom Header */}

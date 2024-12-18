@@ -82,7 +82,7 @@ const ManagePayroll = () => {
   };
 
   const renderItem = ({ item }) => (
-    <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+    <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
       <View className="flex-row items-center flex-1">
         <Ionicons name="cash-outline" size={40} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
         <View className="ml-3 flex-1">
@@ -104,7 +104,7 @@ const ManagePayroll = () => {
   );
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
       {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">

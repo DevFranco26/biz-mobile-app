@@ -163,7 +163,7 @@ const ManageDepartments = () => {
   };
 
   const renderDepartmentItem = ({ item }) => (
-    <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'}`}>
+    <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
       {/* Department Information */}
       <View className="flex-1">
         <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
@@ -192,14 +192,14 @@ const ManageDepartments = () => {
   // If currentUser is not available yet
   if (!currentUser) {
     return (
-      <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}>
+      <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} edges={['top']}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
@@ -273,7 +273,7 @@ const ManageDepartments = () => {
                 keyboardShouldPersistTaps="handled"
               >
                 <View
-                  className={`p-4 ${isLightTheme ? 'bg-white' : 'bg-gray-800'} rounded-lg`}
+                  className={`p-4 ${isLightTheme ? 'bg-white' : 'bg-slate-800'} rounded-lg`}
                 >
                   <Text className={`text-18 font-bold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
                     {editingDepartment ? 'Edit Department' : 'Add Department'}
@@ -284,7 +284,7 @@ const ManageDepartments = () => {
                     Department Name
                   </Text>
                   <TextInput
-                    className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-gray-100 text-gray-800' : 'bg-gray-700 text-gray-100'}`}
+                    className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-slate-100 text-gray-800' : 'bg-slate-700 text-gray-100'}`}
                     value={deptName}
                     onChangeText={setDeptName}
                     placeholder="e.g., Human Resources"
@@ -295,7 +295,7 @@ const ManageDepartments = () => {
                   <Text className={`text-sm mb-1 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
                     Company
                   </Text>
-                  <View className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-gray-100' : 'bg-gray-700'}`}>
+                  <View className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}`}>
                     <Text className={`text-gray-800 ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
                       {currentUser.companyName}
                     </Text>
@@ -305,7 +305,7 @@ const ManageDepartments = () => {
                   <Text className={`text-sm mb-1 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
                     Supervisor
                   </Text>
-                  <View className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-gray-100' : 'bg-gray-700'}`}>
+                  <View className={`w-full p-2 mb-4 rounded ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}`}>
                     <Picker
                       selectedValue={deptSupervisorId === null ? 'null' : String(deptSupervisorId)}
                       onValueChange={(itemValue) => {

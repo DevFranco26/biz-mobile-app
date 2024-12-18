@@ -31,7 +31,7 @@ const TabsLayout = () => {
       />
       {/* Leaves Screen */}
       <Tabs.Screen
-        name="leaves"
+        name="(leaves)"
         options={{
           title: 'Leaves',
           headerShown: false,

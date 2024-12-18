@@ -25,7 +25,7 @@ const Admin = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
       {/* Header Section */}
@@ -124,6 +124,30 @@ const Admin = () => {
             </View>
           </Pressable>
 
+          
+           {/* Manage Departments */}
+           <Pressable
+            onPress={() => navigateToFeature('./ManageDepartments')}
+            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+            accessibilityLabel="Manage Departments"
+            accessibilityHint="Navigate to Manage Departments screen"
+          >
+            <MaterialIcons
+              name="event-note"
+              size={28}
+              color={accentColor}
+              style={{ marginRight: 12 }}
+            />
+            <View>
+              <Text className={`text-lg font-semibold ${headerTextColor}`}>
+              Manage Departments
+              </Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Manage Departments
+              </Text>
+            </View>
+          </Pressable>
+
           {/* Manage Payroll */}
           <Pressable
             onPress={() => navigateToFeature('./ManagePayroll')}
@@ -170,8 +194,31 @@ const Admin = () => {
             </View>
           </Pressable>
 
-          {/* Manage Subscription */}
+          {/* Manage TimeLogs */}
           <Pressable
+            onPress={() => navigateToFeature('./ManageSubscription')}
+            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+            accessibilityLabel="Manage Subscription"
+            accessibilityHint="Navigate to Manage Subscription screen"
+          >
+            <Ionicons
+              name="time-outline"
+              size={28}
+              color={accentColor}
+              style={{ marginRight: 12 }}
+            />
+            <View>
+              <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                Manage TimeLogs
+              </Text>
+              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Manage company employees time logs.
+              </Text>
+            </View>
+          </Pressable>
+
+           {/* Manage Subscription */}
+           <Pressable
             onPress={() => navigateToFeature('./ManageSubscription')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Subscription"

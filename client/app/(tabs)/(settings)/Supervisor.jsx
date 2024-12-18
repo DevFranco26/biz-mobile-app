@@ -15,7 +15,7 @@ const Supervisor = () => {
   const headerBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
   const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-white';
   const cardBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
-  const accentColor = isLightTheme ? '#a21caf' : '#c026d3'; // Different accent color for supervisor
+  const accentColor = isLightTheme ? '#c2410c' : '#f97316'; 
 
   const navigateToFeature = (featurePath) => {
     router.push(featurePath);
@@ -52,12 +52,12 @@ const Supervisor = () => {
         contentContainerStyle={{ paddingBottom: 20 }}
       >
         <View className="space-y-5">
-          {/* Approve Leaves */}
+          {/* Manage Leaves */}
           <Pressable
-            onPress={() => navigateToFeature('./ApproveLeaves')}
+            onPress={() => navigateToFeature('./ManageLeaves')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Approve Leaves"
-            accessibilityHint="Navigate to Approve Leaves screen"
+            accessibilityLabel="Manage Leaves"
+            accessibilityHint="Navigate to Manage Leaves screen"
           >
             <MaterialIcons
               name="event-available"
@@ -67,7 +67,7 @@ const Supervisor = () => {
             />
             <View>
               <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Approve Leaves
+                Manage Leaves
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
                 Review and approve pending leave requests.

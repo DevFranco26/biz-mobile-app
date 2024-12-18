@@ -1,6 +1,11 @@
+// src/controllers/locationController.js
+
 import Location from '../models/Location.js';
 import User from '../models/Users.js';
 
+/**
+ * Create a new location
+ */
 export const createLocation = async (req, res) => {
   const adminId = req.user?.id;
   const { label, latitude, longitude, radius } = req.body;
@@ -23,8 +28,8 @@ export const createLocation = async (req, res) => {
 
     await location.reload({
       include: [
-        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
-        { model: User, as: 'lastEditor', attributes: ['id', 'email'] }
+        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] }
+        // Removed 'lastEditor' include
       ]
     });
 
@@ -36,6 +41,9 @@ export const createLocation = async (req, res) => {
   }
 };
 
+/**
+ * Get all locations associated with the authenticated user's company
+ */
 export const getLocations = async (req, res) => {
   try {
     console.log('getLocations - req.user:', req.user);
@@ -54,14 +62,10 @@ export const getLocations = async (req, res) => {
           attributes: ['id', 'email', 'companyId'],
           required: true,
           where: { companyId } // Filter by the same companyId
-        },
-        {
-          model: User,
-          as: 'lastEditor',
-          attributes: ['id', 'email'],
-          required: false
         }
-      ]
+        // Removed 'lastEditor' include
+      ],
+      order: [['id', 'ASC']],
     });
 
     console.log('getLocations - Found locations:', locations.map(loc => ({
@@ -78,6 +82,9 @@ export const getLocations = async (req, res) => {
   }
 };
 
+/**
+ * Update an existing location
+ */
 export const updateLocation = async (req, res) => {
   const { locationId } = req.params;
   const { label, latitude, longitude, radius } = req.body;
@@ -104,8 +111,8 @@ export const updateLocation = async (req, res) => {
     await location.update({ label, latitude, longitude, radius, updatedBy: userId });
     await location.reload({
       include: [
-        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
-        { model: User, as: 'lastEditor', attributes: ['id', 'email'] }
+        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] }
+        // Removed 'lastEditor' include
       ]
     });
 
@@ -117,6 +124,9 @@ export const updateLocation = async (req, res) => {
   }
 };
 
+/**
+ * Delete a location
+ */
 export const deleteLocation = async (req, res) => {
   const { locationId } = req.params;
 

@@ -360,7 +360,7 @@ const TimeCard = () => {
         <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
           <View className="flex-1 justify-center items-center bg-black/50">
             <TouchableWithoutFeedback>
-              <View className={`w-11/12 p-5 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-gray-800'}`}>
+              <View className={`w-11/12 p-5 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
                 <DateTimePicker
                   value={
                     currentPicker === 'startDate'
@@ -394,7 +394,7 @@ const TimeCard = () => {
                 <View className="flex-row justify-end mt-5">
                   <Pressable
                     onPress={() => setCurrentPicker(null)}
-                    className={`px-4 py-3 mr-2 rounded ${isLightTheme ? 'bg-gray-300' : 'bg-gray-600'}`}
+                    className={`px-4 py-3 mr-2 rounded ${isLightTheme ? 'bg-slate-300' : 'bg-slate-600'}`}
                   >
                     <Text className={`${isLightTheme ? 'text-black' : 'text-white'}`}>Cancel</Text>
                   </Pressable>
@@ -494,7 +494,7 @@ const TimeCard = () => {
           <Text className="text-base mb-2 text-white">
             Select Range:
           </Text>
-          <View className="rounded-lg bg-gray-900">
+          <View className="rounded-lg bg-slate-900">
             <Picker
               selectedValue={rangeType}
               onValueChange={(itemValue) => setRangeType(itemValue)}
@@ -521,7 +521,7 @@ const TimeCard = () => {
               {/* Start Date */}
               <Pressable
                 onPress={() => openPicker('startDate')}
-                className="p-4 rounded-lg bg-gray-700 mb-3"
+                className="p-4 rounded-lg bg-slate-700 mb-3"
               >
                 <Text className="text-white">
                   Start Date: {format(customStartDate, 'MMMM d, yyyy')}
@@ -531,7 +531,7 @@ const TimeCard = () => {
               {/* End Date */}
               <Pressable
                 onPress={() => openPicker('endDate')}
-                className="p-4 rounded-lg bg-gray-700"
+                className="p-4 rounded-lg bg-slate-700"
               >
                 <Text className="text-white">
                   End Date: {format(customEndDate, 'MMMM d, yyyy')}
@@ -547,7 +547,7 @@ const TimeCard = () => {
             {/* Previous Button */}
             <Pressable
               onPress={handlePrev}
-              className="p-2 rounded-full bg-gray-600"
+              className="p-2 rounded-full bg-slate-600"
             >
               <FontAwesome5
                 name="arrow-left"
@@ -564,7 +564,7 @@ const TimeCard = () => {
             {/* Next Button */}
             <Pressable
               onPress={handleNext}
-              className="p-2 rounded-full bg-gray-600"
+              className="p-2 rounded-full bg-slate-600"
             >
               <FontAwesome5
                 name="arrow-right"
@@ -595,7 +595,7 @@ const TimeCard = () => {
           logsWithDuration.map((log, index) => (
             <View
               key={index}
-              className={`p-4 rounded-lg ${isLightTheme ? 'bg-gray-100' : 'bg-gray-800'} shadow-md mb-4`}
+              className={`p-4 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'} shadow-md mb-4`}
             >
               <Text className={`text-xl font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
                 {formatDateWithDay(log.date)}

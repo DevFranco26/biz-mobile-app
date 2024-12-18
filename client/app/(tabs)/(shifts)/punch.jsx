@@ -443,7 +443,7 @@ const Punch = () => {
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
-    <View className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`} style={{ paddingTop: insets.top }}>
+    <View className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} style={{ paddingTop: insets.top }}>
       {/* Separate Status Boxes with Vertical Spacing */}
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}

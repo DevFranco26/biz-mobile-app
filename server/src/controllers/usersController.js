@@ -1,9 +1,11 @@
 // src/controllers/usersController.js
 
-import { User } from '../models/index.js';
+import { User, Company } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 
-// Get all users belonging to the same company as the authenticated user
+/**
+ * Get all users belonging to the same company as the authenticated user
+ */
 export const getAllUsers = async (req, res) => {
   try {
     const companyId = req.user.companyId;
@@ -11,9 +13,10 @@ export const getAllUsers = async (req, res) => {
       return res.status(400).json({ message: 'No company associated with the requesting user.' });
     }
 
-    // Only fetch users with the same companyId
+    // Fetch users with the same companyId, excluding sensitive fields like password
     const users = await User.findAll({
       where: { companyId },
+      attributes: { exclude: ['password'] }, // Exclude password from the response
       order: [['id', 'ASC']],
     });
 
@@ -24,28 +27,39 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// Create a new user
+/**
+ * Create a new user
+ */
 export const createUser = async (req, res) => {
-  const { email, password, role, firstName, middleName, lastName, phone, status } = req.body;
+  const { email, password, role, firstName, middleName, lastName, phone, status, companyId } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' });
+  // Define required fields
+  if (!email || !password || !firstName || !lastName) {
+    return res.status(400).json({ message: 'Email, password, firstName, and lastName are required.' });
   }
 
   try {
-    const existingUser = await User.findOne({ where: { email } });
+    // Check if the email already exists within the same company
+    const existingUser = await User.findOne({ where: { email, companyId: req.user.companyId } });
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists with this email.' });
+      return res.status(409).json({ message: 'User already exists with this email in your company.' });
     }
 
+    // Hash the password
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    // Ensure the new user is created under the same company as the admin creating them
-    const companyId = req.user.companyId;
-    if (!companyId) {
-      return res.status(400).json({ message: 'No company associated with the requesting user.' });
+    // Determine the companyId: if superAdmin, allow specifying companyId; else, use requester's companyId
+    let targetCompanyId = req.user.companyId;
+    if (req.user.role === 'superAdmin' && companyId) {
+      // Verify that the provided companyId exists
+      const companyExists = await Company.findByPk(companyId);
+      if (!companyExists) {
+        return res.status(400).json({ message: 'Invalid companyId provided.' });
+      }
+      targetCompanyId = companyId;
     }
 
+    // Create the new user
     const newUser = await User.create({
       email,
       password: hashedPassword,
@@ -54,75 +68,134 @@ export const createUser = async (req, res) => {
       middleName,
       lastName,
       phone,
-      status: status ?? false,
-      companyId,
+      status: status !== undefined ? status : true, // Default to active if not provided
+      companyId: targetCompanyId,
     });
 
-    res.status(201).json({ message: 'User created successfully.', data: newUser });
+    // Exclude password from the response
+    const { password: pwd, ...userWithoutPassword } = newUser.toJSON();
+
+    res.status(201).json({ message: 'User created successfully.', data: userWithoutPassword });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
-// Update an existing user (including role change)
+/**
+ * Update an existing user (including role change)
+ */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { email, password, role, firstName, middleName, lastName, phone, status } = req.body;
+  const { email, password, role, firstName, middleName, lastName, phone, status, companyId } = req.body;
 
   try {
-    // First, fetch the user and ensure they belong to the same company as the requester
-    const companyId = req.user.companyId;
-    if (!companyId) {
+    // Ensure the authenticated user has a company associated
+    const requesterCompanyId = req.user.companyId;
+    if (!requesterCompanyId) {
       return res.status(400).json({ message: 'No company associated with the requesting user.' });
     }
 
-    const user = await User.findOne({ where: { id, companyId } });
+    // Find the user to be updated within the same company
+    const user = await User.findOne({ where: { id, companyId: requesterCompanyId } });
 
-    if (!user) return res.status(404).json({ message: 'User not found or does not belong to your company.' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found or does not belong to your company.' });
+    }
 
-    // Update fields if provided
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ where: { email } });
+    // Define editable fields based on requester role
+    const editableFieldsByRole = {
+      admin: ['firstName', 'middleName', 'lastName', 'email', 'phone', 'status'],
+      superAdmin: ['firstName', 'middleName', 'lastName', 'email', 'phone', 'status', 'role', 'companyId'],
+    };
+
+    // Determine the requester's role
+    const requesterRole = req.user.role;
+
+    if (!['admin', 'superAdmin'].includes(requesterRole)) {
+      // If the role is not authorized to update users
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    // Get the list of fields the requester is allowed to edit
+    const allowedFields = editableFieldsByRole[requesterRole];
+
+    // Initialize an object to hold the fields to update
+    let fieldsToUpdate = {};
+
+    // Iterate over allowed fields and add to fieldsToUpdate if present in the request body
+    allowedFields.forEach((field) => {
+      if (req.body.hasOwnProperty(field)) {
+        fieldsToUpdate[field] = req.body[field];
+      }
+    });
+
+    // Handle password update if provided
+    if (password) {
+      fieldsToUpdate.password = bcrypt.hashSync(password, 10);
+    }
+
+    // Prevent updating immutable fields explicitly
+    const immutableFields = ['id', 'createdAt', 'updatedAt'];
+    immutableFields.forEach((field) => {
+      if (fieldsToUpdate.hasOwnProperty(field)) {
+        delete fieldsToUpdate[field];
+      }
+    });
+
+    // Check for email uniqueness if email is being updated
+    if (fieldsToUpdate.email && fieldsToUpdate.email !== user.email) {
+      const emailExists = await User.findOne({ where: { email: fieldsToUpdate.email } });
       if (emailExists && emailExists.id !== user.id) {
         return res.status(409).json({ message: 'Another user already has this email.' });
       }
-      user.email = email;
     }
 
-    if (password) {
-      user.password = bcrypt.hashSync(password, 10);
+    // Check for valid companyId if it's being updated by superAdmin
+    if (fieldsToUpdate.companyId) {
+      const companyExists = await Company.findByPk(fieldsToUpdate.companyId);
+      if (!companyExists) {
+        return res.status(400).json({ message: 'Invalid companyId provided.' });
+      }
     }
 
-    if (role) user.role = role;
-    if (firstName !== undefined) user.firstName = firstName;
-    if (middleName !== undefined) user.middleName = middleName;
-    if (lastName !== undefined) user.lastName = lastName;
-    if (phone !== undefined) user.phone = phone;
-    if (status !== undefined) user.status = status;
+    // Update the user with allowed fields
+    await user.update(fieldsToUpdate, { fields: Object.keys(fieldsToUpdate) });
 
-    await user.save();
+    // Exclude password from the response
+    const { password: pwd, ...userWithoutPassword } = user.toJSON();
 
-    res.status(200).json({ message: 'User updated successfully.', data: user });
+    res.status(200).json({ message: 'User updated successfully.', data: userWithoutPassword });
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
-// Delete a user
+/**
+ * Delete a user
+ */
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Ensure the user being deleted belongs to the same company
-    const companyId = req.user.companyId;
-    if (!companyId) {
+    // Ensure the authenticated user has a company associated
+    const requesterCompanyId = req.user.companyId;
+    if (!requesterCompanyId) {
       return res.status(400).json({ message: 'No company associated with the requesting user.' });
     }
 
-    const user = await User.findOne({ where: { id, companyId } });
-    if (!user) return res.status(404).json({ message: 'User not found or does not belong to your company.' });
+    // Find the user to be deleted within the same company
+    const user = await User.findOne({ where: { id, companyId: requesterCompanyId } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found or does not belong to your company.' });
+    }
+
+    // Prevent self-deletion
+    if (user.id === req.user.id) {
+      return res.status(400).json({ message: 'You cannot delete your own account.' });
+    }
 
     await user.destroy();
     res.status(200).json({ message: 'User deleted successfully.' });

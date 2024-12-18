@@ -15,7 +15,7 @@ const User = () => {
   const headerBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
   const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-white';
   const cardBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
-  const accentColor = isLightTheme ? '#0c4a6e' : '#0ea5e9'; // Different accent color for user
+  const accentColor = isLightTheme ? '#c2410c' : '#f97316'; 
 
   const navigateToFeature = (featurePath) => {
     router.push(featurePath);
@@ -23,7 +23,7 @@ const User = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-gray-900'}`}
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
       {/* Header Section */}
@@ -53,7 +53,7 @@ const User = () => {
       >
         <View className="space-y-5">
           {/* View Profile */}
-          <Pressable
+          {/* <Pressable
             onPress={() => navigateToFeature('./ViewProfile')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="View Profile"
@@ -73,54 +73,7 @@ const User = () => {
                 Check and update your personal details.
               </Text>
             </View>
-          </Pressable>
-
-          {/* View Shifts */}
-          <Pressable
-            onPress={() => navigateToFeature('./ViewShifts')}
-            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="View Shifts"
-            accessibilityHint="Navigate to View Shifts screen"
-          >
-            <MaterialIcons
-              name="event"
-              size={28}
-              color={accentColor}
-              style={{ marginRight: 12 }}
-            />
-            <View>
-              <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                View Shifts
-              </Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                View your assigned shifts and schedules.
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Request Leave */}
-          <Pressable
-            onPress={() => navigateToFeature('./RequestLeave')}
-            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Request Leave"
-            accessibilityHint="Navigate to Request Leave screen"
-          >
-            <Entypo
-              name="back-in-time"
-              size={28}
-              color={accentColor}
-              style={{ marginRight: 12 }}
-            />
-            <View>
-              <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Request Leave
-              </Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Submit leave requests for approval.
-              </Text>
-            </View>
-          </Pressable>
-
+          </Pressable> */}
         </View>
       </ScrollView>
     </SafeAreaView>
