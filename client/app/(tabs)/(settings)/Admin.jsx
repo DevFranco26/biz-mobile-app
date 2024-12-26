@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { Ionicons, MaterialIcons, Entypo } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons'; 
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
@@ -55,8 +55,8 @@ const Admin = () => {
       >
         <View className="space-y-5">
           
-           {/* Manage Users */}
-           <Pressable
+          {/* Manage Users */}
+          <Pressable
             onPress={() => navigateToFeature('./ManageUsers')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Users"
@@ -78,12 +78,12 @@ const Admin = () => {
             </View>
           </Pressable>
 
-                    {/* Manage TimeLogs */}
-                    <Pressable
-            onPress={() => navigateToFeature('./ManageSubscription')}
+          {/* Manage TimeLogs */}
+          <Pressable
+            onPress={() => navigateToFeature('./ManageTimeLogs')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Subscription"
-            accessibilityHint="Navigate to Manage Subscription screen"
+            accessibilityLabel="Manage TimeLogs"
+            accessibilityHint="Navigate to Manage TimeLogs screen"
           >
             <Ionicons
               name="time-outline"
@@ -96,7 +96,7 @@ const Admin = () => {
                 Manage TimeLogs
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Manage company employees time logs.
+                Filter, sort, and review employees' time logs.
               </Text>
             </View>
           </Pressable>
@@ -109,7 +109,7 @@ const Admin = () => {
             accessibilityHint="Navigate to Manage Locations screen"
           >
             <Ionicons
-              name="time-outline"
+              name="location-outline"
               size={28}
               color={accentColor}
               style={{ marginRight: 12 }}
@@ -131,8 +131,8 @@ const Admin = () => {
             accessibilityLabel="Manage Leaves"
             accessibilityHint="Navigate to Manage Leaves screen"
           >
-            <MaterialIcons
-              name="event-note"
+            <Ionicons
+              name="calendar-outline"
               size={28}
               color={accentColor}
               style={{ marginRight: 12 }}
@@ -147,49 +147,47 @@ const Admin = () => {
             </View>
           </Pressable>
 
-           {/* Manage Schedules */}
-           <Pressable
-            onPress={() => navigateToFeature('./ManageSchedules')}
+          <Pressable
+            onPress={() => navigateToFeature('./ManageShiftSchedules')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Schedules"
-            accessibilityHint="Navigate to Manage Schedules screen"
+            accessibilityLabel="Manage Shift Schedules"
+            accessibilityHint="Navigate to Manage Shift Schedules screen"
           >
-            <MaterialIcons
-              name="event-note"
+            <Ionicons
+              name="calendar-outline"
               size={28}
               color={accentColor}
               style={{ marginRight: 12 }}
             />
             <View>
               <Text className={`text-lg font-semibold ${headerTextColor}`}>
-              Manage Schedules
+                Manage Shifts
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Approve leave requests and assign approvers.
+                Create, edit, assign and delete shift schedules.
               </Text>
             </View>
           </Pressable>
-
           
-           {/* Manage Departments */}
-           <Pressable
+          {/* Manage Departments */}
+          <Pressable
             onPress={() => navigateToFeature('./ManageDepartments')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Departments"
             accessibilityHint="Navigate to Manage Departments screen"
           >
-            <MaterialIcons
-              name="event-note"
+            <Ionicons
+              name="briefcase-outline"
               size={28}
               color={accentColor}
               style={{ marginRight: 12 }}
             />
             <View>
               <Text className={`text-lg font-semibold ${headerTextColor}`}>
-              Manage Departments
+                Manage Departments
               </Text>
               <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Manage Departments
+                Organize departments and teams.
               </Text>
             </View>
           </Pressable>
@@ -217,15 +215,15 @@ const Admin = () => {
             </View>
           </Pressable>
 
-           {/* Manage Subscription */}
-           <Pressable
+          {/* Manage Subscription */}
+          <Pressable
             onPress={() => navigateToFeature('./ManageSubscription')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Subscription"
             accessibilityHint="Navigate to Manage Subscription screen"
           >
-            <Entypo
-              name="newsletter"
+            <Ionicons
+              name="reader-outline"
               size={28}
               color={accentColor}
               style={{ marginRight: 12 }}
@@ -239,7 +237,6 @@ const Admin = () => {
               </Text>
             </View>
           </Pressable>
-
         </View>
       </ScrollView>
     </SafeAreaView>

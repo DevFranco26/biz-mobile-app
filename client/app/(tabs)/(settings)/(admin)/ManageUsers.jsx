@@ -422,6 +422,8 @@ const ManageUsers = () => {
                 color={presenceColor}
                 style={{ marginLeft: 6 }}
               />
+            </View>
+
 
               {/* Display tooltip */}
               {presenceTooltip && (
@@ -429,8 +431,6 @@ const ManageUsers = () => {
                   {presenceTooltip}
                 </Text>
               )}
-            </View>
-
             {/* Email */}
             <View className="flex-row items-center mt-1">
               <Ionicons 

@@ -1,5 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, Pressable, ScrollView, Alert, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  ScrollView,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../../store/themeStore';
 import * as SecureStore from 'expo-secure-store';
@@ -30,7 +44,7 @@ const Profile = () => {
 
   const presenceColors = {
     active: '#10b981',
-    away: '#f97316',
+    away: '#f97316', // orange-500
     offline: '#d1d5db',
   };
 
@@ -47,11 +61,12 @@ const Profile = () => {
 
   const logout = async () => {
     try {
+      const token = await SecureStore.getItemAsync('token');
       const response = await fetch(`${API_BASE_URL}/auth/sign-out`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${await SecureStore.getItemAsync('token')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -128,11 +143,11 @@ const Profile = () => {
     let intervalId;
     const startInterval = async () => {
       const token = await SecureStore.getItemAsync('token');
-      if (!token) return; 
+      if (!token) return;
       intervalId = setInterval(async () => {
         try {
           const response = await fetch(`${API_BASE_URL}/auth/user`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
             const data = await response.json();
@@ -179,7 +194,7 @@ const Profile = () => {
         firstName: editFirstName,
         middleName: editMiddleName,
         lastName: editLastName,
-        phone: editPhone
+        phone: editPhone,
       };
 
       const response = await fetch(`${API_BASE_URL}/auth/user`, {
@@ -209,7 +224,6 @@ const Profile = () => {
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-
         {/* Profile Header */}
         <View className="bg-slate-800 rounded-xl p-6 mb-6 flex-row items-center relative">
           {user.profileImage ? (
@@ -226,7 +240,7 @@ const Profile = () => {
           )}
 
           {/* Presence Icon at the top-right of avatar */}
-          <View style={{ position: 'absolute', top: 10, right: 10 }}>
+          <View className="absolute top-2.5 right-2.5">
             <Pressable
               ref={iconRef}
               onPress={() => {
@@ -276,7 +290,7 @@ const Profile = () => {
           </Text>
           <Pressable
             className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-white' : 'bg-slate-700'}`}
-            onPress={() => Alert.alert('Change Password feature: on going')}
+            onPress={() => Alert.alert('Change Password feature: ongoing')}
           >
             <Text className={`${isLightTheme ? 'text-gray-800' : 'text-gray-100'} font-medium text-center`}>
               Change Password
@@ -309,35 +323,46 @@ const Profile = () => {
         onRequestClose={() => setIsDropdownVisible(false)}
       >
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+          className="flex-1 bg-slate-200/70 "
           activeOpacity={1}
           onPressOut={() => setIsDropdownVisible(false)}
         >
-          <View style={{
-            position: 'absolute',
-            top: iconLayout.y,
-            left: iconLayout.x - 90,
-            backgroundColor: isLightTheme ? '#fff' : '#374151',
-            borderRadius: 8,
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            width: 110, 
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 5
-          }}>
-            <TouchableOpacity onPress={() => handleStatusSelect('active')} style={{flexDirection:'row', alignItems:'center', marginBottom:8}}>
-              <Ionicons name="checkmark-circle" size={20} color={presenceColors.active} style={{marginRight:8}}/>
-              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Active</Text>
+          <View
+            style={{
+              position: 'absolute',
+              top: iconLayout.y,
+              left: iconLayout.x - 90,
+              backgroundColor: isLightTheme ? '#fff' : '#374151',
+              borderRadius: 8,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              width: 110,
+              shadowColor: '#000',
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => handleStatusSelect('active')}
+              className="flex-row items-center mb-2"
+            >
+              <Ionicons name="checkmark-circle" size={20} color={presenceColors.active} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? 'text-black' : 'text-white'}`}>Active</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleStatusSelect('away')} style={{flexDirection:'row', alignItems:'center', marginBottom:8}}>
-              <Ionicons name="time" size={20} color={presenceColors.away} style={{marginRight:8}}/>
-              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Away</Text>
+            <TouchableOpacity
+              onPress={() => handleStatusSelect('away')}
+              className="flex-row items-center mb-2"
+            >
+              <Ionicons name="time" size={20} color={presenceColors.away} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? 'text-black' : 'text-white'}`}>Away</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleStatusSelect('offline')} style={{flexDirection:'row', alignItems:'center'}}>
-              <Ionicons name="close-circle" size={20} color={presenceColors.offline} style={{marginRight:8}}/>
-              <Text style={{ color: isLightTheme ? '#000' : '#fff', fontSize:16 }}>Offline</Text>
+            <TouchableOpacity
+              onPress={() => handleStatusSelect('offline')}
+              className="flex-row items-center"
+            >
+              <Ionicons name="close-circle" size={20} color={presenceColors.offline} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? 'text-black' : 'text-white'}`}>Offline</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -351,10 +376,10 @@ const Profile = () => {
         onRequestClose={() => setEditProfileModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="flex-1 justify-center items-center bg-slate-950/95">
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ width: '90%' }}
+              className="w-11/12"
               keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
             >
               <ScrollView
@@ -362,30 +387,30 @@ const Profile = () => {
                 keyboardShouldPersistTaps="handled"
               >
                 <View
-                  style={{
-                    padding: 16,
-                    backgroundColor: isLightTheme ? '#fff' : '#1f2937',
-                    borderRadius: 12,
-                  }}
+                  className={`p-4 rounded-3xl ${
+                    isLightTheme ? 'bg-white' : 'bg-slate-800'
+                  }`}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: isLightTheme ? '#1f2937' : '#fff' }}>
+                  <Text
+                    className={`text-lg font-bold mb-3 ${
+                      isLightTheme ? 'text-slate-800' : 'text-white'
+                    }`}
+                  >
                     Edit Profile
                   </Text>
 
                   {/* First Name */}
-                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                  <Text
+                    className={`text-sm mb-1 ${
+                      isLightTheme ? 'text-slate-800' : 'text-gray-300'
+                    }`}
+                  >
                     First Name
                   </Text>
                   <TextInput
-                    style={{
-                      width: '100%',
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
-                      color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14,
-                    }}
+                    className={`w-full p-2 mb-2 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-gray-300'
+                    } text-sm`}
                     value={editFirstName}
                     onChangeText={setEditFirstName}
                     placeholder="e.g., John"
@@ -393,19 +418,17 @@ const Profile = () => {
                   />
 
                   {/* Middle Name */}
-                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                  <Text
+                    className={`text-sm mb-1 ${
+                      isLightTheme ? 'text-slate-800' : 'text-gray-300'
+                    }`}
+                  >
                     Middle Name
                   </Text>
                   <TextInput
-                    style={{
-                      width: '100%',
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
-                      color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14,
-                    }}
+                    className={`w-full p-2 mb-2 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-gray-300'
+                    } text-sm`}
                     value={editMiddleName}
                     onChangeText={setEditMiddleName}
                     placeholder="e.g., A."
@@ -413,19 +436,17 @@ const Profile = () => {
                   />
 
                   {/* Last Name */}
-                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                  <Text
+                    className={`text-sm mb-1 ${
+                      isLightTheme ? 'text-slate-800' : 'text-gray-300'
+                    }`}
+                  >
                     Last Name
                   </Text>
                   <TextInput
-                    style={{
-                      width: '100%',
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
-                      color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14,
-                    }}
+                    className={`w-full p-2 mb-2 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-gray-300'
+                    } text-sm`}
                     value={editLastName}
                     onChangeText={setEditLastName}
                     placeholder="e.g., Doe"
@@ -433,19 +454,17 @@ const Profile = () => {
                   />
 
                   {/* Phone */}
-                  <Text style={{ fontSize: 14, marginBottom: 2, color: isLightTheme ? '#1f2937' : '#d1d5db' }}>
+                  <Text
+                    className={`text-sm mb-1 ${
+                      isLightTheme ? 'text-slate-800' : 'text-gray-300'
+                    }`}
+                  >
                     Phone
                   </Text>
                   <TextInput
-                    style={{
-                      width: '100%',
-                      padding: 10,
-                      marginBottom: 8,
-                      borderRadius: 8,
-                      backgroundColor: isLightTheme ? '#f3f4f6' : '#374151',
-                      color: isLightTheme ? '#1f2937' : '#d1d5db',
-                      fontSize: 14,
-                    }}
+                    className={`w-full p-2 mb-2 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-gray-300'
+                    } text-sm`}
                     value={editPhone}
                     onChangeText={setEditPhone}
                     placeholder="e.g., +1 234 567 890"
@@ -453,27 +472,24 @@ const Profile = () => {
                     placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                   />
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop:12 }}>
+                  <View className="flex-row justify-end mt-3">
                     <TouchableOpacity
                       onPress={() => setEditProfileModalVisible(false)}
-                      style={{ marginRight: 12 }}
+                      className="mr-3"
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: isLightTheme ? '#374151' : '#d1d5db' }}>
+                      <Text
+                        className={`text-sm font-semibold ${
+                          isLightTheme ? 'text-slate-700' : 'text-gray-300'
+                        }`}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={handleSaveProfileEdits}
-                      style={{
-                        backgroundColor: '#10b981',
-                        paddingVertical: 8,
-                        paddingHorizontal: 16,
-                        borderRadius: 8,
-                      }}
+                      className="bg-orange-500 py-2 px-4 rounded-lg"
                     >
-                      <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
-                        Save
-                      </Text>
+                      <Text className="text-white text-sm font-semibold">Save</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
