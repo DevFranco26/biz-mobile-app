@@ -1,3 +1,5 @@
+// src/routes/locationRoutes.js
+
 import express from 'express';
 import { createLocation, getLocations, updateLocation, deleteLocation } from '../controllers/locationController.js';
 import authenticateToken from '../middlewares/authMiddleware.js';

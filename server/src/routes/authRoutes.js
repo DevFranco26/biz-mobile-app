@@ -1,3 +1,5 @@
+// src/routes/authRoutes.js
+
 import express from 'express';
 import { signIn, signOut, getCurrentUser, updateCurrentUser } from '../controllers/authController.js';
 import authenticate from '../middlewares/authMiddleware.js';

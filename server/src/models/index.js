@@ -5,9 +5,9 @@ import Company from './Company.js';
 import Location from './Location.js';
 import TimeLogs from './TimeLogs.js';
 import UserSettings from './UserSettings.js';
-import Leave from './Leave.js'; // Import Leave model
-
-// Define Associations
+import Leave from './Leave.js';
+import ShiftSchedule from './ShiftSchedule.js';
+import UserShiftAssignment from './UserShiftAssignment.js';
 
 // User <-> Company
 User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
@@ -40,6 +40,17 @@ Leave.belongsTo(User, { foreignKey: 'approverId', as: 'approver' });
 Company.hasMany(Leave, { foreignKey: 'companyId', as: 'leaves' });
 Leave.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 
+// Company <-> ShiftSchedule
+Company.hasMany(ShiftSchedule, { foreignKey: 'companyId', as: 'shiftSchedules' });
+ShiftSchedule.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
+// User <-> ShiftSchedule
+User.belongsToMany(ShiftSchedule, { through: UserShiftAssignment, foreignKey: 'userId', otherKey: 'shiftScheduleId', as: 'assignedShifts' });
+ShiftSchedule.belongsToMany(User, { through: UserShiftAssignment, foreignKey: 'shiftScheduleId', otherKey: 'userId', as: 'assignedUsers' });
+
+UserShiftAssignment.belongsTo(ShiftSchedule, { foreignKey: 'shiftScheduleId', as: 'shiftSchedule' });
+UserShiftAssignment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 export {
   User,
   Company,
@@ -47,4 +58,7 @@ export {
   TimeLogs,
   UserSettings,
   Leave,
+  ShiftSchedule,
+  UserShiftAssignment
 };
+
