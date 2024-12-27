@@ -193,7 +193,7 @@ const Admin = () => {
           </Pressable>
 
           {/* Manage Payroll */}
-          <Pressable
+          {/* <Pressable
             onPress={() => navigateToFeature('./ManagePayroll')}
             className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
             accessibilityLabel="Manage Payroll"
@@ -213,7 +213,7 @@ const Admin = () => {
                 Configure rates and generate salary reports.
               </Text>
             </View>
-          </Pressable>
+          </Pressable> */}
 
           {/* Manage Subscription */}
           <Pressable
@@ -237,6 +237,105 @@ const Admin = () => {
               </Text>
             </View>
           </Pressable>
+
+           {/* Manage Payroll Section */}
+           <View className="mt-5">
+            <Text className={`text-2xl font-bold mb-3 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+              Manage Payroll
+            </Text>
+
+            {/* Payroll Settings */}
+            <Pressable
+              onPress={() => navigateToFeature('./PayrollSettings')}
+              className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+              accessibilityLabel="Payroll Settings"
+              accessibilityHint="Navigate to Payroll Settings screen"
+            >
+              <Ionicons
+                name="settings-outline"
+                size={28}
+                color={accentColor}
+                style={{ marginRight: 12 }}
+              />
+              <View>
+                <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                  Payroll Settings
+                </Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                  Configure cutoff cycles, currency, and overtime rates.
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Payrate Settings */}
+            <Pressable
+              onPress={() => navigateToFeature('./PayrateSettings')}
+              className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+              accessibilityLabel="Payrate Settings"
+              accessibilityHint="Navigate to Payrate Settings screen"
+            >
+              <Ionicons
+                name="cash-outline"
+                size={28}
+                color={accentColor}
+                style={{ marginRight: 12 }}
+              />
+              <View>
+                <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                  Payrate Settings
+                </Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                  Set or update pay rates for users.
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Calculate Payroll Manually */}
+            <Pressable
+              onPress={() => navigateToFeature('./CalculatePayrollManually')}
+              className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+              accessibilityLabel="Calculate Payroll Manually"
+              accessibilityHint="Navigate to Calculate Payroll Manually screen"
+            >
+              <Ionicons
+                name="calculator-outline"
+                size={28}
+                color={accentColor}
+                style={{ marginRight: 12 }}
+              />
+              <View>
+                <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                  Calculate Payroll Manually
+                </Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                  Manually calculate payroll for specific users and periods.
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Payroll Records */}
+            <Pressable
+              onPress={() => navigateToFeature('./PayrollRecords')}
+              className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
+              accessibilityLabel="Payroll Records"
+              accessibilityHint="Navigate to Payroll Records screen"
+            >
+              <Ionicons
+                name="document-text-outline"
+                size={28}
+                color={accentColor}
+                style={{ marginRight: 12 }}
+              />
+              <View>
+                <Text className={`text-lg font-semibold ${headerTextColor}`}>
+                  Payroll Records
+                </Text>
+                <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                  View and manage all payroll records.
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

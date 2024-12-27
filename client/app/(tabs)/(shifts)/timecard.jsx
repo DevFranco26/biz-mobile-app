@@ -4,20 +4,19 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   ActivityIndicator,
   Modal,
   TouchableWithoutFeedback,
   Alert,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import useThemeStore from '../../../store/themeStore';
 import useUserStore from '../../../store/userStore';
-import axios from 'axios'; // Using axios directly
+import axios from 'axios';
 import {
   format,
   startOfMonth,
@@ -33,7 +32,8 @@ import {
 } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform as RNPlatform } from 'react-native';
-import * as SecureStore from 'expo-secure-store'; // Import SecureStore to retrieve the token
+import * as SecureStore from 'expo-secure-store';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const TimeCard = () => {
   const { user } = useUserStore();
@@ -48,64 +48,71 @@ const TimeCard = () => {
   const [loading, setLoading] = useState(false);
   const [totalDurationMs, setTotalDurationMs] = useState(0);
   const [logsWithDuration, setLogsWithDuration] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Range Selection States
-  const [rangeType, setRangeType] = useState('Monthly'); // Options: Monthly, Bi-Monthly, Weekly, Custom
+  const [rangeType, setRangeType] = useState('Monthly');
   const [customStartDate, setCustomStartDate] = useState(new Date());
   const [customEndDate, setCustomEndDate] = useState(new Date());
 
-  // Picker States
+  // DateTime picker states
   const [currentPicker, setCurrentPicker] = useState(null); // 'startDate' or 'endDate'
-
-  // Temporary States for iOS
   const [tempStartDate, setTempStartDate] = useState(customStartDate);
   const [tempEndDate, setTempEndDate] = useState(customEndDate);
 
-  // State for RefreshControl
-  const [refreshing, setRefreshing] = useState(false);
+  // DropDownPicker states
+  const [openRangeType, setOpenRangeType] = useState(false);
+  const [rangeTypeItems, setRangeTypeItems] = useState([
+    { label: 'Monthly', value: 'Monthly' },
+    { label: 'Bi-Monthly', value: 'Bi-Monthly' },
+    { label: 'Weekly', value: 'Weekly' },
+    { label: 'Custom Range', value: 'Custom' },
+  ]);
 
-  // Format Date with Day
-  const formatDateWithDay = (dateString) => {
-    const date = new Date(dateString);
-    const options = {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    };
-    return new Intl.DateTimeFormat('en-US', options).format(date);
-  };
-
-  // Combine Date and Time (if needed for shift logs)
+  // 1) Modify combineDateTime to parse the date/time as UTC:
   const combineDateTime = (date, time) => {
-    const dateTimeString = `${date}T${time}`;
+    // Suppose `timeInDate="2024-12-28" and timeInTime="14:00:00"` are in UTC
+    // Add 'Z' so JS parses them as UTC
+    const dateTimeString = `${date}T${time}Z`;
     const dateObj = new Date(dateTimeString);
     return !isNaN(dateObj) ? dateObj : null;
   };
 
-  // Fetch time logs whenever the selected range or dates change
+  // 2) Format for display in local time:
+  const formatDateWithDay = (dateObj) => {
+    // dateObj is already local
+    return format(dateObj, 'EEEE, MMMM d, yyyy'); 
+    // e.g. "Saturday, December 28, 2024" (in local time)
+  };
+
+  // For time display:
+  const formatTime = (dateObj) => {
+    // e.g. "h:mm aa" => "2:00 PM"
+    return format(dateObj, 'p'); // date-fns 'p' uses local time
+  };
+
+  // Hook: fetch logs every time range changes
   useEffect(() => {
     fetchTimeLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeType, selectedDate, customStartDate, customEndDate]);
 
-  // Calculate total duration and format logs
+  // Build logsWithDuration
   useEffect(() => {
     let totalDuration = 0;
 
     const validLogs = shiftLogs
       .map((log) => {
-        const timeIn = combineDateTime(log.timeInDate, log.timeInTime);
-        const timeOut = combineDateTime(log.timeOutDate, log.timeOutTime);
+        const timeIn = combineDateTime(log.timeInDate, log.timeInTime);   // local Date
+        const timeOut = combineDateTime(log.timeOutDate, log.timeOutTime); // local Date
 
         if (timeIn && timeOut && timeOut > timeIn) {
-          const diffMs = timeOut - timeIn;
+          const diffMs = timeOut - timeIn; // local time difference
           totalDuration += diffMs;
 
           return {
-            date: log.timeInDate,
-            timeIn: log.timeInTime,
-            timeOut: log.timeOutTime,
+            timeInObj: timeIn,   // store the actual Date for display
+            timeOutObj: timeOut, 
             duration: `${Math.floor(diffMs / 3600000)}h ${Math.floor(
               (diffMs % 3600000) / 60000
             )}m`,
@@ -119,126 +126,16 @@ const TimeCard = () => {
     setTotalDurationMs(totalDuration);
   }, [shiftLogs]);
 
-  // Fetch time logs from the server based on selected range
-  const fetchTimeLogs = async () => {
-    setLoading(true);
-    try {
-      let startDate, endDate;
-
-      switch (rangeType) {
-        case 'Monthly':
-          startDate = startOfMonth(selectedDate);
-          endDate = endOfMonth(selectedDate);
-          break;
-        case 'Bi-Monthly':
-          const dayOfMonth = selectedDate.getDate();
-          if (dayOfMonth <= 15) {
-            startDate = startOfMonth(selectedDate);
-            endDate = new Date(
-              selectedDate.getFullYear(),
-              selectedDate.getMonth(),
-              15
-            );
-          } else {
-            startDate = new Date(
-              selectedDate.getFullYear(),
-              selectedDate.getMonth(),
-              16
-            );
-            endDate = endOfMonth(selectedDate);
-          }
-          break;
-        case 'Weekly':
-          startDate = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday
-          endDate = endOfWeek(selectedDate, { weekStartsOn: 0 }); // Saturday
-          break;
-        case 'Custom':
-          startDate = startOfDay(customStartDate);
-          endDate = endOfDay(customEndDate);
-          break;
-        default:
-          startDate = startOfMonth(selectedDate);
-          endDate = endOfMonth(selectedDate);
-      }
-
-      // Retrieve the token from SecureStore
-      const token = await SecureStore.getItemAsync('token');
-
-      if (!token) {
-        Alert.alert(
-          'Authentication Error',
-          'You are not logged in. Please sign in again.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Handle navigation to sign-in screen
-                // For example:
-                // useUserStore.getState().clearUser();
-                // router.replace('(auth)/signin');
-              },
-            },
-          ]
-        );
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      // Make the Axios request with Authorization header
-      const response = await axios.get('http://192.168.100.8:5000/api/timelogs/range', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        params: {
-          // userId: user.id, // Removed to enhance security; backend uses token's userId
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd'),
-        },
-      });
-
-      const sortedLogs = (response.data.data || []).sort(
-        (a, b) => b.id - a.id
-      );
-      setShiftLogs(sortedLogs);
-    } catch (error) {
-      console.error('Error fetching time logs:', error);
-      if (error.response && error.response.status === 401) {
-        Alert.alert(
-          'Authentication Error',
-          'Your session has expired. Please sign in again.',
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                // Clear user data and navigate to sign-in screen
-                await SecureStore.deleteItemAsync('token');
-                useUserStore.getState().setUser(null);
-                router.replace('(auth)/SignIn'); // Ensure this path matches your routing
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Error', 'Failed to fetch time logs. Please try again later.');
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Format total duration into hours and minutes
+  // Format total duration
   const formatTotalDuration = (durationMs) => {
     const hrs = Math.floor(durationMs / 3600000);
     const mins = Math.floor((durationMs % 3600000) / 60000);
     return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
   };
 
-  // Get the formatted date range with abbreviated months
-  const getDateRange = () => {
+  // Range logic: local date boundaries
+  const getDateRangeBounds = () => {
     let startDate, endDate;
-
     switch (rangeType) {
       case 'Monthly':
         startDate = startOfMonth(selectedDate);
@@ -263,8 +160,8 @@ const TimeCard = () => {
         }
         break;
       case 'Weekly':
-        startDate = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday
-        endDate = endOfWeek(selectedDate, { weekStartsOn: 0 }); // Saturday
+        startDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
+        endDate = endOfWeek(selectedDate, { weekStartsOn: 0 });
         break;
       case 'Custom':
         startDate = startOfDay(customStartDate);
@@ -274,31 +171,94 @@ const TimeCard = () => {
         startDate = startOfMonth(selectedDate);
         endDate = endOfMonth(selectedDate);
     }
-
-    // Use 'MMM' for abbreviated month names
-    return `${format(startDate, 'MMM d, yyyy')} - ${format(
-      endDate,
-      'MMM d, yyyy'
-    )}`;
+    return { startDate, endDate };
   };
 
-  // Handle Navigation for Predefined Ranges
+  const getDateRange = () => {
+    const { startDate, endDate } = getDateRangeBounds();
+    return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
+  };
+
+  // Fetch logs from server
+  const fetchTimeLogs = async () => {
+    setLoading(true);
+    try {
+      const { startDate, endDate } = getDateRangeBounds();
+
+      // Retrieve the token from SecureStore
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) {
+        Alert.alert(
+          'Authentication Error',
+          'You are not logged in. Please sign in again.',
+          [{ text: 'OK', onPress: () => {} }]
+        );
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      // If your server wants these in UTC,
+      // you might do something like: 
+      // const startDateUTC = startDate.toISOString().slice(0, 10);
+      // const endDateUTC = endDate.toISOString().slice(0, 10);
+
+      const response = await axios.get('http://192.168.100.8:5000/api/timelogs/range', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          // pass them as local or UTC depending on your backend needs
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
+        },
+      });
+
+      const sortedLogs = (response.data.data || []).sort((a, b) => b.id - a.id);
+      setShiftLogs(sortedLogs);
+    } catch (error) {
+      console.error('Error fetching time logs:', error);
+      if (error.response && error.response.status === 401) {
+        Alert.alert(
+          'Authentication Error',
+          'Your session has expired. Please sign in again.',
+          [{
+            text: 'OK',
+            onPress: async () => {
+              await SecureStore.deleteItemAsync('token');
+              useUserStore.getState().setUser(null);
+            },
+          }]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to fetch time logs. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Refresh logic
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTimeLogs();
+  };
+
+  // Range navigation for monthly, etc.
   const handlePrev = () => {
     switch (rangeType) {
       case 'Monthly':
         setSelectedDate(subMonths(selectedDate, 1));
         break;
-      case 'Bi-Monthly':
+      case 'Bi-Monthly': {
         const day = selectedDate.getDate();
         if (day <= 15) {
-          // Move to the second half of the previous month
-          const previousMonthDate = subMonths(selectedDate, 1);
-          setSelectedDate(new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth(), 16));
+          const prevMonth = subMonths(selectedDate, 1);
+          setSelectedDate(new Date(prevMonth.getFullYear(), prevMonth.getMonth(), 16));
         } else {
-          // Move to the first half of the current month
           setSelectedDate(startOfMonth(selectedDate));
         }
         break;
+      }
       case 'Weekly':
         setSelectedDate(subWeeks(selectedDate, 1));
         break;
@@ -312,17 +272,16 @@ const TimeCard = () => {
       case 'Monthly':
         setSelectedDate(addMonths(selectedDate, 1));
         break;
-      case 'Bi-Monthly':
+      case 'Bi-Monthly': {
         const day = selectedDate.getDate();
         if (day <= 15) {
-          // Move to the second half of the current month
           setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 16));
         } else {
-          // Move to the first half of the next month
-          const nextMonthDate = addMonths(selectedDate, 1);
-          setSelectedDate(startOfMonth(nextMonthDate));
+          const nextMonth = addMonths(selectedDate, 1);
+          setSelectedDate(startOfMonth(nextMonth));
         }
         break;
+      }
       case 'Weekly':
         setSelectedDate(addWeeks(selectedDate, 1));
         break;
@@ -331,92 +290,83 @@ const TimeCard = () => {
     }
   };
 
-  // Open Picker Handler
-  const openPicker = (pickerType) => {
-    setCurrentPicker(pickerType);
-    if (RNPlatform.OS === 'android') {
-      // For Android, DateTimePicker will be rendered directly
-    } else {
-      // For iOS, initialize temporary dates
-      if (pickerType === 'startDate') {
-        setTempStartDate(customStartDate);
-      } else if (pickerType === 'endDate') {
-        setTempEndDate(customEndDate);
-      }
-    }
-  };
-
-  // Render DateTimePicker Modal for iOS
+  // iOS datepicker
   const renderIOSPickerModal = () => {
     if (!currentPicker || RNPlatform.OS !== 'ios') return null;
-
     return (
       <Modal
         visible={!!currentPicker}
-        transparent={true}
+        transparent
         animationType="slide"
         onRequestClose={() => setCurrentPicker(null)}
       >
         <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
-          <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="flex-1 justify-center items-center bg-black/60">
             <TouchableWithoutFeedback>
-              <View className={`w-11/12 p-5 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+              <View
+                className={`w-11/12 p-5 rounded-lg ${
+                  isLightTheme ? 'bg-white' : 'bg-slate-800'
+                }`}
+              >
                 <DateTimePicker
-                  value={
-                    currentPicker === 'startDate'
-                      ? tempStartDate
-                      : tempEndDate
-                  }
+                  value={currentPicker === 'startDate' ? tempStartDate : tempEndDate}
                   mode="date"
                   display="spinner"
                   onChange={(event, selectedDate) => {
                     if (event.type === 'set') {
                       if (currentPicker === 'startDate') {
-                        const newStartDate =
-                          selectedDate || tempStartDate;
-                        if (newStartDate > customEndDate) {
+                        const newStart = selectedDate || tempStartDate;
+                        if (newStart > customEndDate) {
                           Alert.alert('Invalid Date', 'Start Date cannot be after End Date.');
-                          setTempEndDate(newStartDate);
+                          setTempEndDate(newStart);
                         }
-                        setTempStartDate(newStartDate);
-                      } else if (currentPicker === 'endDate') {
-                        const newEndDate = selectedDate || tempEndDate;
-                        if (newEndDate < customStartDate) {
+                        setTempStartDate(newStart);
+                      } else {
+                        const newEnd = selectedDate || tempEndDate;
+                        if (newEnd < customStartDate) {
                           Alert.alert('Invalid Date', 'End Date cannot be before Start Date.');
-                          setTempStartDate(newEndDate);
+                          setTempStartDate(newEnd);
                         }
-                        setTempEndDate(newEndDate);
+                        setTempEndDate(newEnd);
                       }
                     }
                   }}
-                  textColor={isLightTheme ? '#000000' : '#FFFFFF'}
+                  textColor={isLightTheme ? '#000' : '#FFF'}
                 />
+
+                {/* Buttons */}
                 <View className="flex-row justify-end mt-5">
                   <Pressable
                     onPress={() => setCurrentPicker(null)}
-                    className={`px-4 py-3 mr-2 rounded ${isLightTheme ? 'bg-slate-300' : 'bg-slate-600'}`}
+                    className={`px-4 py-3 mr-2 rounded ${
+                      isLightTheme ? 'bg-slate-300' : 'bg-slate-600'
+                    }`}
                   >
-                    <Text className={`${isLightTheme ? 'text-black' : 'text-white'}`}>Cancel</Text>
+                    <Text
+                      className={`${
+                        isLightTheme ? 'text-black' : 'text-slate-300'
+                      }`}
+                    >
+                      Cancel
+                    </Text>
                   </Pressable>
+
                   <Pressable
                     onPress={() => {
-                      // Save the temporary dates to actual state
                       if (currentPicker === 'startDate') {
                         setCustomStartDate(tempStartDate);
-                        // Adjust end date if needed
                         if (tempStartDate > customEndDate) {
                           setCustomEndDate(tempStartDate);
                         }
-                      } else if (currentPicker === 'endDate') {
+                      } else {
                         setCustomEndDate(tempEndDate);
-                        // Adjust start date if needed
                         if (tempEndDate < customStartDate) {
                           setCustomStartDate(tempEndDate);
                         }
                       }
                       setCurrentPicker(null);
                     }}
-                    className={`px-4 py-3 rounded bg-orange-500/90 `}
+                    className="px-4 py-3 rounded bg-orange-500/90"
                   >
                     <Text className="text-white">Confirm</Text>
                   </Pressable>
@@ -429,15 +379,12 @@ const TimeCard = () => {
     );
   };
 
-  // Render DateTimePicker for Android
+  // Android datepicker
   const renderAndroidPicker = () => {
     if (!currentPicker || RNPlatform.OS !== 'android') return null;
-
     return (
       <DateTimePicker
-        value={
-          currentPicker === 'startDate' ? customStartDate : customEndDate
-        }
+        value={currentPicker === 'startDate' ? customStartDate : customEndDate}
         mode="date"
         display="default"
         onChange={(event, selectedDate) => {
@@ -448,7 +395,7 @@ const TimeCard = () => {
                 setCustomEndDate(selectedDate);
               }
               setCustomStartDate(selectedDate || customStartDate);
-            } else if (currentPicker === 'endDate') {
+            } else {
               if (selectedDate < customStartDate) {
                 Alert.alert('Invalid Date', 'End Date cannot be before Start Date.');
                 setCustomStartDate(selectedDate);
@@ -456,169 +403,253 @@ const TimeCard = () => {
               setCustomEndDate(selectedDate || customEndDate);
             }
           }
-          setCurrentPicker(null); // Close the picker
+          setCurrentPicker(null);
         }}
-        textColor={isLightTheme ? '#000000' : '#FFFFFF'}
+        textColor={isLightTheme ? '#000' : '#FFF'}
       />
     );
   };
 
+  // Open date picker
+  const openPicker = (pickerType) => {
+    setCurrentPicker(pickerType);
+    if (RNPlatform.OS !== 'android') {
+      if (pickerType === 'startDate') {
+        setTempStartDate(customStartDate);
+      } else {
+        setTempEndDate(customEndDate);
+      }
+    }
+  };
+
   return (
     <View
-      className="flex-1 bg-slate-900"
-      style={{ paddingTop: insets.top + 60 }} // Restore paddingTop to prevent overlap with top tab bar
+      style={{
+        flex: 1,
+        backgroundColor: isLightTheme ? '#FFFFFF' : '#0f172a',
+        paddingTop: insets.top + 60,
+      }}
     >
+      {/* Top Section */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+        <Text
+          className={`text-base mb-2 ${
+            isLightTheme ? 'text-slate-800' : 'text-slate-300'
+          }`}
+        >
+          Select Range:
+        </Text>
+
+        <View className="mb-4">
+          <DropDownPicker
+            open={openRangeType}
+            value={rangeType}
+            items={rangeTypeItems}
+            setOpen={setOpenRangeType}
+            setValue={setRangeType}
+            setItems={setRangeTypeItems}
+            placeholder="Select Range"
+            style={{
+              borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+              backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            }}
+            dropDownContainerStyle={{
+              borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+              backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            }}
+            textStyle={{
+              color: isLightTheme ? '#374151' : '#9CA3AF',
+            }}
+            placeholderStyle={{
+              color: isLightTheme ? '#6B7280' : '#9CA3AF',
+            }}
+            arrowIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+            }}
+            tickIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+            }}
+            zIndex={3000}
+            zIndexInverse={1000}
+          />
+        </View>
+
+        {rangeType === 'Custom' && (
+          <View className="mb-6">
+            <Pressable
+              onPress={() => openPicker('startDate')}
+              className={`p-4 rounded-lg mb-3 ${
+                isLightTheme ? 'bg-slate-200' : 'bg-slate-800'
+              }`}
+            >
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-800' : 'text-slate-400'
+                }`}
+              >
+                Start Date: {format(customStartDate, 'MMMM d, yyyy')}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => openPicker('endDate')}
+              className={`p-4 rounded-lg ${
+                isLightTheme ? 'bg-slate-200' : 'bg-slate-800'
+              }`}
+            >
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-800' : 'text-slate-400'
+                }`}
+              >
+                End Date: {format(customEndDate, 'MMMM d, yyyy')}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {rangeType !== 'Custom' && (
+          <View className="flex-row items-center my-2 ">
+            <Text
+              className={`text-base font-medium ${
+                isLightTheme ? 'text-slate-800' : 'text-slate-300'
+              }`}
+            >
+              {getDateRange()}
+            </Text>
+            <View className="flex-row items-center ml-auto gap-3">
+              <Pressable
+                onPress={handlePrev}
+                className={`p-2 rounded-full ${
+                  isLightTheme ? 'bg-white' : 'bg-slate-900'
+                }`}
+              >
+                <FontAwesome5
+                  name="arrow-left"
+                  size={20}
+                  color={isLightTheme ? '#1e293b' : '#cbd5e1'}
+                />
+              </Pressable>
+
+              <Pressable
+                onPress={handleNext}
+                className={`p-2 rounded-full ${
+                  isLightTheme ? 'bg-white' : 'bg-slate-900'
+                }`}
+              >
+                <FontAwesome5
+                  name="arrow-right"
+                  size={20}
+                  color={isLightTheme ? '#1e293b' : '#cbd5e1'}
+                />
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {rangeType === 'Custom' && (
+          <View className="mb-4">
+            <Text
+              className={`text-base font-medium ${
+                isLightTheme ? 'text-slate-800' : 'text-slate-300'
+              }`}
+            >
+              {getDateRange()}
+            </Text>
+          </View>
+        )}
+
+        <View
+          className={`p-4 rounded-lg mb-4 flex-row justify-between items-center ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+          }`}
+        >
+          <Text
+            className={`text-lg font-semibold ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            Total Hours
+          </Text>
+          <Text
+            className={`text-xl font-bold ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            {formatTotalDuration(totalDurationMs)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Logs Scrollable */}
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={fetchTimeLogs}
-            colors={['#475569']} 
+            onRefresh={onRefresh}
+            colors={['#475569']}
             tintColor={isLightTheme ? '#475569' : '#94a3b8'}
           />
         }
       >
-        {/* Total Hours */}
-        <View className="p-4 rounded-lg mb-6 bg-slate-800 flex-row justify-between items-center">
-          <Text className="text-lg text-white font-semibold">
-            Total Hours
-          </Text>
-          <Text className="text-xl text-white font-bold">
-            {formatTotalDuration(totalDurationMs)}
-          </Text>
-        </View>
-
-        {/* Range Selection */}
-        <View className="mb-6">
-          <Text className="text-base mb-2 text-white">
-            Select Range:
-          </Text>
-          <View className="rounded-lg bg-slate-900">
-            <Picker
-              selectedValue={rangeType}
-              onValueChange={(itemValue) => setRangeType(itemValue)}
-              dropdownIconColor={isLightTheme ? '#1f2937' : '#f9fafb'}
-              style={{
-                height: 50,
-                color: isLightTheme ? '#1f2937' : '#f9fafb',
-              }}
-              itemStyle={{
-                height: 50,
-                color: isLightTheme ? '#1f2937' : '#f9fafb',
-              }}
-            >
-              <Picker.Item label="Monthly" value="Monthly" />
-              <Picker.Item label="Bi-Monthly" value="Bi-Monthly" />
-              <Picker.Item label="Weekly" value="Weekly" />
-              <Picker.Item label="Custom Range" value="Custom" />
-            </Picker>
-          </View>
-
-          {/* Custom Date Pickers */}
-          {rangeType === 'Custom' && (
-            <View className="mt-4">
-              {/* Start Date */}
-              <Pressable
-                onPress={() => openPicker('startDate')}
-                className="p-4 rounded-lg bg-slate-700 mb-3"
-              >
-                <Text className="text-white">
-                  Start Date: {format(customStartDate, 'MMMM d, yyyy')}
-                </Text>
-              </Pressable>
-
-              {/* End Date */}
-              <Pressable
-                onPress={() => openPicker('endDate')}
-                className="p-4 rounded-lg bg-slate-700"
-              >
-                <Text className="text-white">
-                  End Date: {format(customEndDate, 'MMMM d, yyyy')}
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-
-        {/* Date Range Navigation (for predefined ranges) */}
-        {rangeType !== 'Custom' && (
-          <View className="flex-row justify-between items-center mb-6">
-            {/* Previous Button */}
-            <Pressable
-              onPress={handlePrev}
-              className="p-2 rounded-full bg-slate-600"
-            >
-              <FontAwesome5
-                name="arrow-left"
-                size={20}
-                color="#FFFFFF"
-              />
-            </Pressable>
-
-            {/* Date Range Text */}
-            <Text className="text-base font-medium text-white">
-              {getDateRange()}
-            </Text>
-
-            {/* Next Button */}
-            <Pressable
-              onPress={handleNext}
-              className="p-2 rounded-full bg-slate-600"
-            >
-              <FontAwesome5
-                name="arrow-right"
-                size={20}
-                color="#FFFFFF"
-              />
-            </Pressable>
-          </View>
-        )}
-
-        {/* Display Custom Range if selected */}
-        {rangeType === 'Custom' && (
-          <View className="mb-6">
-            <Text className="text-base font-medium text-white">
-              {getDateRange()}
-            </Text>
-          </View>
-        )}
-
-        {/* Time Logs */}
         {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#475569"
-            className="mt-12"
-          />
+          <ActivityIndicator size="large" color="#475569" className="mt-12" />
         ) : logsWithDuration.length > 0 ? (
-          logsWithDuration.map((log, index) => (
-            <View
-              key={index}
-              className={`p-4 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'} shadow-md mb-4`}
-            >
-              <Text className={`text-xl font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
-                {formatDateWithDay(log.date)}
-              </Text>
-              <Text className={`text-md ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
-                {log.timeIn} - {log.timeOut}
-              </Text>
-              <Text className={`text-md mt-2 text-right ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
-                {log.duration}
-              </Text>
-            </View>
-          ))
+          logsWithDuration.map((log, index) => {
+            // Now we use the local Date objects for display
+            const localDateFormatted = formatDateWithDay(log.timeInObj);
+            const timeInFormatted = formatTime(log.timeInObj);
+            const timeOutFormatted = formatTime(log.timeOutObj);
+
+            return (
+              <View
+                key={index}
+                className={`p-4 rounded-lg shadow-md mb-4 ${
+                  isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+                }`}
+              >
+                <Text
+                  className={`text-xl font-semibold ${
+                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                  }`}
+                >
+                  {localDateFormatted}
+                </Text>
+
+                {/* Time in / time out in local */}
+                <Text
+                  className={`text-md ${
+                    isLightTheme ? 'text-slate-600' : 'text-slate-400'
+                  }`}
+                >
+                  {timeInFormatted} - {timeOutFormatted}
+                </Text>
+
+                <Text
+                  className={`text-md mt-2 text-right ${
+                    isLightTheme ? 'text-slate-600' : 'text-slate-400'
+                  }`}
+                >
+                  {log.duration}
+                </Text>
+              </View>
+            );
+          })
         ) : (
-          <Text className="text-center mt-12 text-md text-gray-400">
+          <Text
+            className={`text-center mt-12 text-md ${
+              isLightTheme ? 'text-slate-500' : 'text-slate-400'
+            }`}
+          >
             No logs available for this range.
           </Text>
         )}
       </ScrollView>
 
-      {/* Render iOS Picker Modal */}
+      {/* iOS & Android DatePicker Modals */}
       {renderIOSPickerModal()}
-
-      {/* Render Android Picker */}
       {renderAndroidPicker()}
     </View>
   );

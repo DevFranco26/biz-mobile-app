@@ -11,6 +11,7 @@ import leavesRoutes from './leavesRoutes.js';
 import shiftSchedulesRoutes from './shiftSchedulesRoutes.js'; // Import the shift schedules routes
 import authenticate from '../middlewares/authMiddleware.js';
 import updateActivityMiddleware from '../middlewares/updateActivityMiddleware.js';
+import payrollRoutes from './payrollRoutes.js';
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.use('/users', usersRoutes);
 router.use('/companies', companiesRoutes);
 router.use('/leaves', leavesRoutes);
 router.use('/shiftschedules', shiftSchedulesRoutes); 
+router.use('/payroll', payrollRoutes);
 
 export default router;

@@ -8,6 +8,9 @@ import UserSettings from './UserSettings.js';
 import Leave from './Leave.js';
 import ShiftSchedule from './ShiftSchedule.js';
 import UserShiftAssignment from './UserShiftAssignment.js';
+import PayrollRecords from './PayrollRecords.js';
+import PayRates from './PayRates.js';
+import PayrollSettings from './PayrollSettings.js';
 
 // User <-> Company
 User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
@@ -16,6 +19,7 @@ Company.hasMany(User, { foreignKey: 'companyId', as: 'users' });
 // User <-> Location
 User.hasMany(Location, { foreignKey: 'adminId', as: 'locations' });
 Location.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
+Location.belongsTo(User, { foreignKey: 'updatedBy', as: 'lastEditor' });
 
 // User <-> TimeLogs
 User.hasMany(TimeLogs, { foreignKey: 'userId', as: 'timeLogs' });
@@ -51,6 +55,22 @@ ShiftSchedule.belongsToMany(User, { through: UserShiftAssignment, foreignKey: 's
 UserShiftAssignment.belongsTo(ShiftSchedule, { foreignKey: 'shiftScheduleId', as: 'shiftSchedule' });
 UserShiftAssignment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// Company <-> PayrollSettings
+Company.hasOne(PayrollSettings, { foreignKey: 'companyId', as: 'payrollSettings' });
+PayrollSettings.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
+// User <-> PayRates
+User.hasOne(PayRates, { foreignKey: 'userId', as: 'payRates' });
+PayRates.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User <-> PayrollRecords
+User.hasMany(PayrollRecords, { foreignKey: 'userId', as: 'payrollRecords' });
+PayrollRecords.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Company <-> PayrollRecords
+Company.hasMany(PayrollRecords, { foreignKey: 'companyId', as: 'companyPayrollRecords' });
+PayrollRecords.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
 export {
   User,
   Company,
@@ -59,6 +79,9 @@ export {
   UserSettings,
   Leave,
   ShiftSchedule,
-  UserShiftAssignment
+  UserShiftAssignment,
+  PayrollRecords,
+  PayrollSettings,
+  PayRates
 };
 

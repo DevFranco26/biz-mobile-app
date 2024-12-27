@@ -1,3 +1,5 @@
+// File: app/(tabs)/(shifts)/Schedule.jsx
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -13,10 +15,10 @@ function getDaysInCurrentMonth() {
   const year = now.getFullYear();
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month+1, 0);
+  const lastDay = new Date(year, month + 1, 0);
 
   const days = [];
-  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1)) {
+  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
     days.push(new Date(d));
   }
   return days;
@@ -34,6 +36,7 @@ function isWeekend(date) {
 
 const Schedule = () => {
   const { theme } = useThemeStore();
+  const isLightTheme = theme === 'light';
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -48,14 +51,15 @@ const Schedule = () => {
         router.replace('(auth)/signin');
         return;
       }
+
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/shiftschedules/my`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (res.ok) {
-          setAssignments(data.data); 
+          setAssignments(data.data);
         } else {
           Alert.alert('Error', data.message || 'Failed to fetch schedule.');
         }
@@ -71,13 +75,13 @@ const Schedule = () => {
   const markedDates = {};
 
   // Mark recurrence
-  daysInMonth.forEach(day => {
+  daysInMonth.forEach((day) => {
     const dayStr = day.toISOString().split('T')[0];
     let mark = false;
 
     for (const a of assignments) {
       const { recurrence } = a;
-      // Check recurrence conditions with correct weekday logic
+      // Check recurrence conditions
       if (recurrence === 'all') {
         mark = true;
         break;
@@ -91,27 +95,25 @@ const Schedule = () => {
     }
 
     if (mark) {
-      // Mark with a dot
       markedDates[dayStr] = {
         marked: true,
-        dotColor: 'green'
+        dotColor: 'green',
       };
     }
   });
 
-  // Highlight current day text with orange (no circle)
+  // Highlight current day text with orange
   const currentDateStr = new Date().toISOString().split('T')[0];
   if (!markedDates[currentDateStr]) {
     markedDates[currentDateStr] = {};
   }
-  // Using custom marking to change text color only
   markedDates[currentDateStr].customStyles = {
-    text: { color: '#f97316', fontWeight: 'bold' }
+    text: { color: '#f97316', fontWeight: 'bold' },
   };
 
   const onDayPress = (day) => {
     const dayDate = new Date(day.dateString);
-    const applicable = assignments.filter(a => {
+    const applicable = assignments.filter((a) => {
       if (a.recurrence === 'all') return true;
       if (a.recurrence === 'weekdays') return isWeekday(dayDate);
       if (a.recurrence === 'weekends') return isWeekend(dayDate);
@@ -121,25 +123,44 @@ const Schedule = () => {
     if (applicable.length === 0) {
       Alert.alert('No Shifts', 'No assigned shift for this date.');
     } else {
-      const msg = applicable.map(a => {
-        const localStart = new Date(a.shiftSchedule.startTime);
-        const localEnd = new Date(a.shiftSchedule.endTime);
-        const startTime = localStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        const endTime = localEnd.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        return `${a.shiftSchedule.title}: ${startTime} - ${endTime}`;
-      }).join('\n');
+      const msg = applicable
+        .map((a) => {
+          const localStart = new Date(a.shiftSchedule.startTime);
+          const localEnd = new Date(a.shiftSchedule.endTime);
+          const startTime = localStart.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          const endTime = localEnd.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          return `${a.shiftSchedule.title}: ${startTime} - ${endTime}`;
+        })
+        .join('\n');
       Alert.alert('Assigned Shifts', msg);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900" style={{paddingTop: insets.top}}>
-      <Text className="text-white font-bold text-xl mt-5 ml-4">
+    <SafeAreaView
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
+      style={{ paddingTop: insets.top }}
+    >
+      <Text
+        className={`font-bold text-xl mt-5 ml-4 ${
+          isLightTheme ? 'text-slate-800' : 'text-white'
+        }`}
+      >
         My Shift Schedule
       </Text>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#475569" style={{ marginTop: 48 }} />
+        <ActivityIndicator
+          size="large"
+          color={isLightTheme ? '#475569' : '#94a3b8'}
+          style={{ marginTop: 48 }}
+        />
       ) : (
         <View className="mx-4 mt-4 shadow-lg rounded-lg overflow-hidden">
           <Calendar
@@ -147,12 +168,12 @@ const Schedule = () => {
             markedDates={markedDates}
             markingType="custom"
             theme={{
-              backgroundColor: '#1f2937',
-              calendarBackground: '#1f2937',
-              dayTextColor: '#fff',
-              monthTextColor: '#fff',
-              arrowColor: '#fff',
-              textSectionTitleColor: '#fff'
+              backgroundColor: isLightTheme ? '#FFFFFF' : '#1f2937',
+              calendarBackground: isLightTheme ? '#FFFFFF' : '#1f2937',
+              dayTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+              monthTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+              arrowColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+              textSectionTitleColor: isLightTheme ? '#1f2937' : '#FFFFFF',
             }}
             style={{
               borderRadius: 12,

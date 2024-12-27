@@ -539,11 +539,11 @@ const ManageUsers = () => {
         </Text>
         <Pressable
           onPress={handleAddUser}
-          className={`p-2 rounded-full ${isLightTheme ? 'bg-slate-800' : 'bg-slate-600'}`}
-          accessibilityLabel="Add User"
-          accessibilityHint="Opens a form to add a new user"
+          className={`p-2 rounded-full ${
+            isLightTheme ? 'bg-white' : 'bg-slate-900'
+          }`}
         >
-          <Ionicons name="add" size={24} color="#fff" />
+          <Ionicons name="add" size={24} color={isLightTheme? `#1e293b` : `#cbd5e1`} />
         </Pressable>
       </View>
 
@@ -635,6 +635,12 @@ const ManageUsers = () => {
               }}
               placeholderStyle={{
                 color: isLightTheme ? '#6B7280' : '#9CA3AF',
+              }}
+              arrowIconStyle={{
+                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+              }}
+              tickIconStyle={{
+                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
               }}
               zIndex={9999}
               zIndexInverse={1000}
@@ -855,7 +861,12 @@ const ManageUsers = () => {
                   setValue={setSelectedLocationId}
                   setItems={setLocationItems}
                   placeholder="Select Location"
-
+                  arrowIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                  }}
+                  tickIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                  }}
                   /* Text color for the items in the picker */
                   textStyle={{
                     color: isLightTheme ? '#374151' : '#F1F5F9',

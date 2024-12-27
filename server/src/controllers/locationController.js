@@ -53,7 +53,6 @@ export const getLocations = async (req, res) => {
       return res.status(400).json({ message: 'Company ID is required.' });
     }
 
-    // Only fetch locations where the admin user is in the same company
     const locations = await Location.findAll({
       include: [
         {
@@ -61,9 +60,13 @@ export const getLocations = async (req, res) => {
           as: 'admin',
           attributes: ['id', 'email', 'companyId'],
           required: true,
-          where: { companyId } // Filter by the same companyId
-        }
-        // Removed 'lastEditor' include
+          where: { companyId },
+        },
+        {
+          model: User,
+          as: 'lastEditor',        // <-- Include the user from `updatedBy`
+          attributes: ['id', 'email', 'companyId'],
+        },
       ],
       order: [['id', 'ASC']],
     });
@@ -72,7 +75,7 @@ export const getLocations = async (req, res) => {
       id: loc.id,
       label: loc.label,
       adminEmail: loc.admin?.email,
-      adminCompanyId: loc.admin?.companyId
+      lastEditorEmail: loc.lastEditor?.email, // <-- now we have it
     })));
 
     res.status(200).json({ message: 'Locations retrieved successfully.', data: locations });
@@ -94,6 +97,7 @@ export const updateLocation = async (req, res) => {
 
     const location = await Location.findByPk(locationId, {
       include: { model: User, as: 'admin' }
+      
     });
 
     if (!location) {
@@ -111,8 +115,8 @@ export const updateLocation = async (req, res) => {
     await location.update({ label, latitude, longitude, radius, updatedBy: userId });
     await location.reload({
       include: [
-        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] }
-        // Removed 'lastEditor' include
+        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
+        { model: User, as: 'lastEditor', attributes: ['id', 'email', 'companyId'] },
       ]
     });
 

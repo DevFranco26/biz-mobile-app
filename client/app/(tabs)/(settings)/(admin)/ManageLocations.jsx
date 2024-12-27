@@ -31,7 +31,15 @@ const ManageLocations = () => {
   const isLightTheme = theme === 'light';
   const router = useRouter();
 
-  const { locations, loading, error, fetchLocations, createLocation, updateLocation, deleteLocation } = useLocationsStore();
+  const { 
+    locations, 
+    loading, 
+    error, 
+    fetchLocations, 
+    createLocation, 
+    updateLocation, 
+    deleteLocation 
+  } = useLocationsStore();
 
   // State variables
   const [refreshing, setRefreshing] = useState(false);
@@ -131,14 +139,20 @@ const ManageLocations = () => {
       }
 
       if (result.success) {
-        Alert.alert('Success', currentLocation ? 'Location updated successfully.' : 'Location created successfully.');
+        Alert.alert(
+          'Success', 
+          currentLocation ? 'Location updated successfully.' : 'Location created successfully.'
+        );
         setModalVisible(false);
 
-        // Re-fetch locations to update UI and show updatedBy properly
+        // Re-fetch locations to update UI
         await fetchLocations(token);
 
       } else {
-        Alert.alert('Error', result.message || (currentLocation ? 'Failed to update location.' : 'Failed to create location.'));
+        Alert.alert(
+          'Error', 
+          result.message || (currentLocation ? 'Failed to update location.' : 'Failed to create location.')
+        );
       }
     } catch (err) {
       console.error('Error saving location:', err);
@@ -153,7 +167,7 @@ const ManageLocations = () => {
         const result = await deleteLocation(locationId, token);
         if (result.success) {
           Alert.alert('Success', 'Location deleted successfully.');
-          // Re-fetch to ensure UI updates if necessary
+          // Re-fetch
           await fetchLocations(token);
         } else {
           Alert.alert('Error', result.message || 'Failed to delete location.');
@@ -178,42 +192,111 @@ const ManageLocations = () => {
   const renderItem = ({ item }) => {
     const creator = item.admin ? item.admin.email : 'Unknown';
     const editor = item.lastEditor ? item.lastEditor.email : 'Not edited';
-  
+
     return (
-      <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
+      <View 
+        className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
+          isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+        }`}
+      >
         <View className="flex-row items-center flex-1">
-          <Ionicons name="location-outline" size={40} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
+          <Ionicons 
+            name="location-outline" 
+            size={40} 
+            color={isLightTheme ? '#4b5563' : '#d1d5db'} 
+          />
           <View className="ml-3 flex-1">
-            <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+            <Text 
+              className={`text-lg font-semibold ${
+                isLightTheme ? 'text-gray-800' : 'text-slate-300'
+              }`}
+            >
               {item.label}
             </Text>
-            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-              Latitude: {item.latitude}
-            </Text>
-            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-              Longitude: {item.longitude}
-            </Text>
-            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-              Radius: {item.radius} meters
-            </Text>
-            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-              Created By: {creator}
-            </Text>
-            <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-              Last Edited By: {editor}
-            </Text>
+
+            {/* LATITUDE (with icon) */}
+            <View className="flex-row items-center">
+              <Ionicons 
+                name="navigate-outline" 
+                size={16} 
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Latitude: {item.latitude}
+              </Text>
+            </View>
+
+            {/* LONGITUDE (with icon) */}
+            <View className="flex-row items-center mt-1">
+              <Ionicons 
+                name="navigate-outline"
+                size={16}
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Longitude: {item.longitude}
+              </Text>
+            </View>
+
+            {/* RADIUS (with icon) */}
+            <View className="flex-row items-center mt-1">
+              <Ionicons 
+                name="radio-button-off-outline"
+                size={16}
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                Radius: {item.radius} meters
+              </Text>
+            </View>
+
+            {/* REPLACED "Created By:" with icon */}
+            <View className="flex-row items-center mt-1">
+              <Ionicons 
+                name="person-add-outline"
+                size={16}
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                {creator}
+              </Text>
+            </View>
+
+            {/* REPLACED "Last Edited By:" with icon */}
+            <View className="flex-row items-center mt-1">
+              <Ionicons 
+                name="create-outline"
+                size={16}
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text className={`${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+                {editor}
+              </Text>
+            </View>
           </View>
         </View>
+
         <Pressable onPress={() => handleLocationAction(item)} className="p-2">
-          <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
+          <Ionicons 
+            name="ellipsis-vertical" 
+            size={24} 
+            color={isLightTheme ? '#1f2937' : '#f9fafb'} 
+          />
         </Pressable>
       </View>
     );
   };
-  
-  
+
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
+    <SafeAreaView 
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} 
+      edges={['top']}
+    >
       {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
@@ -223,22 +306,36 @@ const ManageLocations = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text className={`text-lg font-bold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+        <Text 
+          className={`text-lg font-bold ${
+            isLightTheme ? 'text-gray-800' : 'text-slate-300'
+          }`}
+        >
           Manage Locations
         </Text>
       </View>
 
       <View className="flex-row justify-between items-center px-4 mb-4">
-        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+        <Text 
+          className={`text-2xl font-bold ${
+            isLightTheme ? 'text-gray-800' : 'text-slate-300'
+          }`}
+        >
           Locations
         </Text>
         <Pressable
           onPress={openAddLocationModal}
-          className={`p-2 rounded-full ${isLightTheme ? 'bg-slate-700' : 'bg-slate-600'}`}
+          className={`p-2 rounded-full ${
+            isLightTheme ? 'bg-white' : 'bg-slate-900'
+          }`}
           accessibilityLabel="Add Location"
           accessibilityHint="Opens a form to add a new location"
         >
-          <Ionicons name="add" size={24} color="#fff" />
+          <Ionicons 
+            name="add" 
+            size={24} 
+            color={isLightTheme? '#1e293b' : '#cbd5e1'} 
+          />
         </Pressable>
       </View>
 
@@ -255,11 +352,15 @@ const ManageLocations = () => {
               refreshing={refreshing}
               onRefresh={onRefresh}
               colors={['#475569']}
-              tintColor={isLightTheme ? '#475569' : '#f9fafb'} 
+              tintColor={isLightTheme ? '#475569' : '#f9fafb'}
             />
           }
           ListEmptyComponent={
-            <Text className={`text-center mt-12 text-lg ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+            <Text 
+              className={`text-center mt-12 text-lg ${
+                isLightTheme ? 'text-gray-700' : 'text-gray-300'
+              }`}
+            >
               No locations available.
             </Text>
           }
@@ -285,18 +386,31 @@ const ManageLocations = () => {
                 keyboardShouldPersistTaps="handled"
               >
                 <View
-                  className={`p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}
+                  className={`p-6 rounded-lg ${
+                    isLightTheme ? 'bg-white' : 'bg-slate-800'
+                  }`}
                 >
-                  <Text className={`text-xl font-bold mb-4 ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+                  <Text 
+                    className={`text-xl font-bold mb-4 ${
+                      isLightTheme ? 'text-gray-800' : 'text-slate-300'
+                    }`}
+                  >
                     {currentLocation ? 'Edit Location' : 'Add Location'}
                   </Text>
 
                   {/* Label */}
-                  <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
+                  <Text 
+                    // updated style to be more visible/bold
+                    className={`text-base font-semibold ${
+                      isLightTheme ? 'text-blue-800' : 'text-blue-300'
+                    } mb-1`}
+                  >
                     Label
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'} ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
+                    className={`w-full p-3 mb-3 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+                    } ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
                     value={label}
                     onChangeText={setLabel}
                     placeholder="e.g., Main Office"
@@ -304,13 +418,24 @@ const ManageLocations = () => {
                   />
 
                   {/* Map Selection */}
-                  <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
+                  <Text 
+                    className={`text-base mb-1 ${
+                      isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                    }`}
+                  >
                     Select Location on Map
                   </Text>
-                  <Text className={`text-sm mb-2 ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <Text 
+                    className={`text-sm mb-2 ${
+                      isLightTheme ? 'text-gray-600' : 'text-gray-400'
+                    }`}
+                  >
                     Tap on the map to drop a pin, or drag the pin to adjust the location.
                   </Text>
-                  <View style={{ height: 300, width: '100%' }} className="mb-3 rounded-lg overflow-hidden">
+                  <View 
+                    style={{ height: 300, width: '100%' }} 
+                    className="mb-3 rounded-lg overflow-hidden"
+                  >
                     <MapView
                       style={{ flex: 1 }}
                       initialRegion={{
@@ -339,11 +464,17 @@ const ManageLocations = () => {
                   </View>
 
                   {/* Latitude */}
-                  <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
+                  <Text 
+                    className={`text-base mb-1 ${
+                      isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                    }`}
+                  >
                     Latitude
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'} ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
+                    className={`w-full p-3 mb-3 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+                    } ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
                     value={latitude}
                     onChangeText={setLatitude}
                     placeholder="e.g., 37.7749"
@@ -353,11 +484,17 @@ const ManageLocations = () => {
                   />
 
                   {/* Longitude */}
-                  <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
+                  <Text 
+                    className={`text-base mb-1 ${
+                      isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                    }`}
+                  >
                     Longitude
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'} ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
+                    className={`w-full p-3 mb-3 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+                    } ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
                     value={longitude}
                     onChangeText={setLongitude}
                     placeholder="e.g., -122.4194"
@@ -367,11 +504,17 @@ const ManageLocations = () => {
                   />
 
                   {/* Radius */}
-                  <Text className={`text-base mb-1 ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>
+                  <Text 
+                    className={`text-base mb-1 ${
+                      isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                    }`}
+                  >
                     Radius (meters)
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'} ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
+                    className={`w-full p-3 mb-4 rounded-lg ${
+                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+                    } ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}
                     value={radius}
                     onChangeText={setRadius}
                     placeholder="e.g., 500"
@@ -385,7 +528,11 @@ const ManageLocations = () => {
                       onPress={() => setModalVisible(false)}
                       className="mr-4"
                     >
-                      <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-700' : 'text-slate-400'}`}>
+                      <Text 
+                        className={`text-base font-semibold ${
+                          isLightTheme ? 'text-slate-700' : 'text-slate-400'
+                        }`}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
@@ -393,7 +540,7 @@ const ManageLocations = () => {
                       onPress={handleSaveLocation}
                       className="bg-orange-500/90 p-3 rounded-lg"
                     >
-                      <Text className="text-white font-semibold">Confirm</Text>
+                      <Text className="text-slate-300 font-semibold">Confirm</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

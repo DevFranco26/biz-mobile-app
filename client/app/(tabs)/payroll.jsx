@@ -1,87 +1,699 @@
-// File: app/(tabs)/payroll.jsx
+// File: app/(tabs)/Payroll.jsx
 
-import React from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useState, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  ActivityIndicator, 
+  FlatList, 
+  Pressable,
+  Alert,
+  RefreshControl,
+  Modal,
+  TouchableWithoutFeedback,
+} from 'react-native';
+import usePayrollStore from '../../store/payrollStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as SecureStore from 'expo-secure-store';
+import 'nativewind';
 import useThemeStore from '../../store/themeStore';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 
 const Payroll = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
 
-  // Example payroll data for the current user
-  const currentUserPayroll = {
-    name: 'John Doe',
-    position: 'Software Engineer',
-    salary: '$5000',
-    bonuses: '$1000',
-    deductions: '$200',
-    netPay: '$5800',
+  const { myPayrollRecords, fetchMyPayroll, loading } = usePayrollStore();
+  const insets = useSafeAreaInsets();
+
+  // Initialize filterValue and sortValue with default values to prevent null issues
+  const [sortValue, setSortValue] = useState('date_desc'); // Default sort by Date Descending
+  const [filterValue, setFilterValue] = useState('all');   // Default filter is 'all'
+
+  // Separate state variables for Sort and Filter modals
+  const [isSortModalVisible, setIsSortModalVisible] = useState(false);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Sort and Filter Items
+  const [sortItems] = useState([
+    { label: 'Date (Newest)', value: 'date_desc' },
+    { label: 'Date (Oldest)', value: 'date_asc' },
+    { label: 'Net Pay (High to Low)', value: 'netPay_desc' },
+    { label: 'Net Pay (Low to High)', value: 'netPay_asc' },
+  ]);
+
+  const [filterItems] = useState([
+    { label: 'All', value: 'all' },
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Weekly', value: 'weekly' },
+    { label: 'Daily', value: 'daily' }, // Replaced 'Custom Range' with 'Daily'
+  ]);
+
+  // Custom Date Range States (Removed as per request)
+  // const [showStartPicker, setShowStartPicker] = useState(false);
+  // const [showEndPicker, setShowEndPicker] = useState(false);
+  // const [customStartDate, setCustomStartDate] = useState(new Date());
+  // const [customEndDate, setCustomEndDate] = useState(new Date());
+
+  // isFetching State
+  const [isFetching, setIsFetching] = useState(false);
+
+  // Fetch Token and Payroll Records
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync('token');
+        if (!storedToken) {
+          Alert.alert('Authentication Error', 'Please sign in again.');
+          // Optionally navigate to sign-in screen
+          return;
+        }
+        setIsFetching(true);
+        await fetchMyPayroll(storedToken);
+        setIsFetching(false);
+      } catch (error) {
+        console.error('Error initializing Payroll component:', error);
+        Alert.alert('Error', 'Failed to load payroll records.');
+        setIsFetching(false);
+      }
+    };
+    initialize();
+  }, [fetchMyPayroll]);
+
+  // Handle Refresh
+  const onRefresh = useCallback(() => {
+    const refreshPayroll = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync('token');
+        if (storedToken) {
+          setIsFetching(true);
+          await fetchMyPayroll(storedToken);
+          setIsFetching(false);
+        } else {
+          Alert.alert('Authentication Error', 'Please sign in again.');
+        }
+      } catch (error) {
+        console.error('Error refreshing payroll records:', error);
+        Alert.alert('Error', 'Failed to refresh payroll records.');
+        setIsFetching(false);
+      }
+    };
+    refreshPayroll();
+  }, [fetchMyPayroll]);
+
+  // Handle Start Date Change (Removed as per request)
+  // const onStartDateChange = (event, selectedDate) => {
+  //   setShowStartPicker(false);
+  //   if (selectedDate) {
+  //     setCustomStartDate(selectedDate);
+  //     if (selectedDate > customEndDate) {
+  //       setCustomEndDate(selectedDate);
+  //     }
+  //   }
+  // };
+
+  // Handle End Date Change (Removed as per request)
+  // const onEndDateChange = (event, selectedDate) => {
+  //   setShowEndPicker(false);
+  //   if (selectedDate) {
+  //     setCustomEndDate(selectedDate);
+  //     if (selectedDate < customStartDate) {
+  //       setCustomStartDate(selectedDate);
+  //     }
+  //   }
+  // };
+
+  // Sorting Function
+  const sortedPayrollRecords = () => {
+    let sorted = [...myPayrollRecords];
+    switch (sortValue) {
+      case 'date_desc':
+        sorted.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        break;
+      case 'date_asc':
+        sorted.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        break;
+      case 'netPay_desc':
+        sorted.sort((a, b) => parseFloat(b.netPay) - parseFloat(a.netPay));
+        break;
+      case 'netPay_asc':
+        sorted.sort((a, b) => parseFloat(a.netPay) - parseFloat(b.netPay));
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  };
+
+  // Filtering Function
+  const filteredPayrollRecords = () => {
+    let filtered = sortedPayrollRecords();
+    if (filterValue === 'monthly') {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      filtered = filtered.filter(record => {
+        const recordDate = new Date(record.startDate);
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+      });
+    } else if (filterValue === 'weekly') {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 (Sun) to 6 (Sat)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - dayOfWeek); // Sunday
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6); // Saturday
+      filtered = filtered.filter(record => {
+        const recordDate = new Date(record.startDate);
+        return recordDate >= startOfWeek && recordDate <= endOfWeek;
+      });
+    } else if (filterValue === 'daily') {
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+      filtered = filtered.filter(record => {
+        const recordDate = new Date(record.startDate);
+        return recordDate >= startOfDay && recordDate <= endOfDay;
+      });
+    }
+    // 'all' does not filter anything
+    return filtered;
+  };
+
+  // Enhanced HTML/CSS for PDF
+  const generateHtmlContent = (record) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Payroll Record #${record.id}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+          }
+          .header img {
+            width: 150px;
+          }
+          .title {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          table, th, td {
+            border: 1px solid #ddd;
+          }
+          th, td {
+            padding: 12px;
+            text-align: left;
+          }
+          th {
+            background-color: #f2f2f2;
+          }
+          .total {
+            font-weight: bold;
+          }
+          .footer {
+            position: fixed;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <img src="https://yourcompany.com/logo.png" alt="Company Logo" />
+          <h2>Payroll Summary</h2>
+        </div>
+        
+        <div class="title">
+          <h1>Payroll Record #${record.id}</h1>
+        </div>
+        
+        <table>
+          <tr>
+            <th>User ID</th>
+            <td>${record.userId}</td>
+          </tr>
+          <tr>
+            <th>Period</th>
+            <td>${format(new Date(record.startDate), 'MMMM d, yyyy')} ~ ${format(new Date(record.endDate), 'MMMM d, yyyy')}</td>
+          </tr>
+          <tr>
+            <th>Pay Type</th>
+            <td>${record.payType}</td>
+          </tr>
+          <tr>
+            <th>Hours Worked</th>
+            <td>${record.hoursWorked}</td>
+          </tr>
+          <tr>
+            <th>Overtime Hours</th>
+            <td>${record.overtimeHours}</td>
+          </tr>
+          <tr>
+            <th>Overtime Pay</th>
+            <td>${record.overtimePay}</td>
+          </tr>
+          <tr>
+            <th>Gross Pay</th>
+            <td>${record.grossPay}</td>
+          </tr>
+          <tr>
+            <th>Deductions</th>
+            <td>${record.deductions}</td>
+          </tr>
+          <tr class="total">
+            <th>Net Pay</th>
+            <td>${record.netPay}</td>
+          </tr>
+        </table>
+        
+        <div class="footer">
+          &copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  // Handle Download PDF with Preview
+  const handleDownloadPDF = async (record) => {
+    try {
+      const htmlContent = generateHtmlContent(record);
+      
+      // Generate PDF and get URI
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      console.log('PDF file created at:', uri);
+      
+      // Open Print Preview
+      await Print.printAsync({ uri });
+      
+      // Optionally, you can share the PDF after preview
+      /*
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `Payroll Record #${record.id}`,
+        UTI: 'com.adobe.pdf',
+      });
+      */
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF.');
+    }
+  };
+
+  // Render Payroll Item
+  const renderPayrollItem = ({ item }) => (
+    <View 
+      className={`p-4 mb-4 rounded-lg shadow-md ${
+        isLightTheme ? 'bg-white' : 'bg-slate-800'
+      }`}
+      style={{ width: '100%' }}
+    >
+      <View className="mb-2">
+        <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+          {format(new Date(item.startDate), 'MMMM d, yyyy')} - {format(new Date(item.endDate), 'MMMM d, yyyy')}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Pay Type:</Text> {item.payType}
+        </Text>
+      </View>
+      <View className="mb-3">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Net Pay:</Text> ${item.netPay}
+        </Text>
+      </View>
+      <View className="flex-row justify-center">
+        <Pressable 
+          className="bg-blue-600 px-4 py-2 rounded"
+          onPress={() => handleDownloadPDF(item)}
+        >
+          <Text className="text-white text-center font-semibold">Download PDF</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // Function to open Sort Modal
+  const openSortModal = () => {
+    setIsSortModalVisible(true);
+  };
+
+  // Function to handle filter selection
+  const handleFilterSelection = (value) => {
+    setFilterValue(value);
+  };
+
+  // Function to handle sort selection
+  const handleSortSelection = (value) => {
+    setSortValue(value);
+    setIsSortModalVisible(false);
+  };
+
+  // Function to remove a specific filter or sort
+  const removeFilter = (type) => {
+    if (type === 'filter') {
+      setFilterValue('all');
+    } else if (type === 'sort') {
+      setSortValue('date_desc'); // Reset to default sort
+    }
   };
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-900'}`}
+    <View 
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} 
+      style={{ paddingTop: insets.top }}
     >
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* Payroll Header */}
-        <View
-          className={`rounded-lg p-4 mb-4 ${
-            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-          }`}
-        >
-          <Text className="text-2xl font-bold text-white mb-2">Payroll</Text>
-          <Text className="text-sm text-white">
-            Here is the detailed breakdown of your payroll for this month.
-          </Text>
+      {/* Header */}
+      <View className="flex-row justify-center items-center px-4 py-4">
+        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+          My Payroll
+        </Text>
+      </View>
+
+      {/* Active Filters and Sorts with Icons on the Right */}
+      <View className="flex-row items-center px-4 mb-2">
+        <View className="flex-1 flex-row flex-wrap">
+          {filterValue !== 'all' && (
+            <View className={`
+              flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
+              ${isLightTheme ? 'bg-slate-200' : 'bg-slate-700'}
+            `}>
+              <Text className={`
+                text-sm mr-1
+                ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}
+              `}>
+                {filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}
+              </Text>
+              <Pressable onPress={() => removeFilter('filter')}>
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                />
+              </Pressable>
+            </View>
+          )}
+          {sortValue && (
+            <View className={`
+              flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
+              ${isLightTheme ? 'bg-slate-200' : 'bg-slate-700'}
+            `}>
+              <Text className={`
+                text-sm mr-1
+                ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}
+              `}>
+                {sortValue === 'date_desc' && 'Date Desc'}
+                {sortValue === 'date_asc' && 'Date Asc'}
+                {sortValue === 'netPay_desc' && 'Net Pay Desc'}
+                {sortValue === 'netPay_asc' && 'Net Pay Asc'}
+              </Text>
+              <Pressable onPress={() => removeFilter('sort')}>
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                />
+              </Pressable>
+            </View>
+          )}
         </View>
 
-        {/* Payroll Details */}
-        <View
-          className={`rounded-lg p-4 mb-4 ${
-            isLightTheme ? 'bg-white' : 'bg-slate-800'
-          }`}
-        >
-          <Text
-            className={`text-lg font-semibold mb-2 ${
-              isLightTheme ? 'text-slate-900' : 'text-slate-200'
-            }`}
-          >
-            Employee Name: {currentUserPayroll.name}
-          </Text>
-          <Text className="text-base text-slate-400 mb-1">
-            Position: {currentUserPayroll.position}
-          </Text>
-          <Text className="text-base text-slate-400 mb-1">
-            Salary: {currentUserPayroll.salary}
-          </Text>
-          <Text className="text-base text-slate-400 mb-1">
-            Bonuses: {currentUserPayroll.bonuses}
-          </Text>
-          <Text className="text-base text-slate-400 mb-4">
-            Deductions: {currentUserPayroll.deductions}
-          </Text>
-          <Text className="text-lg font-bold text-slate-200 mt-4">
-            Net Pay: {currentUserPayroll.netPay}
-          </Text>
-        </View>
-
-        {/* Action Button (e.g., Print or Export) */}
-        <View className="mb-4">
+        {/* Sort and Filter Icons Positioned on the Right */}
+        <View className="flex-row">
+          {/* Sort Icon */}
           <Pressable
-            className="bg-orange-500/90 border p-4 rounded-lg items-center"
-            onPress={() => {
-              // Handle print action
-              console.log('Print Payroll Details');
-            }}
+            onPress={openSortModal}
+            className="mr-4"
+            accessibilityLabel="Open Sort Options"
           >
-            <Text className="text-white text-base font-bold">
-              Print Payroll Details
-            </Text>
+            <MaterialIcons
+              name="sort"
+              size={24}
+              color={isLightTheme ? '#374151' : '#9ca3af'}
+            />
+          </Pressable>
+
+          {/* Filter Icon */}
+          <Pressable
+            onPress={() => setIsFilterModalVisible(true)}
+            accessibilityLabel="Open Filter Options"
+          >
+            <Ionicons
+              name="filter"
+              size={24}
+              color={isLightTheme ? '#374151' : '#9ca3af'}
+            />
           </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      {/* Sort Modal */}
+      <Modal
+        visible={isSortModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsSortModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsSortModalVisible(false)}>
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <TouchableWithoutFeedback>
+              <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                    Sort Options
+                  </Text>
+                  <Pressable onPress={() => setIsSortModalVisible(false)}>
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={isLightTheme ? '#374151' : '#9ca3af'}
+                    />
+                  </Pressable>
+                </View>
+
+                <FlatList
+                  data={sortItems}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      onPress={() => handleSortSelection(item.value)}
+                      className={`flex-row items-center p-2 rounded-lg mb-2 ${
+                        sortValue === item.value
+                          ? 'bg-slate-300'
+                          : isLightTheme
+                            ? 'bg-slate-100'
+                            : 'bg-slate-700'
+                      }`}
+                      android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
+                    >
+                      <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  )}
+                />
+
+                {/* Confirm Button */}
+                <Pressable
+                  onPress={() => setIsSortModalVisible(false)}
+                  className={`mt-4 p-2 rounded-lg ${
+                    isLightTheme ? 'bg-blue-600' : 'bg-blue-700'
+                  }`}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Confirm
+                  </Text>
+                </Pressable>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={isFilterModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsFilterModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsFilterModalVisible(false)}>
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <TouchableWithoutFeedback>
+              <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                    Filter Options
+                  </Text>
+                  <Pressable onPress={() => setIsFilterModalVisible(false)}>
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={isLightTheme ? '#374151' : '#9ca3af'}
+                    />
+                  </Pressable>
+                </View>
+
+                <FlatList
+                  data={filterItems}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      onPress={() => handleFilterSelection(item.value)}
+                      className={`flex-row items-center p-2 rounded-lg mb-2 ${
+                        filterValue === item.value
+                          ? 'bg-slate-300'
+                          : isLightTheme
+                            ? 'bg-slate-100'
+                            : 'bg-slate-700'
+                      }`}
+                      android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
+                    >
+                      <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  )}
+                />
+
+                {/* Confirm Button */}
+                <Pressable
+                  onPress={() => setIsFilterModalVisible(false)}
+                  className={`mt-4 p-2 rounded-lg ${
+                    isLightTheme ? 'bg-blue-600' : 'bg-blue-700'
+                  }`}
+                >
+                  <Text className="text-white text-center font-semibold">
+                    Confirm
+                  </Text>
+                </Pressable>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Custom Date Range Selection (Removed as per request) */}
+      {/* {filterValue === 'custom' && (
+        <View className="px-4 mb-4">
+          <Text className={`text-lg font-semibold mb-2 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+            Select Date Range
+          </Text>
+          <View className="flex-row justify-between">
+            {/* Start Date Picker */}
+            {/* <TouchableOpacity
+              onPress={() => setShowStartPicker(true)}
+              className={`flex-1 p-4 rounded-lg mb-3 mr-2 ${
+                isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
+              }`}
+            >
+              <Text className={`${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                Start Date: {format(customStartDate, 'MMMM d, yyyy')}
+              </Text>
+            </TouchableOpacity>
+
+            {/* End Date Picker */}
+            {/* <TouchableOpacity
+              onPress={() => setShowEndPicker(true)}
+              className={`flex-1 p-4 rounded-lg mb-3 ml-2 ${
+                isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
+              }`}
+            >
+              <Text className={`${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                End Date: {format(customEndDate, 'MMMM d, yyyy')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )} */}
+
+      {/* DateTimePickers (Removed as per request) */}
+      {/* {showStartPicker && (
+        <DateTimePicker
+          value={customStartDate}
+          mode="date"
+          display="default"
+          onChange={onStartDateChange}
+          maximumDate={customEndDate} // Prevent selecting a start date after end date
+          textColor={isLightTheme ? '#000' : '#FFF'}
+        />
+      )}
+      {showEndPicker && (
+        <DateTimePicker
+          value={customEndDate}
+          mode="date"
+          display="default"
+          onChange={onEndDateChange}
+          minimumDate={customStartDate} // Prevent selecting an end date before start date
+          textColor={isLightTheme ? '#000' : '#FFF'}
+        />
+      )} */}
+
+      {/* Payroll Records List */}
+      <FlatList
+        data={filteredPayrollRecords()}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+        renderItem={renderPayrollItem}
+        ListEmptyComponent={
+          !loading && !isFetching && (
+            <Text 
+              className={`text-center mt-8 text-lg ${
+                isLightTheme ? 'text-gray-500' : 'text-slate-400'
+              }`}
+            >
+              No payroll records found.
+            </Text>
+          )
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching}
+            onRefresh={onRefresh}
+            colors={['#475569']}
+            tintColor={isLightTheme ? '#475569' : '#94a3b8'}
+          />
+        }
+      />
+
+      {/* Loading Indicator */}
+      {(loading || isFetching) && (
+        <View 
+          className={`absolute inset-0 justify-center items-center bg-black/10`}
+        >
+          <ActivityIndicator size="large" color="#0f766e" />
+          <Text className={`mt-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+            Loading payroll...
+          </Text>
+        </View>
+      )}
+    </View>
   );
 };
 

@@ -332,16 +332,14 @@ const ApprovalLeaves = () => {
         }}
       >
         <TouchableOpacity
-          className="flex-1 justify-center items-center bg-slate-800"
+          className={`flex-1 justify-center items-center ${isLightTheme? `bg-slate-100`: `bg-slate-800`}`}
           activeOpacity={1}
           onPressOut={() => {
             setIsFilterModalVisible(false);
             setSelectedFilterOption(null);
           }}
         >
-          <View className={`
-            w-11/12 max-h-3/4 p-6 rounded-lg bg-slate-900
-          `}>
+          <View className={`w-11/12 max-h-3/4 p-6 rounded-lg ${isLightTheme ? `bg-white` : `bg-slate-900`}`}>
             <View className="flex-row justify-between items-center mb-4">
               <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                 {selectedFilterOption === 'status'

@@ -399,11 +399,17 @@ const SubmitLeaves = () => {
                   className="mb-4"
                   style={{
                     borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#FFFFFF' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
                   }}
                   dropDownContainerStyle={{
                     borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#FFFFFF' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                  }}
+                  arrowIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                  }}
+                  tickIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
                   }}
                   zIndex={3000}
                   zIndexInverse={1000}
@@ -432,11 +438,17 @@ const SubmitLeaves = () => {
                   className="mb-4"
                   style={{
                     borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#FFFFFF' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
                   }}
                   dropDownContainerStyle={{
                     borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#FFFFFF' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                  }}
+                  arrowIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                  }}
+                  tickIconStyle={{
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
                   }}
                   zIndex={2000} // Ensure it appears above other elements
                   zIndexInverse={2000}

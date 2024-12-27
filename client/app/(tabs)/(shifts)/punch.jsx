@@ -454,7 +454,7 @@ const Punch = () => {
           <View
             className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
               isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            } shadow-md`}
+            } `}
           >
             <View className="flex-row items-center">
               <MaterialIcons 
@@ -484,7 +484,7 @@ const Punch = () => {
           <View
             className={`flex-row items-center p-4 rounded-xl my-2 ${
               isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            } shadow-md`}
+            } `}
           >
             <Ionicons 
               name="location" 
@@ -505,7 +505,7 @@ const Punch = () => {
           <View
             className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
               isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            } shadow-md`}
+            }`}
           >
             <View className="flex-row items-center">
               <Entypo
@@ -539,7 +539,7 @@ const Punch = () => {
           <View
             className={`flex-row items-center p-4 rounded-xl my-2 ${
               isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            } shadow-md`}
+            } `}
           >
             {isConnected ? (
               <MaterialIcons 
@@ -570,8 +570,8 @@ const Punch = () => {
         {/* Timer Section */}
         <View className="flex-1 justify-center items-center  ">
           <View
-            className={`w-full p-6 rounded-xl ${
-              isLightTheme ? 'bg-slate-100' : 'bg-slate-900'
+            className={`w-full p-6 rounded-xl  ${
+              isLightTheme ? 'bg-white' : 'bg-slate-900'
             } `}
           >
             <Text
