@@ -20,6 +20,8 @@ import useUserStore from '../../store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+const API_BASE_URL = 'http://192.168.100.8:5000/api';
+
 const SigninSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email address').required('Email is required'),
   password: Yup.string().min(6, 'Password should be at least 6 characters').required('Password is required'),
@@ -36,7 +38,7 @@ const Signin = () => {
     const { email, password } = values;
 
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/auth/sign-in', {
+      const response = await fetch(`${API_BASE_URL}/auth/sign-in`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,11 +51,36 @@ const Signin = () => {
 
       if (response.ok) {
         if (data.token && data.user) {
+          // Store token & user in SecureStore
           await SecureStore.setItemAsync('token', data.token);
           await SecureStore.setItemAsync('user', JSON.stringify(data.user));
 
+          // Update user in Zustand
           setUser(data.user);
 
+          // 1) Immediately set the presence to "active"
+          try {
+            const setActiveResponse = await fetch(`${API_BASE_URL}/users/me/presence`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${data.token}`,
+              },
+              body: JSON.stringify({ presenceStatus: 'active' }),
+            });
+
+            if (setActiveResponse.ok) {
+              const updatedPresenceData = await setActiveResponse.json();
+              // Update user store again to reflect new presence status
+              setUser(updatedPresenceData.data);
+            } else {
+              console.log('Failed to set presence to active');
+            }
+          } catch (err) {
+            console.error('Error setting presence to active:', err);
+          }
+
+          // 2) Navigate to Profile
           router.replace('(tabs)/profile');
         } else {
           Alert.alert('Error', 'Missing token or user data in response.');
@@ -74,15 +101,25 @@ const Signin = () => {
           <Formik initialValues={{ email: '', password: '' }} validationSchema={SigninSchema} onSubmit={handleSignin}>
             {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
               <>
-                <Text className={`text-5xl font-extrabold text-center mb-12 ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}>
+                <Text
+                  className={`text-5xl font-extrabold text-center mb-12 ${
+                    theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+                  }`}
+                >
                   Biz Buddy
                 </Text>
 
                 {/* Email Input */}
                 <View className="mb-4 w-full">
-                  <Text className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}>Email</Text>
+                  <Text
+                    className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}
+                  >
+                    Email
+                  </Text>
                   <TextInput
-                    className={`w-full p-4 my-2 rounded-lg ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'} ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
+                    className={`w-full p-4 my-2 rounded-lg ${
+                      theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+                    } ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
                     keyboardType="email-address"
                     value={values.email}
                     onChangeText={handleChange('email')}
@@ -96,10 +133,16 @@ const Signin = () => {
 
                 {/* Password Input */}
                 <View className="mb-6 w-full">
-                  <Text className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}>Password</Text>
+                  <Text
+                    className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}
+                  >
+                    Password
+                  </Text>
                   <View className="relative">
                     <TextInput
-                      className={`w-full p-4 my-2 rounded-lg ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'} ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
+                      className={`w-full p-4 my-2 rounded-lg ${
+                        theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+                      } ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
                       secureTextEntry={!passwordVisible}
                       value={values.password}
                       onChangeText={handleChange('password')}
@@ -135,14 +178,18 @@ const Signin = () => {
                 {/* Get Started Button */}
                 <Pressable
                   className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
-                  onPress={() => router.push('(auth)/get-started')} // Updated route
+                  onPress={() => router.push('(auth)/get-started')}
                 >
                   <Text className="text-orange-500/90 text-center text-lg font-medium">Get Started</Text>
                 </Pressable>
 
                 {/* Forgot Password */}
                 <Pressable onPress={() => Alert.alert('Forgot Password')}>
-                  <Text className={`text-blue-500 text-sm mt-4 text-center ${theme === 'light' ? 'text-blue-700' : 'text-blue-400'}`}>
+                  <Text
+                    className={`text-blue-500 text-sm mt-4 text-center ${
+                      theme === 'light' ? 'text-blue-700' : 'text-blue-400'
+                    }`}
+                  >
                     Forgot Password?
                   </Text>
                 </Pressable>

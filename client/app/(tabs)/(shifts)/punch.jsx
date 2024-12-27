@@ -568,7 +568,7 @@ const Punch = () => {
         </View>
 
         {/* Timer Section */}
-        <View className="flex-1 justify-center items-center mt-8">
+        <View className="flex-1 justify-center items-center  ">
           <View
             className={`w-full p-6 rounded-xl ${
               isLightTheme ? 'bg-slate-100' : 'bg-slate-900'
@@ -597,7 +597,7 @@ const Punch = () => {
             : isLightTheme
             ? 'bg-orange-600'
             : 'bg-orange-500'
-        } shadow-md ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+        }  ${isLoading ? 'opacity-50' : 'opacity-100'}`}
       >
         <View className="flex-row items-center justify-center">
           {isLoading && (

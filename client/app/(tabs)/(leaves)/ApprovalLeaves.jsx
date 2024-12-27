@@ -1,4 +1,4 @@
-// app/(tabs)/(leaves)/ApprovalLeaves.jsx
+// File: app/(tabs)/(leaves)/ApprovalLeaves.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  StyleSheet,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
@@ -109,7 +108,7 @@ const ApprovalLeaves = () => {
       case 'Rejected':
         return 'text-red-500';
       default:
-        return 'text-gray-500';
+        return 'text-slate-500';
     }
   };
 
@@ -119,7 +118,7 @@ const ApprovalLeaves = () => {
       ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}
     `}>
       <View className="flex-row justify-between items-center mb-2">
-        <Text className={`text-lg font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+        <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
           {item.type}
         </Text>
         <Text className={`font-semibold ${getStatusColor(item.status)}`}>
@@ -133,9 +132,9 @@ const ApprovalLeaves = () => {
           name="arrow-up-circle-outline"
           size={20}
           color={isLightTheme ? '#374151' : '#9ca3af'}
-          style={{ marginRight: 4 }}
+          className="mr-2"
         />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
           From: {formatDateTime(item.fromDate)}
         </Text>
       </View>
@@ -146,9 +145,9 @@ const ApprovalLeaves = () => {
           name="arrow-down-circle-outline"
           size={20}
           color={isLightTheme ? '#374151' : '#9ca3af'}
-          style={{ marginRight: 4 }}
+          className="mr-2"
         />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
           To: {formatDateTime(item.toDate)}
         </Text>
       </View>
@@ -160,9 +159,9 @@ const ApprovalLeaves = () => {
             name="information-circle-outline"
             size={18}
             color={isLightTheme ? '#374151' : '#9ca3af'}
-            style={{ marginRight: 8, marginTop: 2 }}
+            className="mr-2 mt-1"
           />
-          <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'} flex-1`}>
+          <Text className={`text-sm ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
             {item.reason}
           </Text>
         </View>
@@ -174,8 +173,8 @@ const ApprovalLeaves = () => {
           <Ionicons
             name="close-circle"
             size={18}
-            color={'#ef4444'}
-            style={{ marginRight: 8, marginTop: 2 }}
+            color="#ef4444"
+            className="mr-2 mt-1"
           />
           <Text className="text-sm text-red-500 flex-1">
             {`Rejection Reason: ${item.rejectionReason}`}
@@ -238,7 +237,7 @@ const ApprovalLeaves = () => {
   };
 
   return (
-    <SafeAreaView className={`flex-1 px-4 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} style={{ paddingTop: insets.top }}>
+    <SafeAreaView className={`flex-1 px-4 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} style={{ paddingTop: 60 }}>
       {/* Header with Active Filters and Sort/Filter Icons */}
       <View className="flex-row justify-between items-center mb-4">
         {/* Active Filters */}
@@ -259,7 +258,7 @@ const ApprovalLeaves = () => {
                   name="close-circle"
                   size={16}
                   color={isLightTheme ? '#374151' : '#9ca3af'}
-                  style={{ marginLeft: 4 }}
+                  className="ml-1"
                 />
               </Pressable>
             </View>
@@ -268,11 +267,11 @@ const ApprovalLeaves = () => {
           {filterType !== 'ALL' && (
             <View className={`
               flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-sky-100' : 'bg-slate-700'}
+              ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}
             `}>
               <Text className={`
                 text-sm mr-1
-                ${isLightTheme ? 'text-blue-900' : 'text-sky-300'}
+                ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}
               `}>
                 {filterType}
               </Text>
@@ -281,7 +280,7 @@ const ApprovalLeaves = () => {
                   name="close-circle"
                   size={16}
                   color={isLightTheme ? '#374151' : '#9ca3af'}
-                  style={{ marginLeft: 4 }}
+                  className="ml-1"
                 />
               </Pressable>
             </View>
@@ -333,7 +332,7 @@ const ApprovalLeaves = () => {
         }}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          className="flex-1 justify-center items-center bg-slate-800"
           activeOpacity={1}
           onPressOut={() => {
             setIsFilterModalVisible(false);
@@ -341,11 +340,10 @@ const ApprovalLeaves = () => {
           }}
         >
           <View className={`
-            w-11/12 max-h-3/4 p-6 rounded-lg
-            ${isLightTheme ? 'bg-white' : 'bg-slate-800'}
+            w-11/12 max-h-3/4 p-6 rounded-lg bg-slate-900
           `}>
             <View className="flex-row justify-between items-center mb-4">
-              <Text className={`text-xl font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+              <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                 {selectedFilterOption === 'status'
                   ? 'Filter by Status'
                   : selectedFilterOption === 'type'
@@ -377,9 +375,9 @@ const ApprovalLeaves = () => {
                     name="time"
                     size={24}
                     color={isLightTheme ? '#374151' : '#9ca3af'}
-                    style={{ marginRight: 12 }}
+                    className="mr-3"
                   />
-                  <Text className={`text-lg ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Filter by Status
                   </Text>
                 </Pressable>
@@ -393,9 +391,9 @@ const ApprovalLeaves = () => {
                     name="document-text"
                     size={24}
                     color={isLightTheme ? '#374151' : '#9ca3af'}
-                    style={{ marginRight: 12 }}
+                    className="mr-3"
                   />
-                  <Text className={`text-lg ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Filter by Leave Type
                   </Text>
                 </Pressable>
@@ -420,9 +418,9 @@ const ApprovalLeaves = () => {
                       name={status.icon}
                       size={24}
                       color={filterStatus === status.value ? '#1e3a8a' : (isLightTheme ? '#374151' : '#9ca3af')}
-                      style={{ marginRight: 12 }}
+                      className="mr-3"
                     />
-                    <Text className={`text-lg ${filterStatus === status.value ? 'text-blue-900' : (isLightTheme ? 'text-gray-800' : 'text-gray-100')}`}>
+                    <Text className={`text-lg ${filterStatus === status.value ? 'text-blue-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}`}>
                       {status.label}
                     </Text>
                   </Pressable>
@@ -450,9 +448,9 @@ const ApprovalLeaves = () => {
                       name={getTypeIcon(type.value)}
                       size={24}
                       color={filterType === type.value ? '#1e3a8a' : (isLightTheme ? '#374151' : '#9ca3af')}
-                      style={{ marginRight: 12 }}
+                      className="mr-3"
                     />
-                    <Text className={`text-lg ${filterType === type.value ? 'text-blue-900' : (isLightTheme ? 'text-gray-800' : 'text-gray-100')}`}>
+                    <Text className={`text-lg ${filterType === type.value ? 'text-blue-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}`}>
                       {type.label}
                     </Text>
                   </Pressable>
@@ -464,7 +462,7 @@ const ApprovalLeaves = () => {
       </Modal>
 
       {loadingUserLeaves && !refreshing ? (
-        <ActivityIndicator size="large" color="#10B981" style={styles.activityIndicator} />
+        <ActivityIndicator size="large" color="#10B981" className="mt-10" />
       ) : errorUserLeaves ? (
         <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-red-700' : 'text-red-300'}`}>
           {errorUserLeaves}
@@ -474,14 +472,14 @@ const ApprovalLeaves = () => {
           data={getFilteredAndSortedLeaves()}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderLeaveItem}
-          showsVerticalScrollIndicator={true}  // Ensures scrollbar is visible on the right
+          showsVerticalScrollIndicator={true} 
           contentContainerStyle={
             getFilteredAndSortedLeaves().length === 0
               ? { flexGrow: 1, justifyContent: 'center', alignItems: 'center' }
               : { paddingBottom: 40 }
           }
           ListEmptyComponent={
-            <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+            <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
               You have not submitted any leave requests.
             </Text>
           }
@@ -498,17 +496,5 @@ const ApprovalLeaves = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  activityIndicator: {
-    marginTop: 40,
-  },
-});
 
 export default ApprovalLeaves;

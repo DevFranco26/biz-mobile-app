@@ -1,3 +1,5 @@
+// File: app/(tabs)/(leaves)/SubmitLeaves.jsx
+
 import React, { useState, useEffect } from 'react';
 import {
   Text,
@@ -53,7 +55,7 @@ const SubmitLeaves = () => {
   const [approverValue, setApproverValue] = useState('');
 
   // Picker states
-  const [currentPicker, setCurrentPicker] = useState(null); // 'fromDate', 'fromTime', 'toDate', 'toTime'
+  const [currentPicker, setCurrentPicker] = useState(null); 
 
   // Temporary states for picker selections
   const [tempDate, setTempDate] = useState(new Date());
@@ -69,7 +71,7 @@ const SubmitLeaves = () => {
     { label: 'Casual Leave', value: 'Casual Leave' },
   ]);
 
-  const [isSubmitting, setIsSubmitting] = useState(false); // Submission loading state
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   // Accessing leaveStore
   const {
@@ -197,128 +199,190 @@ const SubmitLeaves = () => {
     }
   };
 
-  // Render date/time picker modal with Confirm and Cancel buttons
-  const renderPickerModal = () => {
+  // Render date/time picker based on platform
+  const renderPicker = () => {
     if (!currentPicker) return null;
 
-    // Determine if picker is for date or time and which field
     const isDatePicker = currentPicker.includes('Date');
     const isFromPicker = currentPicker.startsWith('from');
 
-    return (
-      <Modal
-        visible={!!currentPicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setCurrentPicker(null)}
-      >
-        <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
-          <View className="flex-1 justify-center items-center bg-slate-950/60 ">
-            <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 max-w-lg p-6 rounded-lg ${
-                  isLightTheme ? 'bg-white' : 'bg-slate-800'
-                }`}
-              >
-                <DateTimePicker
-                  value={
-                    isFromPicker
-                      ? isDatePicker
-                        ? leaveFromDate
-                        : leaveFromTime
-                      : isDatePicker
-                      ? leaveToDate
-                      : leaveToTime
-                  }
-                  mode={isDatePicker ? 'date' : 'time'}
-                  is24Hour={true}
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedValue) => {
-                    if (event.type === 'set') {
-                      if (isDatePicker) {
-                        setTempDate(selectedValue || (isFromPicker ? leaveFromDate : leaveToDate));
-                      } else {
-                        setTempTime(selectedValue || (isFromPicker ? leaveFromTime : leaveToTime));
-                      }
+    const onChange = (event, selectedValue) => {
+      if (Platform.OS === 'android') {
+        if (event.type === 'set') {
+          // User confirmed the selection
+          if (isDatePicker) {
+            if (isFromPicker) {
+              setLeaveFromDate(selectedValue || leaveFromDate);
+              // Ensure fromDate <= toDate
+              const newCombinedFromDate = combineDateAndTime(selectedValue || leaveFromDate, leaveFromTime);
+              const currentCombinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
+              if (newCombinedFromDate > currentCombinedToDate) {
+                setLeaveToDate(selectedValue || leaveFromDate);
+              }
+            } else {
+              const newToDate = selectedValue || leaveToDate;
+              const currentCombinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
+              const newCombinedToDate = combineDateAndTime(newToDate, leaveToTime);
+              if (newCombinedToDate < currentCombinedFromDate) {
+                Alert.alert(
+                  'Invalid Date',
+                  "Leave 'To Date and Time' should be greater than or equal to 'From Date and Time'."
+                );
+                return;
+              }
+              setLeaveToDate(newToDate);
+            }
+          } else {
+            if (isFromPicker) {
+              setLeaveFromTime(selectedValue || leaveFromTime);
+            } else {
+              setLeaveToTime(selectedValue || leaveToTime);
+            }
+          }
+        }
+        // For Android, picker closes automatically after selection
+        setCurrentPicker(null);
+      } else {
+        // iOS handling
+        if (event.type === 'set') {
+          if (isDatePicker) {
+            setTempDate(selectedValue || (isFromPicker ? leaveFromDate : leaveToDate));
+          } else {
+            setTempTime(selectedValue || (isFromPicker ? leaveFromTime : leaveToTime));
+          }
+        }
+      }
+    };
+
+    if (Platform.OS === 'android') {
+      // For Android, render the picker without custom modal
+      return (
+        <DateTimePicker
+          value={
+            isFromPicker
+              ? isDatePicker
+                ? leaveFromDate
+                : leaveFromTime
+              : isDatePicker
+              ? leaveToDate
+              : leaveToTime
+          }
+          mode={isDatePicker ? 'date' : 'time'}
+          is24Hour={true}
+          display="default"
+          onChange={onChange}
+        />
+      );
+    } else {
+      // For iOS, render the picker inside a custom modal
+      return (
+        <Modal
+          visible={!!currentPicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setCurrentPicker(null)}
+        >
+          <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
+            <View className="flex-1 justify-center items-center bg-slate-900 ">
+              <TouchableWithoutFeedback>
+                <View
+                  className={`w-11/12 max-w-lg p-6 rounded-lg ${
+                    isLightTheme ? 'bg-white' : 'bg-slate-800'
+                  }`}
+                >
+                  <DateTimePicker
+                    value={
+                      isFromPicker
+                        ? isDatePicker
+                          ? leaveFromDate
+                          : leaveFromTime
+                        : isDatePicker
+                        ? leaveToDate
+                        : leaveToTime
                     }
-                  }}
-                  style={{
-                    width: '100%',
-                    backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
-                  }}
-                />
-                <View className="flex-row justify-between mt-4">
-                  <Pressable
-                    onPress={() => setCurrentPicker(null)}
-                    className={`p-3 rounded-lg ${
-                      isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
-                    } flex-1 mr-2`}
-                  >
-                    <Text
-                      className={`text-center ${
-                        isLightTheme ? 'text-gray-800' : 'text-gray-100'
-                      }`}
-                    >
-                      Cancel
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      if (isFromPicker) {
-                        if (isDatePicker) {
-                          setLeaveFromDate(tempDate);
-                          // Ensure fromDate <= toDate
-                          const newCombinedFromDate = combineDateAndTime(tempDate, leaveFromTime);
-                          const currentCombinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
-                          if (newCombinedFromDate > currentCombinedToDate) {
-                            setLeaveToDate(tempDate);
-                          }
-                        } else {
-                          setLeaveFromTime(tempTime);
-                        }
-                      } else {
-                        if (isDatePicker) {
-                          const newCombinedToDate = combineDateAndTime(tempDate, leaveToTime);
-                          const currentCombinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
-                          if (newCombinedToDate < currentCombinedFromDate) {
-                            Alert.alert(
-                              'Invalid Date',
-                              "Leave 'To Date and Time' should be greater than or equal to 'From Date and Time'."
-                            );
-                            return;
-                          }
-                          setLeaveToDate(tempDate);
-                        } else {
-                          setLeaveToTime(tempTime);
-                        }
-                      }
-                      setCurrentPicker(null);
+                    mode={isDatePicker ? 'date' : 'time'}
+                    is24Hour={true}
+                    display="spinner"
+                    onChange={onChange}
+                    style={{
+                      width: '100%',
+                      backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
                     }}
-                    className="p-3 rounded-lg bg-orange-500 flex-1 ml-2"
-                  >
-                    <Text className="text-center text-white">Confirm</Text>
-                  </Pressable>
+                  />
+                  <View className="flex-row justify-between mt-4">
+                    <Pressable
+                      onPress={() => setCurrentPicker(null)}
+                      className={`p-3 rounded-lg ${
+                        isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
+                      } flex-1 mr-2`}
+                    >
+                      <Text
+                        className={`text-center ${
+                          isLightTheme ? 'text-slate-800' : 'text-slate-100'
+                        }`}
+                      >
+                        Cancel
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        if (isFromPicker) {
+                          if (isDatePicker) {
+                            setLeaveFromDate(tempDate);
+                            // Ensure fromDate <= toDate
+                            const newCombinedFromDate = combineDateAndTime(tempDate, leaveFromTime);
+                            const currentCombinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
+                            if (newCombinedFromDate > currentCombinedToDate) {
+                              setLeaveToDate(tempDate);
+                            }
+                          } else {
+                            setLeaveFromTime(tempTime);
+                          }
+                        } else {
+                          if (isDatePicker) {
+                            const newCombinedToDate = combineDateAndTime(tempDate, leaveToTime);
+                            const currentCombinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
+                            if (newCombinedToDate < currentCombinedFromDate) {
+                              Alert.alert(
+                                'Invalid Date',
+                                "Leave 'To Date and Time' should be greater than or equal to 'From Date and Time'."
+                              );
+                              return;
+                            }
+                            setLeaveToDate(tempDate);
+                          } else {
+                            setLeaveToTime(tempTime);
+                          }
+                        }
+                        setCurrentPicker(null);
+                      }}
+                      className="p-3 rounded-lg bg-orange-500 flex-1 ml-2"
+                    >
+                      <Text className="text-center text-white">Confirm</Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-    );
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      );
+    }
   };
 
   return (
     <SafeAreaView
-      className={`flex-1 bg-${isLightTheme ? 'white' : 'slate-900'} px-4`}
-      style={{ paddingTop: insets.top }}
+      className={`flex-1 bg-${isLightTheme ? 'white' : 'slate-900'} px-4 `}
+      style={{ paddingTop: 60 }}
     >
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'padding'} className="flex-1">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-start">
+          <View className="flex-1 justify-between">
+            {/* Form Fields */}
             <View className="space-y-4">
               {/* Leave Type Dropdown */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
                   Leave Type <Text className="text-red-500">*</Text>
                 </Text>
                 <DropDownPicker
@@ -351,7 +415,7 @@ const SubmitLeaves = () => {
 
               {/* Approver Dropdown */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
                   Approver <Text className="text-red-500">*</Text>
                 </Text>
                 <DropDownPicker
@@ -390,12 +454,12 @@ const SubmitLeaves = () => {
 
               {/* Leave Reason */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
                   Reason (Optional)
                 </Text>
                 <TextInput
                   className={`p-4 rounded-lg mb-4 text-base ${
-                    isLightTheme ? 'bg-slate-100 text-gray-800' : 'bg-slate-800 text-gray-100'
+                    isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-100'
                   }`}
                   placeholder="Enter leave reason"
                   value={leaveReason}
@@ -411,7 +475,7 @@ const SubmitLeaves = () => {
 
               {/* Leave From Date & Time */}
               <View className="">
-                <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
                   Leave From <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="flex-row space-x-4 mb-4 gap-3">
@@ -421,11 +485,10 @@ const SubmitLeaves = () => {
                       isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
                     }`}
                     onPress={() => {
-                      setTempDate(leaveFromDate);
                       setCurrentPicker('fromDate');
                     }}
                   >
-                    <Text className={`text-base ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                    <Text className={`text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                       {leaveFromDate.toLocaleDateString()}
                     </Text>
                     <Ionicons
@@ -441,11 +504,10 @@ const SubmitLeaves = () => {
                       isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
                     }`}
                     onPress={() => {
-                      setTempTime(leaveFromTime);
                       setCurrentPicker('fromTime');
                     }}
                   >
-                    <Text className={`text-base ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                    <Text className={`text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                       {leaveFromTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                     <Ionicons
@@ -459,7 +521,7 @@ const SubmitLeaves = () => {
 
               {/* Leave To Date & Time */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
+                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
                   Leave To <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="flex-row space-x-4 mb-4 gap-3">
@@ -469,11 +531,10 @@ const SubmitLeaves = () => {
                       isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
                     }`}
                     onPress={() => {
-                      setTempDate(leaveToDate);
                       setCurrentPicker('toDate');
                     }}
                   >
-                    <Text className={`text-base ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                    <Text className={`text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                       {leaveToDate.toLocaleDateString()}
                     </Text>
                     <Ionicons
@@ -489,11 +550,10 @@ const SubmitLeaves = () => {
                       isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
                     }`}
                     onPress={() => {
-                      setTempTime(leaveToTime);
                       setCurrentPicker('toTime');
                     }}
                   >
-                    <Text className={`text-base ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                    <Text className={`text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                       {leaveToTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                     <Ionicons
@@ -504,36 +564,36 @@ const SubmitLeaves = () => {
                   </Pressable>
                 </View>
               </View>
+            </View>
 
-              {/* Submit Button */}
-              <View className="mt-44">
-                <Pressable
-                  onPress={handleSubmit}
-                  className={`bg-orange-500/90 py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
-                    isSubmitting ? 'opacity-50' : 'opacity-100'
-                  }`}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting && (
-                    <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
-                  )}
-                  <Text className="text-white text-center text-lg font-medium">
-                    {isSubmitting ? 'Submitting...' : 'Request Leave'}
-                  </Text>
-                </Pressable>
-                {errorSubmitting && (
-                  <Text className="text-center text-red-500 mt-2 text-sm">
-                    {errorSubmitting}
-                  </Text>
+            {/* Submit Button */}
+            <View className="mt-4 mb-4">
+              <Pressable
+                onPress={handleSubmit}
+                className={`bg-orange-500 py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
+                  isSubmitting ? 'opacity-50' : 'opacity-100'
+                }`}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
                 )}
-              </View>
+                <Text className="text-white text-center text-lg font-medium">
+                  {isSubmitting ? 'Submitting...' : 'Request Leave'}
+                </Text>
+              </Pressable>
+              {errorSubmitting && (
+                <Text className="text-center text-red-500 mt-2 text-sm">
+                  {errorSubmitting}
+                </Text>
+              )}
             </View>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      {/* Render the date/time picker modal */}
-      {renderPickerModal()}
+      {/* Render the date/time picker */}
+      {renderPicker()}
     </SafeAreaView>
   );
 };
