@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // Only allow admins or superAdmins to manage companies
-router.use(authorizeRoles('admin', 'superAdmin'));
+router.use(authorizeRoles('superAdmin'));
 
 // GET /api/companies - Fetch all companies
 router.get('/', getAllCompanies);

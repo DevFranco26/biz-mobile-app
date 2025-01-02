@@ -11,12 +11,24 @@ const UserShiftAssignment = require('./UserShiftAssignment.js');
 const PayrollRecords = require('./PayrollRecords.js');
 const PayRates = require('./PayRates.js');
 const PayrollSettings = require('./PayrollSettings.js');
+const Department = require('./Department.js');
+const SubscriptionPlan = require('./SubscriptionPlan.js');
+const Subscription = require('./Subscription.js');
+
 
 // Define Associations
 
 // User <-> Company
 User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 Company.hasMany(User, { foreignKey: 'companyId', as: 'users' });
+
+// User <-> Department
+User.belongsTo(Department, { foreignKey: 'departmentId', as: 'Department' });
+Department.hasMany(User, { foreignKey: 'departmentId', as: 'Users' });
+
+// Department <-> Supervisor (User)
+Department.belongsTo(User, { as: 'Supervisor', foreignKey: 'supervisorId' });
+User.hasMany(Department, { foreignKey: 'supervisorId', as: 'SupervisedDepartments' });
 
 // User <-> Location
 User.hasMany(Location, { foreignKey: 'adminId', as: 'locations' });
@@ -73,6 +85,14 @@ PayrollRecords.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Company.hasMany(PayrollRecords, { foreignKey: 'companyId', as: 'companyPayrollRecords' });
 PayrollRecords.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 
+// Company <-> Subscription
+Company.hasOne(Subscription, { foreignKey: 'companyId', as: 'subscription' });
+Subscription.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
+// SubscriptionPlan <-> Subscription
+SubscriptionPlan.hasMany(Subscription, { foreignKey: 'planId', as: 'subscriptions' });
+Subscription.belongsTo(SubscriptionPlan, { foreignKey: 'planId', as: 'plan' });
+
 module.exports = {
   User,
   Company,
@@ -85,4 +105,7 @@ module.exports = {
   PayrollRecords,
   PayrollSettings,
   PayRates,
+  Department,
+  SubscriptionPlan,
+  Subscription
 };
