@@ -35,8 +35,8 @@ const ShiftsTabsLayout = () => {
           left: 0,
           right: 0,
           height: 60,
-          elevation: 0, // Remove shadow on Android
-          shadowOpacity: 0, // Remove shadow on iOS
+          elevation: 0, 
+          shadowOpacity: 0,
         },
         tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316',
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
@@ -53,7 +53,7 @@ const ShiftsTabsLayout = () => {
           flexDirection: 'column',
         },
         headerShown: false,
-        tabBarLabelPosition: 'below-icon', // Ensures labels are below icons
+        tabBarLabelPosition: 'below-icon', 
       }}
     >
       {/* Punch Screen */}

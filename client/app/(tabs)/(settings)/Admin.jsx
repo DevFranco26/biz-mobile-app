@@ -14,7 +14,7 @@ const Admin = () => {
 
   // Determine colors based on theme
   const headerBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
-  const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-white';
+  const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-slate-300';
   const cardBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
   const accentColor = isLightTheme ? '#c2410c' : '#f97316';
 
@@ -191,29 +191,6 @@ const Admin = () => {
               </Text>
             </View>
           </Pressable>
-
-          {/* Manage Payroll */}
-          {/* <Pressable
-            onPress={() => navigateToFeature('./ManagePayroll')}
-            className={`p-4 rounded-xl flex-row items-center shadow-sm my-2 ${cardBg}`}
-            accessibilityLabel="Manage Payroll"
-            accessibilityHint="Navigate to Manage Payroll screen"
-          >
-            <Ionicons
-              name="cash-outline"
-              size={28}
-              color={accentColor}
-              style={{ marginRight: 12 }}
-            />
-            <View>
-              <Text className={`text-lg font-semibold ${headerTextColor}`}>
-                Manage Payroll
-              </Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
-                Configure rates and generate salary reports.
-              </Text>
-            </View>
-          </Pressable> */}
 
           {/* Manage Subscription */}
           <Pressable

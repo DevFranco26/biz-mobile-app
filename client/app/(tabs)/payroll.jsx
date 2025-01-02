@@ -311,14 +311,6 @@ const Payroll = () => {
       // Open Print Preview
       await Print.printAsync({ uri });
       
-      // Optionally, you can share the PDF after preview
-      /*
-      await Sharing.shareAsync(uri, {
-        mimeType: 'application/pdf',
-        dialogTitle: `Payroll Record #${record.id}`,
-        UTI: 'com.adobe.pdf',
-      });
-      */
     } catch (error) {
       console.error('Error generating PDF:', error);
       Alert.alert('Error', 'Failed to generate PDF.');
@@ -334,13 +326,38 @@ const Payroll = () => {
       style={{ width: '100%' }}
     >
       <View className="mb-2">
-        <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+        <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           {format(new Date(item.startDate), 'MMMM d, yyyy')} - {format(new Date(item.endDate), 'MMMM d, yyyy')}
         </Text>
       </View>
       <View className="mb-1">
         <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
           <Text className="font-semibold">Pay Type:</Text> {item.payType}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Hours worked:</Text> {item.hoursWorked}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Overtime Hours:</Text> ${item.overtimeHours}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Overtime Pay:</Text> ${item.overtimePay}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Gross Pay:</Text> ${item.grossPay}
+        </Text>
+      </View>
+      <View className="mb-1">
+        <Text className={`text-md ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-semibold">Deductions:</Text> ${item.deductions}
         </Text>
       </View>
       <View className="mb-3">
@@ -350,7 +367,7 @@ const Payroll = () => {
       </View>
       <View className="flex-row justify-center">
         <Pressable 
-          className="bg-blue-600 px-4 py-2 rounded"
+          className="bg-orange-500 px-4 py-2 rounded"
           onPress={() => handleDownloadPDF(item)}
         >
           <Text className="text-white text-center font-semibold">Download PDF</Text>
@@ -380,7 +397,7 @@ const Payroll = () => {
     if (type === 'filter') {
       setFilterValue('all');
     } else if (type === 'sort') {
-      setSortValue('date_desc'); // Reset to default sort
+      setSortValue('date_desc'); 
     }
   };
 
@@ -391,7 +408,7 @@ const Payroll = () => {
     >
       {/* Header */}
       <View className="flex-row justify-center items-center px-4 py-4">
-        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           My Payroll
         </Text>
       </View>
@@ -402,7 +419,7 @@ const Payroll = () => {
           {filterValue !== 'all' && (
             <View className={`
               flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-slate-200' : 'bg-slate-700'}
+              ${isLightTheme ? 'bg-slate-200' : 'bg-slate-800'}
             `}>
               <Text className={`
                 text-sm mr-1
@@ -481,7 +498,7 @@ const Payroll = () => {
         onRequestClose={() => setIsSortModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsSortModalVisible(false)}>
-          <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="flex-1 justify-center items-center bg-slate-900">
             <TouchableWithoutFeedback>
               <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
                 <View className="flex-row justify-between items-center mb-4">
@@ -522,8 +539,8 @@ const Payroll = () => {
                 {/* Confirm Button */}
                 <Pressable
                   onPress={() => setIsSortModalVisible(false)}
-                  className={`mt-4 p-2 rounded-lg ${
-                    isLightTheme ? 'bg-blue-600' : 'bg-blue-700'
+                  className={`mt-4 p-3 rounded-lg ${
+                    isLightTheme ? 'bg-orange-500' : 'bg-orange-500'
                   }`}
                 >
                   <Text className="text-white text-center font-semibold">
@@ -544,7 +561,7 @@ const Payroll = () => {
         onRequestClose={() => setIsFilterModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsFilterModalVisible(false)}>
-          <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="flex-1 justify-center items-center bg-slate-900">
             <TouchableWithoutFeedback>
               <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
                 <View className="flex-row justify-between items-center mb-4">
@@ -586,7 +603,7 @@ const Payroll = () => {
                 <Pressable
                   onPress={() => setIsFilterModalVisible(false)}
                   className={`mt-4 p-2 rounded-lg ${
-                    isLightTheme ? 'bg-blue-600' : 'bg-blue-700'
+                    isLightTheme ? 'bg-orange-500' : 'bg-orange-500'
                   }`}
                 >
                   <Text className="text-white text-center font-semibold">
@@ -598,62 +615,6 @@ const Payroll = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Custom Date Range Selection (Removed as per request) */}
-      {/* {filterValue === 'custom' && (
-        <View className="px-4 mb-4">
-          <Text className={`text-lg font-semibold mb-2 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-            Select Date Range
-          </Text>
-          <View className="flex-row justify-between">
-            {/* Start Date Picker */}
-            {/* <TouchableOpacity
-              onPress={() => setShowStartPicker(true)}
-              className={`flex-1 p-4 rounded-lg mb-3 mr-2 ${
-                isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
-              }`}
-            >
-              <Text className={`${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
-                Start Date: {format(customStartDate, 'MMMM d, yyyy')}
-              </Text>
-            </TouchableOpacity>
-
-            {/* End Date Picker */}
-            {/* <TouchableOpacity
-              onPress={() => setShowEndPicker(true)}
-              className={`flex-1 p-4 rounded-lg mb-3 ml-2 ${
-                isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
-              }`}
-            >
-              <Text className={`${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
-                End Date: {format(customEndDate, 'MMMM d, yyyy')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )} */}
-
-      {/* DateTimePickers (Removed as per request) */}
-      {/* {showStartPicker && (
-        <DateTimePicker
-          value={customStartDate}
-          mode="date"
-          display="default"
-          onChange={onStartDateChange}
-          maximumDate={customEndDate} // Prevent selecting a start date after end date
-          textColor={isLightTheme ? '#000' : '#FFF'}
-        />
-      )}
-      {showEndPicker && (
-        <DateTimePicker
-          value={customEndDate}
-          mode="date"
-          display="default"
-          onChange={onEndDateChange}
-          minimumDate={customStartDate} // Prevent selecting an end date before start date
-          textColor={isLightTheme ? '#000' : '#FFF'}
-        />
-      )} */}
 
       {/* Payroll Records List */}
       <FlatList
