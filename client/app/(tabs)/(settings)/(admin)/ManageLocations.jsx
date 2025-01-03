@@ -375,7 +375,7 @@ const ManageLocations = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-center items-center bg-slate-950/80">
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"
@@ -401,8 +401,8 @@ const ManageLocations = () => {
                   {/* Label */}
                   <Text 
                     // updated style to be more visible/bold
-                    className={`text-base font-semibold ${
-                      isLightTheme ? 'text-blue-800' : 'text-blue-300'
+                    className={`text-base  ${
+                      isLightTheme ? 'text-slate-700' : 'text-blue-300'
                     } mb-1`}
                   >
                     Label
@@ -540,7 +540,7 @@ const ManageLocations = () => {
                       onPress={handleSaveLocation}
                       className="bg-orange-500/90 p-3 rounded-lg"
                     >
-                      <Text className="text-slate-300 font-semibold">Confirm</Text>
+                      <Text className="text-white font-semibold">Confirm</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

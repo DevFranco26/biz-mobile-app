@@ -34,7 +34,7 @@ router.get('/all', authorizeRoles('admin', 'superAdmin'), getAllDepartments);
  * @desc    Get Department by ID
  * @access  Admin, SuperAdmin
  */
-router.get('/:id', authorizeRoles('admin', 'superAdmin'), getDepartmentById);
+router.get('/:id', authorizeRoles('superAdmin', 'admin', 'supervisor', 'user'), getDepartmentById);
 
 /**
  * @route   PUT /api/departments/update/:id

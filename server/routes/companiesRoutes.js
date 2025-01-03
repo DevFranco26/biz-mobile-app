@@ -1,7 +1,13 @@
 // File: server/routes/companiesRoutes.js
 
 const express = require('express');
-const { getAllCompanies, createCompany, updateCompany, deleteCompany } = require('../controllers/companiesController.js');
+const {
+  getAllCompanies,
+  getCompanyById,   // <--- Import the new function
+  createCompany,
+  updateCompany,
+  deleteCompany,
+} = require('../controllers/companiesController.js');
 const authenticate = require('../middlewares/authMiddleware.js');
 const { authorizeRoles } = require('../middlewares/roleMiddleware.js');
 
@@ -10,19 +16,59 @@ const router = express.Router();
 // Apply authentication middleware to all company routes
 router.use(authenticate);
 
-// Only allow admins or superAdmins to manage companies
-router.use(authorizeRoles('superAdmin'));
+/**
+ * @route   GET /api/companies/all
+ * @desc    Get all Companies
+ * @access  superAdmin
+ */
+router.get(
+  '/all',
+  authorizeRoles('superAdmin'),
+  getAllCompanies
+);
 
-// GET /api/companies - Fetch all companies
-router.get('/', getAllCompanies);
+/**
+ * @route   GET /api/companies/:id
+ * @desc    Get Company by ID
+ * @access  superAdmin
+ */
+router.get(
+  '/:id',
+  authorizeRoles('superAdmin', 'admin', 'supervisor', 'user'),
+  getCompanyById
+);
 
-// POST /api/companies - Create a new company
-router.post('/', createCompany);
+/**
+ * @route   POST /api/companies/create
+ * @desc    Create a new Company
+ * @access  superAdmin
+ */
+router.post(
+  '/create',
+  authorizeRoles('superAdmin'),
+  createCompany
+);
 
-// PUT /api/companies/:id - Update a company
-router.put('/:id', updateCompany);
+/**
+ * @route   PUT /api/companies/update/:id
+ * @desc    Update a Company by ID
+ * @access  superAdmin
+ */
+router.put(
+  '/update/:id',
+  authorizeRoles('superAdmin'),
+  updateCompany
+);
 
-// DELETE /api/companies/:id - Delete a company
-router.delete('/:id', deleteCompany);
+/**
+ * @route   DELETE /api/companies/delete/:id
+ * @desc    Delete a Company by ID
+ * @access  superAdmin
+ */
+router.delete(
+  '/delete/:id',
+  authorizeRoles('superAdmin'),
+  deleteCompany
+);
 
 module.exports = router;

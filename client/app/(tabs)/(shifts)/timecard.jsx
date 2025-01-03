@@ -344,7 +344,7 @@ const TimeCard = () => {
                   >
                     <Text
                       className={`${
-                        isLightTheme ? 'text-black' : 'text-slate-300'
+                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
                       }`}
                     >
                       Cancel
@@ -434,7 +434,7 @@ const TimeCard = () => {
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         <Text
           className={`text-base mb-2 ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            isLightTheme ? 'text-slate-700' : 'text-slate-300'
           }`}
         >
           Select Range:
@@ -464,10 +464,10 @@ const TimeCard = () => {
               color: isLightTheme ? '#6B7280' : '#9CA3AF',
             }}
             arrowIconStyle={{
-              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
             }}
             tickIconStyle={{
-              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
             }}
             zIndex={3000}
             zIndexInverse={1000}
@@ -484,7 +484,7 @@ const TimeCard = () => {
             >
               <Text
                 className={`${
-                  isLightTheme ? 'text-slate-800' : 'text-slate-400'
+                  isLightTheme ? 'text-slate-700' : 'text-slate-400'
                 }`}
               >
                 Start Date: {format(customStartDate, 'MMMM d, yyyy')}
@@ -499,7 +499,7 @@ const TimeCard = () => {
             >
               <Text
                 className={`${
-                  isLightTheme ? 'text-slate-800' : 'text-slate-400'
+                  isLightTheme ? 'text-slate-700' : 'text-slate-400'
                 }`}
               >
                 End Date: {format(customEndDate, 'MMMM d, yyyy')}
@@ -512,7 +512,7 @@ const TimeCard = () => {
           <View className="flex-row items-center my-2 ">
             <Text
               className={`text-base font-medium ${
-                isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
               {getDateRange()}
@@ -527,7 +527,7 @@ const TimeCard = () => {
                 <FontAwesome5
                   name="arrow-left"
                   size={20}
-                  color={isLightTheme ? '#1e293b' : '#cbd5e1'}
+                  color={isLightTheme ? '#334155' : '#cbd5e1'}
                 />
               </Pressable>
 
@@ -540,7 +540,7 @@ const TimeCard = () => {
                 <FontAwesome5
                   name="arrow-right"
                   size={20}
-                  color={isLightTheme ? '#1e293b' : '#cbd5e1'}
+                  color={isLightTheme ? '#334155' : '#cbd5e1'}
                 />
               </Pressable>
             </View>
@@ -551,7 +551,7 @@ const TimeCard = () => {
           <View className="mb-4">
             <Text
               className={`text-base font-medium ${
-                isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
               {getDateRange()}
@@ -566,14 +566,14 @@ const TimeCard = () => {
         >
           <Text
             className={`text-lg font-semibold ${
-              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+              isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
             Total Hours
           </Text>
           <Text
             className={`text-xl font-bold ${
-              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+              isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
             {formatTotalDuration(totalDurationMs)}
@@ -606,13 +606,13 @@ const TimeCard = () => {
             return (
               <View
                 key={index}
-                className={`p-4 rounded-lg shadow-md mb-4 ${
+                className={`p-4 rounded-lg mb-4 ${
                   isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
                 }`}
               >
                 <Text
                   className={`text-xl font-semibold ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                    isLightTheme ? 'text-slate-700' : 'text-slate-300'
                   }`}
                 >
                   {localDateFormatted}

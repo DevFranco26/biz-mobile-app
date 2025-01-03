@@ -579,19 +579,19 @@ const ManageUsers = () => {
   onRequestClose={() => setEditUserModalVisible(false)}
 >
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-    <View className="flex-1 justify-center items-center bg-slate-900">
+    <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="w-11/12"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
       >
         <View
-          className={`p-6 rounded-2xl w-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
+          className={`p-6 rounded-2xl w-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'} `}
         >
           {/* Modal Title */}
           <Text
             className={`text-xl font-bold mb-4 ${
-              isLightTheme ? 'text-slate-900' : 'text-slate-300'
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
             }`}
           >
             {selectedUser ? 'Edit User' : 'Add User'}
@@ -608,7 +608,7 @@ const ManageUsers = () => {
           <View
             className={`border rounded-lg mb-4 ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100'
+                ? 'border-slate-100 bg-slate-100'
                 : 'border-slate-800 bg-slate-800'
             }`}
           >
@@ -624,23 +624,23 @@ const ManageUsers = () => {
                 color: isLightTheme ? '#374151' : '#E5E7EB',
               }}
               style={{
-                borderWidth: 0, // We already have a container with a border
+                borderWidth: 0, 
                 backgroundColor: isLightTheme ? '#F1F5F9' : '#1E293B',
                 paddingVertical: 12,
                 paddingHorizontal: 10,
               }}
               dropDownContainerStyle={{
-                borderColor: isLightTheme ? '#D1D5DB' : '#1E293B',
+                borderColor: isLightTheme ? '#F1F5F9' : '#1E293B',
                 backgroundColor: isLightTheme ? '#F1F5F9' : '#1E293B',
               }}
               placeholderStyle={{
                 color: isLightTheme ? '#6B7280' : '#9CA3AF',
               }}
               arrowIconStyle={{
-                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
               }}
               tickIconStyle={{
-                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
               }}
               zIndex={9999}
               zIndexInverse={1000}
@@ -675,7 +675,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-4 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editEmail}
@@ -699,7 +699,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-4 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editPassword}
@@ -722,7 +722,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-4 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editFirstName}
@@ -742,7 +742,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-4 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editMiddleName}
@@ -762,7 +762,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-4 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editLastName}
@@ -782,7 +782,7 @@ const ManageUsers = () => {
           <TextInput
             className={`w-full p-3 mb-6 rounded-lg border ${
               isLightTheme
-                ? 'border-slate-300 bg-slate-100 text-slate-800'
+                ? 'border-slate-100 bg-slate-100 text-slate-800'
                 : 'border-slate-800 bg-slate-800 text-slate-300'
             }`}
             value={editPhone}
@@ -826,7 +826,7 @@ const ManageUsers = () => {
   transparent={true}
   onRequestClose={() => setUserSettingsModalVisible(false)}
 >
-  <View className="flex-1 justify-center items-center bg-slate-900">
+  <View className={`flex-1 justify-center items-center bg-slate-900 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
     <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
         User Location Restriction
@@ -852,7 +852,7 @@ const ManageUsers = () => {
               <Text className={`text-base mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
                 Select a Location <Text className="text-red-500">*</Text>
               </Text>
-              <View className={`border rounded-lg mb-4 z-40 ${isLightTheme ? 'border-slate-300 bg-slate-100' : 'border-slate-800 bg-slate-800'}`}>
+              <View className={`border rounded-lg mb-4 z-40 ${isLightTheme ? 'border-slate-100 bg-slate-100' : 'border-slate-800 bg-slate-800'}`}>
                 <DropDownPicker
                   open={locationOpen}
                   value={selectedLocationId}
@@ -862,10 +862,10 @@ const ManageUsers = () => {
                   setItems={setLocationItems}
                   placeholder="Select Location"
                   arrowIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
                   }}
                   tickIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
                   }}
                   /* Text color for the items in the picker */
                   textStyle={{
@@ -876,7 +876,7 @@ const ManageUsers = () => {
                   /* Main style for the dropdown button */
                   style={{
                     borderWidth: 1,
-                    borderColor: isLightTheme ? '#D1D5DB' : '#1e293b',
+                    borderColor: isLightTheme ? '#F1F5F9' : '#1e293b',
                     backgroundColor: isLightTheme ? '#F1F5F9' : '#1e293b', 
                     paddingVertical: 12,
                     paddingHorizontal: 12,
@@ -886,7 +886,7 @@ const ManageUsers = () => {
                   /* Style for the container that appears when the dropdown is expanded */
                   dropDownContainerStyle={{
                     borderWidth: 1,
-                    borderColor: isLightTheme ? '#D1D5DB' : '#1e293b',
+                    borderColor: isLightTheme ? '#F1F5F9' : '#1e293b',
                     backgroundColor: isLightTheme ? '#F1F5F9' : '#1e293b',
                     borderRadius: 8,
                   }}

@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/_layout.jsx
+// File: client/app/(tabs)/(settings)/_layout.jsx
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';

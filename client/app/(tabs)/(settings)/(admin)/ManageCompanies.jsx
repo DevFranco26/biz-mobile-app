@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/(admin)/ManageDepartments.jsx
+// File: app/(tabs)/(settings)/(admin)/ManageCompanies.jsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -18,7 +18,7 @@ import {
   RefreshControl
 } from 'react-native';
 import useThemeStore from '../../../../store/themeStore';
-import useDepartmentStore from '../../../../store/departmentStore';
+import useCompanyStore from '../../../../store/companyStore';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,19 +26,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_BASE_URL = 'http://192.168.100.8:5000/api';
 
-const ManageDepartments = () => {
+const ManageCompanies = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
 
-  const { departments, loading, error, fetchDepartments } = useDepartmentStore();
+  const { companies, loading, error, fetchCompanies, deleteCompany } = useCompanyStore();
 
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
-  // Fields for add/edit department modal
-  const [deptName, setDeptName] = useState('');
+  // Fields for add/edit company modal
+  const [companyName, setCompanyName] = useState('');
+  const [companyDomain, setCompanyDomain] = useState('');
 
-  const [editDeptModalVisible, setEditDeptModalVisible] = useState(false);
+  const [editCompanyModalVisible, setEditCompanyModalVisible] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const [token, setToken] = useState(null);
@@ -52,7 +53,7 @@ const ManageDepartments = () => {
         return;
       }
       setToken(storedToken);
-      await fetchDepartments(storedToken);
+      await fetchCompanies(storedToken);
     };
     initialize();
   }, []);
@@ -60,23 +61,25 @@ const ManageDepartments = () => {
   const onRefresh = async () => {
     if (!token) return;
     setRefreshing(true);
-    await fetchDepartments(token);
+    await fetchCompanies(token);
     setRefreshing(false);
   };
 
-  const handleAddDepartment = () => {
-    setSelectedDepartment(null);
-    setDeptName('');
-    setEditDeptModalVisible(true);
+  const handleAddCompany = () => {
+    setSelectedCompany(null);
+    setCompanyName('');
+    setCompanyDomain('');
+    setEditCompanyModalVisible(true);
   };
 
-  const handleEditDepartment = (dept) => {
-    setSelectedDepartment(dept);
-    setDeptName(dept.name);
-    setEditDeptModalVisible(true);
+  const handleEditCompany = (company) => {
+    setSelectedCompany(company);
+    setCompanyName(company.name);
+    setCompanyDomain(company.domain);
+    setEditCompanyModalVisible(true);
   };
 
-  const handleDeleteDepartment = async (departmentId) => {
+  const handleDeleteCompany = async (companyId) => {
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
       router.replace('(auth)/signin');
@@ -84,67 +87,52 @@ const ManageDepartments = () => {
     }
     Alert.alert(
       'Confirm Deletion',
-      'Are you sure you want to delete this department?',
+      'Are you sure you want to delete this company?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            try {
-              const url = `${API_BASE_URL}/departments/delete/${departmentId}`;
-              const res = await fetch(url, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const data = await res.json();
-              if (res.ok) {
-                Alert.alert('Success', data.message || 'Department deleted successfully.');
-                await fetchDepartments(token);
-              } else {
-                Alert.alert('Error', data.message || 'Failed to delete department.');
-              }
-            } catch (err) {
-              console.error('Error deleting department:', err);
-              Alert.alert('Error', 'An unexpected error occurred.');
-            }
-          },
+            await deleteCompany(companyId, token);
+            await fetchCompanies(token);
+          }
         },
       ]
     );
   };
 
-  const handleDepartmentAction = (dept) => {
+  const handleCompanyAction = (company) => {
     Alert.alert(
-      'Department Actions',
-      `Choose an action for "${dept.name}".`,
+      'Company Actions',
+      `Choose an action for "${company.name}".`,
       [
-        { text: 'Edit', onPress: () => handleEditDepartment(dept) },
+        { text: 'Edit', onPress: () => handleEditCompany(company) },
         {
           text: 'Delete',
-          onPress: () => handleDeleteDepartment(dept.id),
+          onPress: () => handleDeleteCompany(company.id),
         },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
 
-  const handleSaveDepartmentEdits = async () => {
+  const handleSaveCompanyEdits = async () => {
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
       router.replace('(auth)/signin');
       return;
     }
-    if (!deptName) {
-      Alert.alert('Validation Error', 'Department name is required.');
+    if (!companyName || !companyDomain) {
+      Alert.alert('Validation Error', 'Name and Domain are required fields.');
       return;
     }
 
     try {
       let res, data;
-      if (selectedDepartment) {
-        // Update existing department
-        const url = `${API_BASE_URL}/departments/update/${selectedDepartment.id}`;
+      if (selectedCompany) {
+        // Update existing company
+        const url = `${API_BASE_URL}/companies/update/${selectedCompany.id}`;
         res = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -152,13 +140,14 @@ const ManageDepartments = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            name: deptName,
+            name: companyName,
+            domain: companyDomain,
           }),
         });
         data = await res.json();
       } else {
-        // Create a new department
-        const url = `${API_BASE_URL}/departments/create`;
+        // Create a new company
+        const url = `${API_BASE_URL}/companies/create`;
         res = await fetch(url, {
           method: 'POST',
           headers: {
@@ -166,21 +155,22 @@ const ManageDepartments = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            name: deptName,
+            name: companyName,
+            domain: companyDomain,
           }),
         });
         data = await res.json();
       }
 
       if (res.ok) {
-        Alert.alert('Success', selectedDepartment ? 'Department updated successfully.' : 'Department created successfully.');
-        setEditDeptModalVisible(false);
-        await fetchDepartments(token);
+        Alert.alert('Success', selectedCompany ? 'Company updated successfully.' : 'Company created successfully.');
+        setEditCompanyModalVisible(false);
+        await fetchCompanies(token);
       } else {
-        Alert.alert('Error', data.message || 'Failed to save department.');
+        Alert.alert('Error', data.message || 'Failed to save company.');
       }
     } catch (err) {
-      console.error('Error saving department:', err);
+      console.error('Error saving company:', err);
       Alert.alert('Error', 'An unexpected error occurred.');
     }
   };
@@ -200,9 +190,16 @@ const ManageDepartments = () => {
           >
             {item.name}
           </Text>
+          <Text
+            className={`mt-1 text-base ${
+              isLightTheme ? 'text-slate-600' : 'text-slate-300'
+            }`}
+          >
+            Domain: {item.domain}
+          </Text>
         </View>
 
-        <Pressable onPress={() => handleDepartmentAction(item)} className="p-2">
+        <Pressable onPress={() => handleCompanyAction(item)} className="p-2">
           <Ionicons
             name="ellipsis-vertical"
             size={24}
@@ -232,7 +229,7 @@ const ManageDepartments = () => {
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
-          Manage Departments
+          Manage Companies
         </Text>
       </View>
 
@@ -243,10 +240,10 @@ const ManageDepartments = () => {
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
-          Departments
+          Companies
         </Text>
         <Pressable
-          onPress={handleAddDepartment}
+          onPress={handleAddCompany}
           className={`p-2 rounded-full ${
             isLightTheme ? 'bg-white' : 'bg-slate-900'
           }`}
@@ -263,7 +260,7 @@ const ManageDepartments = () => {
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
         <FlatList
-          data={departments}
+          data={companies}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
@@ -281,18 +278,18 @@ const ManageDepartments = () => {
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
-              No departments found.
+              No companies found.
             </Text>
           }
         />
       )}
 
-      {/* Add/Edit Department Modal */}
+      {/* Add/Edit Company Modal */}
       <Modal
-        visible={editDeptModalVisible}
+        visible={editCompanyModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setEditDeptModalVisible(false)}
+        onRequestClose={() => setEditCompanyModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white'  : 'bg-slate-900'}`}>
@@ -311,16 +308,36 @@ const ManageDepartments = () => {
                     isLightTheme ? 'text-slate-900' : 'text-slate-300'
                   }`}
                 >
-                  {selectedDepartment ? 'Edit Department' : 'Add Department'}
+                  {selectedCompany ? 'Edit Company' : 'Add Company'}
                 </Text>
 
-                {/* Department Name */}
+                {/* Company Name */}
                 <Text
                   className={`text-sm font-medium mb-1 ${
                     isLightTheme ? 'text-slate-800' : 'text-slate-300'
                   }`}
                 >
-                  Department Name <Text className="text-red-500">*</Text>
+                  Company Name <Text className="text-red-500">*</Text>
+                </Text>
+                <TextInput
+                  className={`w-full p-3 mb-4 rounded-lg border ${
+                    isLightTheme
+                      ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
+                  }`}
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  placeholder="e.g., ACME Inc."
+                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
+                />
+
+                {/* Company Domain */}
+                <Text
+                  className={`text-sm font-medium mb-1 ${
+                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                  }`}
+                >
+                  Domain <Text className="text-red-500">*</Text>
                 </Text>
                 <TextInput
                   className={`w-full p-3 mb-6 rounded-lg border ${
@@ -328,16 +345,17 @@ const ManageDepartments = () => {
                       ? 'border-slate-100 bg-slate-100 text-slate-800'
                       : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
-                  value={deptName}
-                  onChangeText={setDeptName}
-                  placeholder="e.g., Sales"
+                  value={companyDomain}
+                  onChangeText={setCompanyDomain}
+                  placeholder="e.g., acme.com"
                   placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
+                  autoCapitalize="none"
                 />
 
                 {/* Action Buttons */}
                 <View className="flex-row justify-end">
                   <TouchableOpacity
-                    onPress={() => setEditDeptModalVisible(false)}
+                    onPress={() => setEditCompanyModalVisible(false)}
                     className="mr-4"
                   >
                     <Text
@@ -349,7 +367,7 @@ const ManageDepartments = () => {
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={handleSaveDepartmentEdits}
+                    onPress={handleSaveCompanyEdits}
                     className="bg-orange-500 py-3 px-6 rounded-lg"
                   >
                     <Text className="text-white text-base font-semibold">
@@ -366,4 +384,4 @@ const ManageDepartments = () => {
   );
 };
 
-export default ManageDepartments;
+export default ManageCompanies;

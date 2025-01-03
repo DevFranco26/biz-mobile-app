@@ -15,7 +15,7 @@ const signIn = async (req, res) => {
     // Find user by email
     const user = await User.findOne({
       where: { email },
-      attributes: ['id', 'email', 'role', 'companyId', 'firstName', 'lastName', 'middleName', 'phone', 'password', 'lastActiveAt', 'presenceStatus']
+      attributes: ['id', 'email', 'role', 'companyId', 'departmentId', 'firstName', 'lastName', 'middleName', 'phone', 'password', 'lastActiveAt', 'presenceStatus']
     });
 
     if (!user) {
@@ -41,7 +41,7 @@ const signIn = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, role: user.role, companyId: user.companyId },
+      { userId: user.id, role: user.role, companyId: user.companyId, departmentId: user.departmentId },
       process.env.JWT_SECRET,
       { expiresIn: '10y' }
     );
@@ -54,6 +54,7 @@ const signIn = async (req, res) => {
         email: user.email,
         role: user.role,
         companyId: user.companyId,
+        departmentId: user.departmentId,
         firstName: user.firstName,
         lastName: user.lastName,
         middleName: user.middleName,
@@ -97,6 +98,7 @@ const getCurrentUser = async (req, res) => {
         email: user.email,
         role: user.role,
         companyId: user.companyId,
+        departmentId: user.departmentId,
         firstName: user.firstName,
         lastName: user.lastName,
         middleName: user.middleName,

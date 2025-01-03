@@ -38,7 +38,7 @@ const COLORS = {
     background: '#FFFFFF', 
     backgroundSecondary: '#F1F5F9', 
     text: '#374151', 
-    modalBackground: '#FFFFFF', 
+    modalBackground: '#f8fafc', 
     inputBackground: '#F1F5F9', 
     borderColor: '#E5E7EB', 
     placeholder: '#6B7280', 

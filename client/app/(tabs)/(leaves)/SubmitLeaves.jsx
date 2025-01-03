@@ -113,8 +113,8 @@ const SubmitLeaves = () => {
   useEffect(() => {
     if (approvers.length > 0) {
       const formattedApprovers = approvers.map((approver) => ({
-        label: approver.name || `${approver.firstName} ${approver.lastName}`, // Adjust based on backend response
-        value: String(approver.id), // Convert to string to prevent type mismatch
+        label: approver.name || `${approver.firstName} ${approver.lastName}`, 
+        value: String(approver.id), 
       }));
       setApproverItems(formattedApprovers);
     } else {
@@ -406,10 +406,10 @@ const SubmitLeaves = () => {
                     backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
                   }}
                   arrowIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
                   }}
                   tickIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
                   }}
                   zIndex={3000}
                   zIndexInverse={1000}

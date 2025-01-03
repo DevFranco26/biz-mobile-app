@@ -1,4 +1,4 @@
-// File: app/Profile.jsx
+// File: client/app/(tabs)/Profile.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -21,7 +21,9 @@ import useThemeStore from '../../store/themeStore';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import useUserStore from '../../store/userStore';
-import { Ionicons } from '@expo/vector-icons';
+import useCompanyStore from '../../store/companyStore';
+import useDepartmentStore from '../../store/departmentStore';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 import 'nativewind';
 
 const API_BASE_URL = 'http://192.168.100.8:5000/api';
@@ -31,6 +33,9 @@ const Profile = () => {
   const { user, clearUser, setUser } = useUserStore();
   const router = useRouter();
   const isLightTheme = theme === 'light';
+
+  // We'll define an orange accent color to match Settings.jsx
+  const accentColor = isLightTheme ? '#c2410c' : '#f97316';
 
   const [presenceStatus, setPresenceStatus] = useState(user.presenceStatus || 'offline');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -42,6 +47,7 @@ const Profile = () => {
   const [editLastName, setEditLastName] = useState(user.lastName || '');
   const [editPhone, setEditPhone] = useState(user.phone || '');
 
+  // For the presence icon dropdown
   const iconRef = useRef(null);
   const [iconLayout, setIconLayout] = useState({ x: 0, y: 0 });
 
@@ -56,6 +62,26 @@ const Profile = () => {
     away: 'time',
     offline: 'close-circle',
   }[presenceStatus];
+
+  // Bring in company & department store logic
+  const { fetchCompanyById, getCompanyName } = useCompanyStore();
+  const { fetchDepartmentById, getDepartmentName } = useDepartmentStore();
+
+  // Called once to fetch single company and dept if present
+  useEffect(() => {
+    const initFetch = async () => {
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) return;
+
+      if (user.companyId) {
+        await fetchCompanyById(token, user.companyId);
+      }
+      if (user.departmentId) {
+        await fetchDepartmentById(token, user.departmentId);
+      }
+    };
+    initFetch();
+  }, [user.companyId, user.departmentId, fetchCompanyById, fetchDepartmentById]);
 
   const getInitials = (name) => {
     const nameArray = name.trim().split(' ');
@@ -128,7 +154,6 @@ const Profile = () => {
         setPresenceStatus(data.data.presenceStatus);
       } else {
         Alert.alert('Error', data.message || 'Failed to update presence status.');
-        // Revert if fail
         setPresenceStatus(user.presenceStatus || 'offline');
       }
     } catch (error) {
@@ -146,14 +171,12 @@ const Profile = () => {
   const measureIconPosition = () => {
     if (iconRef.current) {
       iconRef.current.measureInWindow((x, y, width, height) => {
-        // SHIFT the dropdown below the icon
         setIconLayout({ x, y: y + height + 6 });
       });
     }
   };
 
   useEffect(() => {
-    // Remeasure whenever dropdown changes or status changes
     setTimeout(() => {
       measureIconPosition();
     }, 300);
@@ -184,7 +207,7 @@ const Profile = () => {
         } catch (err) {
           console.error('Error fetching user data periodically:', err);
         }
-      }, 60000); // every 60 seconds
+      }, 60000);
     };
     startInterval();
 
@@ -267,7 +290,7 @@ const Profile = () => {
             </View>
           )}
 
-          {/* Presence Icon at the top-right of avatar */}
+          {/* Presence Icon Top Right */}
           <View className="absolute top-2.5 right-2.5">
             <Pressable
               ref={iconRef}
@@ -303,7 +326,7 @@ const Profile = () => {
           </View>
         </View>
 
-        {/* Contact Information */}
+        {/* Contact Information Card */}
         <View
           className={`rounded-lg p-6 mb-6 ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
@@ -317,29 +340,12 @@ const Profile = () => {
             Contact Information
           </Text>
 
-          {/* Company ID */}
-          <View className="flex-row items-center mb-4">
-            <Ionicons
-              name="id-card-outline"
-              size={20}
-              color={isLightTheme ? '#374151' : '#9ca3af'}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
-              }`}
-            >
-              <Text className="font-semibold">Company ID:</Text> {user.companyId + 1000}
-            </Text>
-          </View>
-
           {/* Email */}
           <View className="flex-row items-center mb-4">
             <Ionicons
               name="mail-outline"
               size={20}
-              color={isLightTheme ? '#374151' : '#9ca3af'}
+              color={accentColor}
               className="mr-3"
             />
             <Text
@@ -351,12 +357,47 @@ const Profile = () => {
             </Text>
           </View>
 
+          {/* Company ID + Name */}
+          <View className="flex-row items-center mb-4">
+            <Ionicons
+              name="id-card-outline"
+              size={20}
+              color={accentColor}
+              className="mr-3"
+            />
+            <Text
+              className={`text-base ${
+                isLightTheme ? 'text-slate-700' : 'text-slate-300'
+              }`}
+            >
+              <Text className="font-semibold">Company:</Text> {getCompanyName(user.companyId) || 'Bench'}
+            </Text>
+          </View>
+
+          {/* Department ID + Name */}
+          <View className="flex-row items-center mb-4">
+            <AntDesign
+              name="team"
+              size={20}
+              color={accentColor}
+              className="mr-3"
+            />
+            <Text
+              className={`text-base ${
+                isLightTheme ? 'text-slate-700' : 'text-slate-300'
+              }`}
+            >
+              <Text className="font-semibold">Department: </Text>
+              {getDepartmentName(user.departmentId) || 'Unknown Department'}
+            </Text>
+          </View>
+
           {/* Role */}
           <View className="flex-row items-center mb-4">
             <Ionicons
               name="briefcase-outline"
               size={20}
-              color={isLightTheme ? '#374151' : '#9ca3af'}
+              color={accentColor}
               className="mr-3"
             />
             <Text
@@ -373,7 +414,7 @@ const Profile = () => {
             <Ionicons
               name="call-outline"
               size={20}
-              color={isLightTheme ? '#374151' : '#9ca3af'}
+              color={accentColor}
               className="mr-3"
             />
             <Text
@@ -386,7 +427,7 @@ const Profile = () => {
           </View>
         </View>
 
-        {/* Account Settings */}
+        {/* Account Settings Card */}
         <View
           className={`rounded-lg p-6 ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
@@ -404,7 +445,6 @@ const Profile = () => {
               isLightTheme ? 'bg-white' : 'bg-slate-700'
             }`}
             onPress={() => Alert.alert('Change Password feature: ongoing')}
-            accessibilityLabel="Change Password"
           >
             <Text
               className={`${
@@ -419,7 +459,6 @@ const Profile = () => {
               isLightTheme ? 'bg-white' : 'bg-slate-700'
             }`}
             onPress={handleOpenEditProfile}
-            accessibilityLabel="Edit Profile"
           >
             <Text
               className={`${
@@ -434,7 +473,6 @@ const Profile = () => {
               isLightTheme ? 'bg-white' : 'bg-slate-700'
             }`}
             onPress={confirmLogout}
-            accessibilityLabel="Logout"
           >
             <Text
               className={`${
@@ -472,7 +510,6 @@ const Profile = () => {
             <TouchableOpacity
               onPress={() => handleStatusSelect('active')}
               className="flex-row items-center mb-2"
-              accessibilityLabel="Set Status to Active"
             >
               <Ionicons
                 name="checkmark-circle"
@@ -491,7 +528,6 @@ const Profile = () => {
             <TouchableOpacity
               onPress={() => handleStatusSelect('away')}
               className="flex-row items-center mb-2"
-              accessibilityLabel="Set Status to Away"
             >
               <Ionicons
                 name="time"
@@ -510,7 +546,6 @@ const Profile = () => {
             <TouchableOpacity
               onPress={() => handleStatusSelect('offline')}
               className="flex-row items-center"
-              accessibilityLabel="Set Status to Offline"
             >
               <Ionicons
                 name="close-circle"
@@ -530,15 +565,14 @@ const Profile = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Edit Profile Modal - now full page */}
+      {/* Edit Profile Modal */}
       <Modal
         visible={editProfileModalVisible}
-        transparent={false}  
+        transparent={false}
         animationType="slide"
         onRequestClose={() => setEditProfileModalVisible(false)}
       >
         <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
-          {/* Top bar with a close icon at right */}
           <View className="flex-row justify-end items-center p-4 mt-16">
             <TouchableOpacity onPress={() => setEditProfileModalVisible(false)}>
               <Ionicons
@@ -575,9 +609,7 @@ const Profile = () => {
                   </Text>
                   <TextInput
                     className={`w-full p-3 mb-2 rounded-lg ${
-                      isLightTheme
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'bg-slate-700 text-slate-300'
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-slate-300'
                     } text-sm`}
                     value={editFirstName}
                     onChangeText={setEditFirstName}
@@ -595,9 +627,7 @@ const Profile = () => {
                   </Text>
                   <TextInput
                     className={`w-full p-3 mb-2 rounded-lg ${
-                      isLightTheme
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'bg-slate-700 text-slate-300'
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-slate-300'
                     } text-sm`}
                     value={editMiddleName}
                     onChangeText={setEditMiddleName}
@@ -615,9 +645,7 @@ const Profile = () => {
                   </Text>
                   <TextInput
                     className={`w-full p-3 mb-2 rounded-lg ${
-                      isLightTheme
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'bg-slate-700 text-slate-300'
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-slate-300'
                     } text-sm`}
                     value={editLastName}
                     onChangeText={setEditLastName}
@@ -635,9 +663,7 @@ const Profile = () => {
                   </Text>
                   <TextInput
                     className={`w-full p-3 mb-2 rounded-lg ${
-                      isLightTheme
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'bg-slate-700 text-slate-300'
+                      isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-slate-300'
                     } text-sm`}
                     value={editPhone}
                     onChangeText={setEditPhone}
@@ -646,17 +672,14 @@ const Profile = () => {
                     placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                   />
 
-                  {/* "Save" button only */}
                   <View className="flex-row justify-end mt-5">
                     <TouchableOpacity
                       onPress={handleSaveProfileEdits}
                       className={`bg-orange-500 py-2 px-4 rounded-lg`}
-                      accessibilityLabel="Save Profile Changes"
                     >
                       <Text className="text-white text-sm font-semibold">Save</Text>
                     </TouchableOpacity>
                   </View>
-
                 </ScrollView>
               </KeyboardAvoidingView>
             </View>
@@ -668,3 +691,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

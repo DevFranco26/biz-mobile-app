@@ -320,8 +320,8 @@ const Payroll = () => {
   // Render Payroll Item
   const renderPayrollItem = ({ item }) => (
     <View 
-      className={`p-4 mb-4 rounded-lg shadow-md ${
-        isLightTheme ? 'bg-white' : 'bg-slate-800'
+      className={`p-4 mb-4 rounded-lg ${
+        isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
       }`}
       style={{ width: '100%' }}
     >

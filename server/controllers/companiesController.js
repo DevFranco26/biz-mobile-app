@@ -20,6 +20,35 @@ const getAllCompanies = async (req, res) => {
 };
 
 /**
+ * Get Company by ID
+ * Retrieves a single company based on its ID.
+ */
+const getCompanyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid Company ID.' });
+    }
+
+    const company = await Company.findOne({
+      where: { id },
+      attributes: ['id', 'name', 'domain', 'createdAt', 'updatedAt'],
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found.' });
+    }
+
+    res.status(200).json({ message: 'Company retrieved successfully.', data: company });
+  } catch (error) {
+    console.error('Error in getCompanyById:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+/**
  * Create a New Company
  * Adds a new company to the database.
  */
@@ -90,6 +119,7 @@ const deleteCompany = async (req, res) => {
 
 module.exports = {
   getAllCompanies,
+  getCompanyById,  
   createCompany,
   updateCompany,
   deleteCompany,

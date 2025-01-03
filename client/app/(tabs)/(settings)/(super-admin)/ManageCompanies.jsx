@@ -1,1 +1,0 @@
-// File: app/(tabs)/(settings)/(super-admin)/ManageCompanies.jsx

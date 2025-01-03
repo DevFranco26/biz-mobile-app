@@ -1,4 +1,4 @@
-// File: store/usersStore.jsx
+// File: client/store/usersStore.jsx
 
 import create from 'zustand';
 import { Alert } from 'react-native';
@@ -12,7 +12,7 @@ const useUsersStore = create((set) => ({
   fetchUsers: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/users', { // Updated endpoint
+      const response = await fetch('http://192.168.100.8:5000/api/users', { 
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

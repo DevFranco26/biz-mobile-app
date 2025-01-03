@@ -1,4 +1,4 @@
-// File: store/userStore.jsx
+// File: client/store/userStore.jsx
 
 import create from 'zustand';
 import { Alert } from 'react-native';
