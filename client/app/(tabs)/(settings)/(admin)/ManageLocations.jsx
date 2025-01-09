@@ -370,7 +370,7 @@ const ManageLocations = () => {
       {/* Add/Edit Location Modal */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >

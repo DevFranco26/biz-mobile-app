@@ -290,7 +290,7 @@ const ManageDepartments = () => {
       {/* Add/Edit Department Modal */}
       <Modal
         visible={editDeptModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setEditDeptModalVisible(false)}
       >

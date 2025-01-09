@@ -15,7 +15,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import useThemeStore from '../../../../store/themeStore';
 import useCompanyStore from '../../../../store/companyStore';
@@ -31,7 +31,15 @@ const ManageCompanies = () => {
   const isLightTheme = theme === 'light';
   const router = useRouter();
 
-  const { companies, loading, error, fetchCompanies, deleteCompany } = useCompanyStore();
+  const {
+    companies,
+    loading,
+    error,
+    fetchCompanies,
+    deleteCompany,
+    fetchCompanyUserCount,
+    companyUserCounts, // read user counts from store
+  } = useCompanyStore();
 
   const [selectedCompany, setSelectedCompany] = useState(null);
 
@@ -56,7 +64,7 @@ const ManageCompanies = () => {
       await fetchCompanies(storedToken);
     };
     initialize();
-  }, []);
+  }, [fetchCompanies, router]);
 
   const onRefresh = async () => {
     if (!token) return;
@@ -64,6 +72,20 @@ const ManageCompanies = () => {
     await fetchCompanies(token);
     setRefreshing(false);
   };
+
+  // Once companies are fetched, also fetch user counts
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!token) return;
+      // For each company, call fetchCompanyUserCount
+      for (let c of companies) {
+        await fetchCompanyUserCount(token, c.id);
+      }
+    };
+    if (companies.length > 0) {
+      fetchCounts();
+    }
+  }, [companies, token, fetchCompanyUserCount]);
 
   const handleAddCompany = () => {
     setSelectedCompany(null);
@@ -85,36 +107,28 @@ const ManageCompanies = () => {
       router.replace('(auth)/signin');
       return;
     }
-    Alert.alert(
-      'Confirm Deletion',
-      'Are you sure you want to delete this company?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteCompany(companyId, token);
-            await fetchCompanies(token);
-          }
+    Alert.alert('Confirm Deletion', 'Are you sure you want to delete this company?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteCompany(companyId, token);
+          await fetchCompanies(token);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleCompanyAction = (company) => {
-    Alert.alert(
-      'Company Actions',
-      `Choose an action for "${company.name}".`,
-      [
-        { text: 'Edit', onPress: () => handleEditCompany(company) },
-        {
-          text: 'Delete',
-          onPress: () => handleDeleteCompany(company.id),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Company Actions', `Choose an action for "${company.name}".`, [
+      { text: 'Edit', onPress: () => handleEditCompany(company) },
+      {
+        text: 'Delete',
+        onPress: () => handleDeleteCompany(company.id),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleSaveCompanyEdits = async () => {
@@ -176,6 +190,8 @@ const ManageCompanies = () => {
   };
 
   const renderItem = ({ item }) => {
+    // Retrieve the userCount from store
+    const userCount = companyUserCounts[item.id] || 0;
     return (
       <View
         className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
@@ -196,6 +212,13 @@ const ManageCompanies = () => {
             }`}
           >
             Domain: {item.domain}
+          </Text>
+          <Text
+            className={`text-sm mt-1 ${
+              isLightTheme ? 'text-slate-600' : 'text-slate-300'
+            }`}
+          >
+            Users: {userCount}
           </Text>
         </View>
 
@@ -287,19 +310,23 @@ const ManageCompanies = () => {
       {/* Add/Edit Company Modal */}
       <Modal
         visible={editCompanyModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setEditCompanyModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white'  : 'bg-slate-900'}`}>
+          <View
+            className={`flex-1 justify-center items-center ${
+              isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'
+            }`}
+          >
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"
               keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
             >
               <View
-                className={`p-6 rounded-2xl w-full ${
+                className={`p-6 rounded-2xl shadow-md w-full ${
                   isLightTheme ? 'bg-white' : 'bg-slate-900'
                 }`}
               >

@@ -1,6 +1,7 @@
 // File: server/controllers/companiesController.js
 
-const Company = require('../models/Company.js');
+// IMPORTANT: import both Company and User from your models
+const { Company, User } = require('../models/index.js');
 
 /**
  * Get All Companies
@@ -12,7 +13,9 @@ const getAllCompanies = async (req, res) => {
       attributes: ['id', 'name', 'domain', 'createdAt', 'updatedAt'],
       order: [['id', 'ASC']],
     });
-    res.status(200).json({ message: 'Companies retrieved successfully.', data: companies });
+    res
+      .status(200)
+      .json({ message: 'Companies retrieved successfully.', data: companies });
   } catch (error) {
     console.error('Get All Companies Error:', error);
     res.status(500).json({ message: 'Internal server error.' });
@@ -41,7 +44,9 @@ const getCompanyById = async (req, res) => {
       return res.status(404).json({ message: 'Company not found.' });
     }
 
-    res.status(200).json({ message: 'Company retrieved successfully.', data: company });
+    res
+      .status(200)
+      .json({ message: 'Company retrieved successfully.', data: company });
   } catch (error) {
     console.error('Error in getCompanyById:', error);
     res.status(500).json({ message: 'Internal server error.' });
@@ -57,11 +62,15 @@ const createCompany = async (req, res) => {
   try {
     const existingCompany = await Company.findOne({ where: { domain } });
     if (existingCompany) {
-      return res.status(400).json({ message: 'Company with this domain already exists.' });
+      return res
+        .status(400)
+        .json({ message: 'Company with this domain already exists.' });
     }
 
     const newCompany = await Company.create({ name, domain });
-    res.status(201).json({ message: 'Company created successfully.', data: newCompany });
+    res
+      .status(201)
+      .json({ message: 'Company created successfully.', data: newCompany });
   } catch (error) {
     console.error('Create Company Error:', error);
     res.status(500).json({ message: 'Internal server error.' });
@@ -85,12 +94,19 @@ const updateCompany = async (req, res) => {
     if (domain && domain !== company.domain) {
       const existingCompany = await Company.findOne({ where: { domain } });
       if (existingCompany) {
-        return res.status(400).json({ message: 'Company with this domain already exists.' });
+        return res
+          .status(400)
+          .json({ message: 'Company with this domain already exists.' });
       }
     }
 
-    await company.update({ name: name || company.name, domain: domain || company.domain });
-    res.status(200).json({ message: 'Company updated successfully.', data: company });
+    await company.update({
+      name: name || company.name,
+      domain: domain || company.domain,
+    });
+    res
+      .status(200)
+      .json({ message: 'Company updated successfully.', data: company });
   } catch (error) {
     console.error('Update Company Error:', error);
     res.status(500).json({ message: 'Internal server error.' });
@@ -117,10 +133,40 @@ const deleteCompany = async (req, res) => {
   }
 };
 
+/**
+ * Get the User Count for a Company
+ * GET /api/companies/:id/user-count
+ */
+const getCompanyUserCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid Company ID.' });
+    }
+
+    // Ensure `User` is properly imported from your models
+    const userCount = await User.count({
+      where: { companyId: id },
+    });
+
+    res.status(200).json({
+      message: 'Company user count retrieved successfully.',
+      data: {
+        companyId: Number(id),
+        userCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error in getCompanyUserCount:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
 module.exports = {
   getAllCompanies,
-  getCompanyById,  
+  getCompanyById,
   createCompany,
   updateCompany,
   deleteCompany,
+  getCompanyUserCount,
 };

@@ -19,16 +19,16 @@ const router = express.Router();
 router.use(authenticate);
 
 // Routes for Employees and Admins to manage their leave requests
-router.post('/submit', authorizeRoles('user', 'admin', 'supervisor'), submitLeaveRequest);
-router.get('/my', authorizeRoles('user', 'admin', 'supervisor'), getUserLeaves);
+router.post('/submit', authorizeRoles('user', 'admin', 'supervisor', 'superAdmin'), submitLeaveRequest);
+router.get('/my', authorizeRoles('user', 'admin', 'supervisor', 'superAdmin'), getUserLeaves);
 
 // Routes for Approvers (Admins and Supervisors) to manage leave requests
-router.get('/pending', authorizeRoles('admin', 'supervisor'), getPendingLeavesForApprover);
-router.get('/', authorizeRoles('admin', 'supervisor'), getLeavesForApprover);
-router.put('/:id/approve', authorizeRoles('admin', 'supervisor'), approveLeave);
-router.put('/:id/reject', authorizeRoles('admin', 'supervisor'), rejectLeave);
+router.get('/pending', authorizeRoles('admin', 'supervisor', 'superAdmin'), getPendingLeavesForApprover);
+router.get('/', authorizeRoles('admin', 'supervisor', 'superAdmin'), getLeavesForApprover);
+router.put('/:id/approve', authorizeRoles('admin', 'supervisor', 'superAdmin'), approveLeave);
+router.put('/:id/reject', authorizeRoles('admin', 'supervisor', 'superAdmin'), rejectLeave);
 
 // Additional Route: Get Approvers within the same company
-router.get('/approvers', authorizeRoles('user', 'admin', 'supervisor'), getApprovers);
+router.get('/approvers', authorizeRoles('user', 'admin', 'supervisor', 'superAdmin'), getApprovers);
 
 module.exports = router;

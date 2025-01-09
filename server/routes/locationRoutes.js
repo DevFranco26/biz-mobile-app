@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Only allow admins to manage locations
-router.use(authorizeRoles('admin'));
+router.use(authorizeRoles('admin', 'superAdmin'));
 
 router.post('/create', createLocation);
 router.get('/all', getLocations);

@@ -3,10 +3,11 @@
 const express = require('express');
 const {
   getAllCompanies,
-  getCompanyById,   // <--- Import the new function
+  getCompanyById,
   createCompany,
   updateCompany,
   deleteCompany,
+  getCompanyUserCount,
 } = require('../controllers/companiesController.js');
 const authenticate = require('../middlewares/authMiddleware.js');
 const { authorizeRoles } = require('../middlewares/roleMiddleware.js');
@@ -21,54 +22,41 @@ router.use(authenticate);
  * @desc    Get all Companies
  * @access  superAdmin
  */
-router.get(
-  '/all',
-  authorizeRoles('superAdmin'),
-  getAllCompanies
-);
+router.get('/all', authorizeRoles('superAdmin'), getAllCompanies);
 
 /**
  * @route   GET /api/companies/:id
  * @desc    Get Company by ID
- * @access  superAdmin
+ * @access  superAdmin, admin, supervisor, user
  */
-router.get(
-  '/:id',
-  authorizeRoles('superAdmin', 'admin', 'supervisor', 'user'),
-  getCompanyById
-);
+router.get('/:id', authorizeRoles('superAdmin', 'admin', 'supervisor', 'user'), getCompanyById);
 
 /**
  * @route   POST /api/companies/create
  * @desc    Create a new Company
  * @access  superAdmin
  */
-router.post(
-  '/create',
-  authorizeRoles('superAdmin'),
-  createCompany
-);
+router.post('/create', authorizeRoles('superAdmin'), createCompany);
 
 /**
  * @route   PUT /api/companies/update/:id
  * @desc    Update a Company by ID
  * @access  superAdmin
  */
-router.put(
-  '/update/:id',
-  authorizeRoles('superAdmin'),
-  updateCompany
-);
+router.put('/update/:id', authorizeRoles('superAdmin'), updateCompany);
 
 /**
  * @route   DELETE /api/companies/delete/:id
  * @desc    Delete a Company by ID
  * @access  superAdmin
  */
-router.delete(
-  '/delete/:id',
-  authorizeRoles('superAdmin'),
-  deleteCompany
-);
+router.delete('/delete/:id', authorizeRoles('superAdmin'), deleteCompany);
+
+/**
+ * @route   GET /api/companies/:id/user-count
+ * @desc    Get the user count for a company
+ * @access  superAdmin
+ */
+router.get('/:id/user-count', authorizeRoles('superAdmin'), getCompanyUserCount);
 
 module.exports = router;

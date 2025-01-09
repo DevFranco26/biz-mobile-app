@@ -543,7 +543,7 @@ const ManageShiftSchedules = () => {
       {/* Add/Edit Shift Modal */}
       <Modal
         visible={editShiftModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setEditShiftModalVisible(false)}
       >
@@ -712,7 +712,7 @@ const ManageShiftSchedules = () => {
       {/* Assign Shift Modal */}
       <Modal
         visible={assignModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setAssignModalVisible(false)}
       >
@@ -876,7 +876,7 @@ const ManageShiftSchedules = () => {
       {/* Assigned Users Modal */}
       <Modal
         visible={assignedUsersModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setAssignedUsersModalVisible(false)}
       >

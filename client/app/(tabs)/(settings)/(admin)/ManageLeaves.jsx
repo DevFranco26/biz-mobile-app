@@ -451,7 +451,7 @@ export const ManageLeaves = () => {
       <Modal
         visible={isFilterModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => {
           setIsFilterModalVisible(false);
           setSelectedFilterOption(null);
@@ -663,7 +663,7 @@ export const ManageLeaves = () => {
       <Modal
         visible={isRejectModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => {
           setIsRejectModalVisible(false);
           setSelectedLeave(null);

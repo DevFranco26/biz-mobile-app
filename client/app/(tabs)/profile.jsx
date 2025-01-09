@@ -569,7 +569,7 @@ const Profile = () => {
       <Modal
         visible={editProfileModalVisible}
         transparent={false}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setEditProfileModalVisible(false)}
       >
         <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>

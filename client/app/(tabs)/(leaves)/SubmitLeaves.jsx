@@ -279,7 +279,7 @@ const SubmitLeaves = () => {
         <Modal
           visible={!!currentPicker}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setCurrentPicker(null)}
         >
           <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>

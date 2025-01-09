@@ -325,7 +325,7 @@ const ApprovalLeaves = () => {
       <Modal
         visible={isFilterModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => {
           setIsFilterModalVisible(false);
           setSelectedFilterOption(null);

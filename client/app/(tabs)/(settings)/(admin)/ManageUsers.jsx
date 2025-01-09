@@ -574,7 +574,7 @@ const ManageUsers = () => {
       {/* Add/Edit User Modal */}
 <Modal
   visible={editUserModalVisible}
-  animationType="slide"
+  animationType="fade"
   transparent={true}
   onRequestClose={() => setEditUserModalVisible(false)}
 >
@@ -822,7 +822,7 @@ const ManageUsers = () => {
 {/* User Settings Modal */}
 <Modal
   visible={userSettingsModalVisible}
-  animationType="slide"
+  animationType="fade"
   transparent={true}
   onRequestClose={() => setUserSettingsModalVisible(false)}
 >

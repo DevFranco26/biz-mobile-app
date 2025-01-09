@@ -494,13 +494,13 @@ const Payroll = () => {
       <Modal
         visible={isSortModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsSortModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsSortModalVisible(false)}>
-          <View className="flex-1 justify-center items-center bg-slate-900">
+          <View className={`flex-1 justify-center items-center ${isLightTheme? `bg-slate-950/70`: `bg-slate-950/70`}`}>
             <TouchableWithoutFeedback>
-              <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
                 <View className="flex-row justify-between items-center mb-4">
                   <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Sort Options
@@ -522,10 +522,12 @@ const Payroll = () => {
                       onPress={() => handleSortSelection(item.value)}
                       className={`flex-row items-center p-2 rounded-lg mb-2 ${
                         sortValue === item.value
-                          ? 'bg-slate-300'
+                          ? isLightTheme
+                          ? 'bg-slate-200'
+                          : 'bg-slate-700'
                           : isLightTheme
-                            ? 'bg-slate-100'
-                            : 'bg-slate-700'
+                            ? 'bg-white'
+                            : 'bg-slate-800'
                       }`}
                       android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                     >
@@ -539,7 +541,7 @@ const Payroll = () => {
                 {/* Confirm Button */}
                 <Pressable
                   onPress={() => setIsSortModalVisible(false)}
-                  className={`mt-4 p-3 rounded-lg ${
+                  className={`mt-4 p-4 rounded-lg ${
                     isLightTheme ? 'bg-orange-500' : 'bg-orange-500'
                   }`}
                 >
@@ -557,13 +559,13 @@ const Payroll = () => {
       <Modal
         visible={isFilterModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsFilterModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsFilterModalVisible(false)}>
-          <View className="flex-1 justify-center items-center bg-slate-900">
+          <View className={`flex-1 justify-center items-center ${isLightTheme? `bg-slate-950/60`: `bg-slate-950/60`}`}>
             <TouchableWithoutFeedback>
-              <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
                 <View className="flex-row justify-between items-center mb-4">
                   <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Filter Options
@@ -585,10 +587,8 @@ const Payroll = () => {
                       onPress={() => handleFilterSelection(item.value)}
                       className={`flex-row items-center p-2 rounded-lg mb-2 ${
                         filterValue === item.value
-                          ? 'bg-slate-300'
-                          : isLightTheme
-                            ? 'bg-slate-100'
-                            : 'bg-slate-700'
+                          ? isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
+                          : isLightTheme? 'bg-white' : 'bg-slate-800'
                       }`}
                       android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                     >
@@ -602,7 +602,7 @@ const Payroll = () => {
                 {/* Confirm Button */}
                 <Pressable
                   onPress={() => setIsFilterModalVisible(false)}
-                  className={`mt-4 p-2 rounded-lg ${
+                  className={`mt-4 p-4 rounded-lg ${
                     isLightTheme ? 'bg-orange-500' : 'bg-orange-500'
                   }`}
                 >

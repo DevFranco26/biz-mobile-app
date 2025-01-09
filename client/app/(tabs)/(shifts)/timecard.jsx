@@ -297,7 +297,7 @@ const TimeCard = () => {
       <Modal
         visible={!!currentPicker}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setCurrentPicker(null)}
       >
         <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
