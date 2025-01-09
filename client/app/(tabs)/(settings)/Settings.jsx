@@ -29,7 +29,7 @@ const Settings = () => {
   // Some theming constants
   const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-slate-300';
   const cardBg = isLightTheme ? 'bg-slate-100' : 'bg-slate-800';
-  const accentColor = isLightTheme ? '#c2410c' : '#f97316';
+  const accentColor = isLightTheme ? '#f97316' : '#f97316';
 
   // Helper: user role
   const userRole = (user?.role || '').toLowerCase();

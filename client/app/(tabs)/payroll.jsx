@@ -626,7 +626,7 @@ const Payroll = () => {
           !loading && !isFetching && (
             <Text 
               className={`text-center mt-8 text-lg ${
-                isLightTheme ? 'text-gray-500' : 'text-slate-400'
+                isLightTheme ? 'text-slate-500' : 'text-slate-400'
               }`}
             >
               No payroll records found.
@@ -649,7 +649,7 @@ const Payroll = () => {
           className={`absolute inset-0 justify-center items-center bg-black/10`}
         >
           <ActivityIndicator size="large" color="#0f766e" />
-          <Text className={`mt-2 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>
+          <Text className={`mt-2 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
             Loading payroll...
           </Text>
         </View>

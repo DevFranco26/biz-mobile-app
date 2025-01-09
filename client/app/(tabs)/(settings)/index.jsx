@@ -43,7 +43,7 @@ const SettingsIndex = () => {
   if (!user) {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
-        <Text className="text-gray-700 dark:text-gray-200 text-lg text-center mb-4">
+        <Text className="text-slate-700 dark:text-slate-200 text-lg text-center mb-4">
           You are not signed in.
         </Text>
         <Pressable

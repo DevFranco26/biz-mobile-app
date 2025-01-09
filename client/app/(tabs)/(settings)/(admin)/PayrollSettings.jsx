@@ -113,7 +113,7 @@ const PayrollSettings = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0f766e" />
           <Text
-            className={`mt-4 ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}
+            className={`mt-4 ${isLightTheme ? 'text-slate-700' : 'text-gray-300'}`}
           >
             Loading Payroll Settings...
           </Text>

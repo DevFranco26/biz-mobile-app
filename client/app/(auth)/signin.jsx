@@ -97,13 +97,13 @@ const Signin = () => {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View className={`flex-1 justify-center items-center px-6 ${theme === 'light' ? 'bg-white' : 'bg-gray-900'}`}>
+        <View className={`flex-1 justify-center items-center px-6 ${theme === 'light' ? 'bg-white' : 'bg-slate-900'}`}>
           <Formik initialValues={{ email: '', password: '' }} validationSchema={SigninSchema} onSubmit={handleSignin}>
             {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
               <>
                 <Text
                   className={`text-5xl font-extrabold text-center mb-12 ${
-                    theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+                    theme === 'light' ? 'text-slate-800' : 'text-slate-100'
                   }`}
                 >
                   Biz Buddy
@@ -112,14 +112,14 @@ const Signin = () => {
                 {/* Email Input */}
                 <View className="mb-4 w-full">
                   <Text
-                    className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}
+                    className={`text-lg ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'} text-left`}
                   >
                     Email
                   </Text>
                   <TextInput
                     className={`w-full p-4 my-2 rounded-lg ${
-                      theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
-                    } ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
+                      theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
+                    } ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}
                     keyboardType="email-address"
                     value={values.email}
                     onChangeText={handleChange('email')}
@@ -134,15 +134,15 @@ const Signin = () => {
                 {/* Password Input */}
                 <View className="mb-6 w-full">
                   <Text
-                    className={`text-lg ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'} text-left`}
+                    className={`text-lg ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'} text-left`}
                   >
                     Password
                   </Text>
                   <View className="relative">
                     <TextInput
                       className={`w-full p-4 my-2 rounded-lg ${
-                        theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
-                      } ${theme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}
+                        theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
+                      } ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}
                       secureTextEntry={!passwordVisible}
                       value={values.password}
                       onChangeText={handleChange('password')}

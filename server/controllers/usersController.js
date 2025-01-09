@@ -305,10 +305,48 @@ const updateUserPresence = async (req, res) => {
   }
 };
 
+/**
+ * Change the authenticated user's password
+ */
+const changeUserPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields (oldPassword, newPassword, confirmPassword) are required.' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New password and confirm password do not match.' });
+    }
+
+    // Fetch the authenticated user
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check if oldPassword matches current password
+    const isMatch = bcrypt.compareSync(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Old password is incorrect.' });
+    }
+
+    // Update with new password
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    await user.update({ password: hashedPassword });
+
+    return res.status(200).json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Change Password Error:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   createUser,
   updateUser,
   deleteUser,
   updateUserPresence,
+  changeUserPassword
 };

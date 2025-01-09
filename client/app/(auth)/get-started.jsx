@@ -113,7 +113,7 @@ const GetStarted = () => {
       <>
         <Text
           className={`text-4xl font-extrabold text-center mb-8 ${
-            theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+            theme === 'light' ? 'text-slate-800' : 'text-slate-100'
           }`}
         >
           Get Started
@@ -123,16 +123,16 @@ const GetStarted = () => {
         <View className="mb-4 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Name
           </Text>
           <TextInput
             className={`w-full p-4 my-2 rounded-lg ${
-              theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+              theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
             } ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             }`}
             value={values.name}
             onChangeText={handleChange('name')}
@@ -152,16 +152,16 @@ const GetStarted = () => {
         <View className="mb-4 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Email
           </Text>
           <TextInput
             className={`w-full p-4 my-2 rounded-lg ${
-              theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+              theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
             } ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             }`}
             keyboardType="email-address"
             value={values.email}
@@ -182,7 +182,7 @@ const GetStarted = () => {
         <View className="mb-4 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Password
@@ -190,9 +190,9 @@ const GetStarted = () => {
           <View className="relative">
             <TextInput
               className={`w-full p-4 my-2 rounded-lg ${
-                theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+                theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
               } ${
-                theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+                theme === 'light' ? 'text-slate-800' : 'text-slate-100'
               }`}
               secureTextEntry={!passwordVisible}
               value={values.password}
@@ -233,7 +233,7 @@ const GetStarted = () => {
         <View className="mb-6 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Confirm Password
@@ -241,9 +241,9 @@ const GetStarted = () => {
           <View className="relative">
             <TextInput
               className={`w-full p-4 my-2 rounded-lg ${
-                theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+                theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
               } ${
-                theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+                theme === 'light' ? 'text-slate-800' : 'text-slate-100'
               }`}
               secureTextEntry={!confirmPasswordVisible}
               value={values.confirmPassword}
@@ -314,7 +314,7 @@ const GetStarted = () => {
       <>
         <Text
           className={`text-4xl font-extrabold text-center mb-8 ${
-            theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+            theme === 'light' ? 'text-slate-800' : 'text-slate-100'
           }`}
         >
           Company & Subscription
@@ -324,16 +324,16 @@ const GetStarted = () => {
         <View className="mb-4 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Company Name
           </Text>
           <TextInput
             className={`w-full p-4 my-2 rounded-lg ${
-              theme === 'light' ? 'bg-gray-100' : 'bg-gray-800'
+              theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
             } ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             }`}
             value={values.companyName}
             onChangeText={handleChange('companyName')}
@@ -355,7 +355,7 @@ const GetStarted = () => {
         <View className="mb-4 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Number of Users (Pax)
@@ -368,10 +368,10 @@ const GetStarted = () => {
                 className={`flex-1 py-2 m-1 rounded-lg border-2 ${
                   values.pax === option
                     ? 'border-orange-500/90 bg-orange-500/30'
-                    : `border-gray-300 ${
+                    : `border-slate-300 ${
                         theme === 'light'
-                          ? 'bg-gray-100'
-                          : 'bg-gray-800'
+                          ? 'bg-slate-100'
+                          : 'bg-slate-800'
                       }`
                 }`}
                 onPress={() => handleChange('pax')(option)}
@@ -381,8 +381,8 @@ const GetStarted = () => {
                     values.pax === option
                       ? 'text-orange-500'
                       : theme === 'light'
-                      ? 'text-gray-800'
-                      : 'text-gray-100'
+                      ? 'text-slate-800'
+                      : 'text-slate-100'
                   }`}
                 >
                   {option}
@@ -401,7 +401,7 @@ const GetStarted = () => {
         <View className="mb-6 w-full">
           <Text
             className={`text-lg ${
-              theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+              theme === 'light' ? 'text-slate-800' : 'text-slate-100'
             } text-left`}
           >
             Select Package
@@ -414,10 +414,10 @@ const GetStarted = () => {
                 className={`flex-1 py-2 m-1 rounded-lg border-2 ${
                   values.package === pkg
                     ? 'border-orange-500/90 bg-orange-500/30'
-                    : `border-gray-300 ${
+                    : `border-slate-300 ${
                         theme === 'light'
-                          ? 'bg-gray-100'
-                          : 'bg-gray-800'
+                          ? 'bg-slate-100'
+                          : 'bg-slate-800'
                       }`
                 }`}
                 onPress={() => handleChange('package')(pkg)}
@@ -427,8 +427,8 @@ const GetStarted = () => {
                     values.package === pkg
                       ? 'text-orange-500'
                       : theme === 'light'
-                      ? 'text-gray-800'
-                      : 'text-gray-100'
+                      ? 'text-slate-800'
+                      : 'text-slate-100'
                   }`}
                 >
                   {pkg}
@@ -445,7 +445,7 @@ const GetStarted = () => {
 
         {/* Back Button */}
         <Pressable
-          className="w-full py-4 rounded-lg mt-7 bg-gray-500/90"
+          className="w-full py-4 rounded-lg mt-7 bg-slate-500/90"
           onPress={() => setCurrentStep(1)}
         >
           <Text className="text-white text-center text-lg font-medium">
@@ -479,7 +479,7 @@ const GetStarted = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View
           className={`flex-1 justify-center items-center px-6 ${
-            theme === 'light' ? 'bg-white' : 'bg-gray-900'
+            theme === 'light' ? 'bg-white' : 'bg-slate-900'
           }`}
         >
           <Formik

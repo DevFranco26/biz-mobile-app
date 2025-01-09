@@ -226,10 +226,10 @@ export const ManageLeaves = () => {
             color={isLightTheme ? '#4b5563' : '#d1d5db'}
           />
           <View className="ml-3 flex-1">
-            <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+            <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
               {item.requester.name}
             </Text>
-            <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-300'}`}>
+            <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-300'}`}>
               Email: {item.requester.dataValues.email}
             </Text>
             <Text className={`
@@ -254,7 +254,7 @@ export const ManageLeaves = () => {
       </View>
       
       {item.reason && item.reason.trim() !== '' && (
-        <Text className={`text-sm mt-1 ${isLightTheme ? 'text-gray-700' : 'text-gray-200'}`}>
+        <Text className={`text-sm mt-1 ${isLightTheme ? 'text-slate-700' : 'text-slate-200'}`}>
           Reason: {item.reason}
         </Text>
       )}
@@ -267,7 +267,7 @@ export const ManageLeaves = () => {
           color={isLightTheme ? '#374151' : '#9ca3af'}
           style={{ marginRight: 4 }}
         />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-gray-700' : 'text-gray-200'}`}>
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-200'}`}>
           From: {formatDate(item.fromDate)}
         </Text>
       </View>
@@ -280,7 +280,7 @@ export const ManageLeaves = () => {
           color={isLightTheme ? '#374151' : '#9ca3af'}
           style={{ marginRight: 4 }}
         />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-gray-700' : 'text-gray-200'}`}>
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-200'}`}>
           To: {formatDate(item.toDate)}
         </Text>
       </View>
@@ -320,7 +320,7 @@ export const ManageLeaves = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
           Manage Leaves
         </Text>
       </View>
@@ -421,7 +421,7 @@ export const ManageLeaves = () => {
           style={{ marginTop: 40 }}
         />
       ) : errorLeaves ? (
-        <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+        <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
           {errorLeaves}
         </Text>
       ) : (
@@ -432,7 +432,7 @@ export const ManageLeaves = () => {
           showsVerticalScrollIndicator={true}
           contentContainerStyle={getSortedAndFilteredLeaves().length === 0 ? { flexGrow: 1, justifyContent: 'center', alignItems: 'center' } : { paddingHorizontal: 16, paddingBottom: 20 }}
           ListEmptyComponent={
-            <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-gray-800' : 'text-white'}`}>
+            <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
               No leave requests found.
             </Text>
           }
@@ -508,7 +508,7 @@ export const ManageLeaves = () => {
                     color={isLightTheme ? '#374151' : '#9ca3af'}
                     style={{ marginRight: 12 }}
                   />
-                  <Text className={`text-lg ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Filter by Status
                   </Text>
                 </Pressable>
@@ -525,7 +525,7 @@ export const ManageLeaves = () => {
                     color={isLightTheme ? '#374151' : '#9ca3af'}
                     style={{ marginRight: 12 }}
                   />
-                  <Text className={`text-lg ${isLightTheme ? 'text-gray-800' : 'text-gray-100'}`}>
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                     Filter by User
                   </Text>
                 </Pressable>
@@ -563,7 +563,7 @@ export const ManageLeaves = () => {
                     />
                     <Text className={`
                       text-lg
-                      ${localFilterStatus === status ? 'text-slate-900' : (isLightTheme ? 'text-gray-800' : 'text-gray-100')}
+                      ${localFilterStatus === status ? 'text-slate-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}
                     `}>
                       {status}
                     </Text>
@@ -611,7 +611,7 @@ export const ManageLeaves = () => {
                       />
                       <Text className={`
                         text-lg
-                        ${filterUserEmail === 'ALL' ? 'text-slate-900' : (isLightTheme ? 'text-gray-800' : 'text-gray-100')}
+                        ${filterUserEmail === 'ALL' ? 'text-slate-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}
                       `}>
                         All Users
                       </Text>
@@ -645,7 +645,7 @@ export const ManageLeaves = () => {
                         />
                         <Text className={`
                           text-lg
-                          ${filterUserEmail === user.email ? 'text-slate-900' : (isLightTheme ? 'text-gray-800' : 'text-gray-100')}
+                          ${filterUserEmail === user.email ? 'text-slate-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}
                         `}>
                           {user.email}
                         </Text>
@@ -686,7 +686,7 @@ export const ManageLeaves = () => {
             <View className="flex-row justify-between items-center mb-4">
               <Text className={`
                 text-lg font-semibold
-                ${isLightTheme ? 'text-gray-800' : 'text-white'}
+                ${isLightTheme ? 'text-slate-800' : 'text-white'}
               `}>
                 Reject Leave Request
               </Text>
@@ -707,14 +707,14 @@ export const ManageLeaves = () => {
 
             <Text className={`
               text-base mb-2
-              ${isLightTheme ? 'text-gray-800' : 'text-white'}
+              ${isLightTheme ? 'text-slate-800' : 'text-white'}
             `}>
               Rejection Reason:
             </Text>
             <TextInput
               className={`
                 border rounded-lg p-3 text-base 
-                ${isLightTheme ? 'border-gray-300 bg-slate-100 text-gray-800' : 'border-gray-600 bg-slate-800 text-gray-100'}
+                ${isLightTheme ? 'border-slate-300 bg-slate-100 text-slate-800' : 'border-slate-600 bg-slate-800 text-slate-100'}
               `}
               placeholder="Enter reason for rejection"
               placeholderTextColor={isLightTheme ? '#a1a1aa' : '#9ca3af'}
@@ -733,7 +733,7 @@ export const ManageLeaves = () => {
                   setRejectionReason('');
                 }}
               >
-                <Text className="text-base font-medium text-gray-800">Cancel</Text>
+                <Text className="text-base font-medium text-slate-800">Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

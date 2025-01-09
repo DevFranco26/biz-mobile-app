@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import useThemeStore from '../../store/themeStore';
 import useUserStore from '../../store/userStore';
 
-// Helper function to get initials
+// Helper to get initials
 const getInitials = (user) => {
   if (!user) return '';
   const { firstName = '', lastName = '' } = user;
@@ -19,26 +19,26 @@ const getInitials = (user) => {
 
 const TabsLayout = () => {
   const { theme } = useThemeStore();
-  const { user } = useUserStore(); // to get the user's name
+  const { user } = useUserStore();
   const isLightTheme = theme === 'light';
 
-  // Create the avatar as a small circle with initials
+  // Reusable Avatar icon that uses the color passed from the tab bar
   const AvatarIcon = ({ color, size }) => {
     const initials = getInitials(user);
-    // We'll just keep the circle size
-    const circleSize = 23; // slightly bigger
+    const circleSize = 23;
+
     return (
       <View
         style={{
           width: circleSize,
           height: circleSize,
           borderRadius: circleSize / 2,
-          backgroundColor: color, // Use the color from tabBar
+          backgroundColor: color,       // <--- Use the "color" from tabBarIcon
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={{ color: isLightTheme ? '#fff' : '#0f172a', fontWeight: 'bold', fontSize: 12 }}>
+        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
           {initials}
         </Text>
       </View>
@@ -52,65 +52,56 @@ const TabsLayout = () => {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
           borderTopColor: isLightTheme ? '#ffffff' : '#0f172a',
         },
-        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316',
-        tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
+        tabBarActiveTintColor: '#f97316',  // Active color
+        tabBarInactiveTintColor: '#9ca3af', // Inactive color
       }}
     >
-      {/* Profile Screen */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           headerShown: false,
-          // Ionicons outline for profile
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
-      {/* Leaves Screen */}
       <Tabs.Screen
         name="(leaves)"
         options={{
           title: 'Leaves',
           headerShown: false,
-          // Ionicons outline for calendar
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
-      {/* Payroll Screen */}
       <Tabs.Screen
         name="payroll"
         options={{
           title: 'Payroll',
           headerShown: false,
-          // Ionicons outline for cash
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cash-outline" size={size} color={color} />
           ),
         }}
       />
-      {/* Shifts Screen */}
       <Tabs.Screen
         name="(shifts)"
         options={{
           title: 'Shifts',
           headerShown: false,
-          // Ionicons outline for time
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time-outline" size={size} color={color} />
           ),
         }}
       />
-      {/* Settings Screen */}
       <Tabs.Screen
         name="(settings)"
         options={{
           title: 'Settings',
           headerShown: false,
-          // Instead of Ionicons gear, use an avatar:
+          // Use AvatarIcon here so it matches the active/inactive color
           tabBarIcon: AvatarIcon,
         }}
       />
@@ -119,4 +110,3 @@ const TabsLayout = () => {
 };
 
 export default TabsLayout;
-

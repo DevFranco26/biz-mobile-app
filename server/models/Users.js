@@ -11,7 +11,7 @@ const User = sequelize.define('User', {
   },
   email: {
     type: DataTypes.STRING(255),
-    unique: 'Users_email_key', // Associate with the existing unique constraint
+    unique: 'Users_email_key', 
     allowNull: false,
     validate: {
       isEmail: true,
