@@ -1,8 +1,9 @@
 // File: app/(tabs)/(shifts)/Schedule.jsx
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import useThemeStore from '../../../store/themeStore';
 import { Calendar } from 'react-native-calendars';
@@ -16,7 +17,6 @@ function getDaysInCurrentMonth() {
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-
   const days = [];
   for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
     days.push(new Date(d));
@@ -26,12 +26,12 @@ function getDaysInCurrentMonth() {
 
 function isWeekday(date) {
   const day = date.getDay();
-  return day >= 1 && day <= 5; // Monday=1 ... Friday=5
+  return day >= 1 && day <= 5;
 }
 
 function isWeekend(date) {
   const day = date.getDay();
-  return day === 0 || day === 6; // Sunday=0, Saturday=6
+  return day === 0 || day === 6;
 }
 
 const Schedule = () => {
@@ -42,74 +42,119 @@ const Schedule = () => {
 
   const [loading, setLoading] = useState(false);
   const [assignments, setAssignments] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Request notification permissions on mount
   useEffect(() => {
-    const fetchData = async () => {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) {
-        Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
-        return;
+    (async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Notifications permission is required.');
       }
+    })();
+  }, []);
 
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/shiftschedules/my`, {
-          headers: { Authorization: `Bearer ${token}` },
+  // Extracted data-fetching function
+  const fetchData = async () => {
+    const token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      Alert.alert('Authentication Error', 'Please sign in again.');
+      router.replace('(auth)/signin');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/shiftschedules/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const schedules = data.data;
+        setAssignments(schedules);
+
+        // Schedule notifications for each assignment
+        schedules.forEach((a) => {
+          const startTime = new Date(a.shiftSchedule.startTime);
+          const endTime = new Date(a.shiftSchedule.endTime);
+          const now = new Date();
+
+          const startNotificationTime = new Date(startTime.getTime() - 30 * 60000);
+          const endNotificationTime = new Date(endTime.getTime() - 30 * 60000);
+
+          if (startNotificationTime > now) {
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Shift Reminder',
+                body: `Your shift "${a.shiftSchedule.title}" starts at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+              },
+              trigger: startNotificationTime,
+            });
+          }
+
+          if (endNotificationTime > now) {
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Shift Reminder',
+                body: `Your shift "${a.shiftSchedule.title}" ends at ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+              },
+              trigger: endNotificationTime,
+            });
+          }
         });
-        const data = await res.json();
-        if (res.ok) {
-          setAssignments(data.data);
-        } else {
-          Alert.alert('Error', data.message || 'Failed to fetch schedule.');
-        }
-      } catch (error) {
-        Alert.alert('Error', 'An unexpected error occurred.');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to fetch schedule.');
       }
-      setLoading(false);
-    };
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred.');
+    }
+    setLoading(false);
+  };
+
+  // Initial data fetch on mount
+  useEffect(() => {
     fetchData();
   }, [router]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const daysInMonth = getDaysInCurrentMonth();
   const markedDates = {};
 
-  // Mark recurrence
   daysInMonth.forEach((day) => {
-    const dayStr = day.toISOString().split('T')[0];
+    const localDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const yyyy = localDate.getFullYear();
+    const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(localDate.getDate()).padStart(2, '0');
+    const localDayStr = `${yyyy}-${mm}-${dd}`;
+
     let mark = false;
 
     for (const a of assignments) {
       const { recurrence } = a;
-      // Check recurrence conditions
       if (recurrence === 'all') {
         mark = true;
         break;
-      } else if (recurrence === 'weekdays' && isWeekday(day)) {
+      } else if (recurrence === 'weekdays' && isWeekday(localDate)) {
         mark = true;
         break;
-      } else if (recurrence === 'weekends' && isWeekend(day)) {
+      } else if (recurrence === 'weekends' && isWeekend(localDate)) {
         mark = true;
         break;
       }
     }
 
     if (mark) {
-      markedDates[dayStr] = {
+      markedDates[localDayStr] = {
         marked: true,
         dotColor: 'green',
       };
     }
   });
-
-  // Highlight current day text with orange
-  const currentDateStr = new Date().toISOString().split('T')[0];
-  if (!markedDates[currentDateStr]) {
-    markedDates[currentDateStr] = {};
-  }
-  markedDates[currentDateStr].customStyles = {
-    text: { color: '#f97316', fontWeight: 'bold' },
-  };
 
   const onDayPress = (day) => {
     const dayDate = new Date(day.dateString);
@@ -162,25 +207,33 @@ const Schedule = () => {
           style={{ marginTop: 48 }}
         />
       ) : (
-        <View className="mx-4 mt-4 shadow-lg rounded-lg overflow-hidden">
-          <Calendar
-            onDayPress={onDayPress}
-            markedDates={markedDates}
-            markingType="custom"
-            theme={{
-              backgroundColor: isLightTheme ? '#FFFFFF' : '#1f2937',
-              calendarBackground: isLightTheme ? '#FFFFFF' : '#1f2937',
-              dayTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-              monthTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-              arrowColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-              textSectionTitleColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-            }}
-            style={{
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          />
-        </View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View className="mx-4 mt-4 rounded-2xl overflow-hidden">
+            <Calendar
+              onDayPress={onDayPress}
+              markedDates={markedDates}
+              markingType="custom"
+              theme={{
+                backgroundColor: isLightTheme ? '#FFFFFF' : '#1f2937',
+                calendarBackground: isLightTheme ? '#f1f5f9' : '#1f2937',
+                dayTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+                monthTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+                arrowColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+                textSectionTitleColor: isLightTheme ? '#1f2937' : '#FFFFFF',
+                todayTextColor: '#f97316', // Orange 500
+              }}
+              style={{
+                borderRadius: 12,
+                overflow: 'hidden',
+              }}
+            />
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );

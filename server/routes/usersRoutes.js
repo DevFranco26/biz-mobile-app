@@ -7,7 +7,8 @@ const {
   updateUser, 
   deleteUser,
   updateUserPresence,
-  changeUserPassword
+  changeUserPassword,
+  getUserById 
 } = require('../controllers/usersController.js');
 const authenticate = require('../middlewares/authMiddleware.js');
 const { authorizeRoles } = require('../middlewares/roleMiddleware.js');
@@ -28,5 +29,8 @@ router.delete('/:id', authorizeRoles('admin', 'superAdmin'), deleteUser);
 // New route to update the current user's presence
 router.put('/me/presence', updateUserPresence);
 router.put('/me/password', changeUserPassword);
+
+// New route to fetch a single user's details
+router.get('/:id/detail', authorizeRoles('user', 'admin', 'superAdmin', 'supervisor'), getUserById);
 
 module.exports = router;

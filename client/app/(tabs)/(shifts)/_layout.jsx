@@ -11,21 +11,25 @@ const ShiftsTabsLayout = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
 
-  // Helper function to generate tab icons
-  const getTabBarIcon = (iconName, size = 20, accessibilityLabel = '') => ({ color }) => (
-    <Ionicons
-      name={iconName}
-      size={size}
-      color={color}
-      accessibilityLabel={accessibilityLabel}
-    />
-  );
+  // Helper function to generate tab icons using Ionicons
+  const getTabBarIcon = (iconName, size = 24, accessibilityLabel = '') => {
+    return ({ color }) => (
+      <Ionicons
+        name={iconName}
+        size={size}
+        color={color}
+        accessibilityLabel={accessibilityLabel}
+      />
+    );
+  };
 
   return (
     <Tabs
       initialRouteName="Punch"
       screenOptions={{
-        // Position the tab bar at the top
+        headerShown: false,
+        tabBarShowIcon: true,
+        tabBarLabelPosition: 'below-icon',
         tabBarStyle: {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
           borderBottomColor: isLightTheme ? '#e5e7eb' : '#0f172a',
@@ -38,9 +42,8 @@ const ShiftsTabsLayout = () => {
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveTintColor: isLightTheme ? '#c2410c' : '#f97316',
+        tabBarActiveTintColor: '#f97316',
         tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
-        tabBarShowIcon: true,
         tabBarLabelStyle: {
           fontSize: 12,
           textTransform: 'none',
@@ -52,8 +55,6 @@ const ShiftsTabsLayout = () => {
         tabBarItemStyle: {
           flexDirection: 'column',
         },
-        headerShown: false,
-        tabBarLabelPosition: 'below-icon',
       }}
     >
       {/* Punch Screen */}
@@ -61,8 +62,7 @@ const ShiftsTabsLayout = () => {
         name="Punch"
         options={{
           tabBarLabel: 'Punch',
-          // Ionicons outline for time
-          tabBarIcon: getTabBarIcon('time-outline', 20, 'Punch Tab Icon'),
+          tabBarIcon: getTabBarIcon('time-outline', 24, 'Punch Tab Icon'),
         }}
       />
 
@@ -71,8 +71,7 @@ const ShiftsTabsLayout = () => {
         name="TimeCard"
         options={{
           tabBarLabel: 'Time Card',
-          // Ionicons outline for clipboard
-          tabBarIcon: getTabBarIcon('clipboard-outline', 20, 'Time Card Tab Icon'),
+          tabBarIcon: getTabBarIcon('clipboard-outline', 24, 'Time Card Tab Icon'),
         }}
       />
 
@@ -80,9 +79,8 @@ const ShiftsTabsLayout = () => {
       <Tabs.Screen
         name="Schedules"
         options={{
-          tabBarLabel: 'Shift Schedule',
-          // Ionicons outline for calendar
-          tabBarIcon: getTabBarIcon('calendar-outline', 20, 'Shift Schedule Tab Icon'),
+          tabBarLabel: 'Schedule',
+          tabBarIcon: getTabBarIcon('calendar-outline', 24, 'Shift Schedule Tab Icon'),
         }}
       />
     </Tabs>

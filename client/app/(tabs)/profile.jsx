@@ -730,9 +730,9 @@ const Profile = () => {
                     <View className="flex-row justify-end mt-4">
                       <Pressable
                         onPress={() => setEditProfileModalVisible(false)}
-                        className="p-4 rounded-lg bg-slate-600 mr-2"
+                        className="p-4 rounded-lg mr-2"
                       >
-                        <Text className="text-white text-center font-semibold">Cancel</Text>
+                        <Text className={`text-center font-semibold ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Cancel</Text>
                       </Pressable>
 
                       <Pressable
@@ -890,9 +890,9 @@ const Profile = () => {
                     <View className="flex-row justify-end mt-4">
                       <Pressable
                         onPress={() => setChangePasswordModalVisible(false)}
-                        className="p-4 rounded-lg bg-slate-600 mr-2"
+                        className="p-4 rounded-lg mr-2 "
                       >
-                        <Text className="text-white text-center font-semibold">Cancel</Text>
+                        <Text className={`text-center font-semibold ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Cancel</Text>
                       </Pressable>
 
                       <Pressable

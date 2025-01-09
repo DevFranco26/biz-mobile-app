@@ -12,35 +12,64 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
 import useLeaveStore from '../../../store/leaveStore';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, AntDesign, FontAwesome5 } from '@expo/vector-icons';
 import 'nativewind';
+import useUsersStore from '../../../store/usersStore';
 
 const ApprovalLeaves = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const {
-    userLeaves,
-    fetchUserLeaves,
-    loadingUserLeaves,
-    errorUserLeaves,
-  } = useLeaveStore();
+  const { userLeaves, fetchUserLeaves, loadingUserLeaves, errorUserLeaves } = useLeaveStore();
+  const { fetchUserById } = useUsersStore();
 
-  const [sortOrder, setSortOrder] = useState('desc'); 
-  const [filterStatus, setFilterStatus] = useState('ALL'); 
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
-
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedFilterOption, setSelectedFilterOption] = useState(null); 
-
+  const [selectedFilterOption, setSelectedFilterOption] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [approverEmails, setApproverEmails] = useState({});
+  const [requesterEmails, setRequesterEmails] = useState({});
+
+  // Unified helper function for Leave Type icons using Ionicons
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'Sick Leave':
+        return 'bandage-outline';
+      case 'Vacation Leave':
+        return 'airplane-outline';
+      case 'Emergency Leave':
+        return 'warning-outline';
+      case 'Maternity/Paternity Leave':
+        return 'woman-outline';
+      case 'Casual Leave':
+        return 'beer-outline';
+      default:
+        return 'layers-outline';
+    }
+  };
+
+  // Helper function for Status icons using Ionicons
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Pending':
+        return 'time-outline';
+      case 'Approved':
+        return 'checkmark-circle-outline';
+      case 'Rejected':
+        return 'close-circle-outline';
+      default:
+        return 'help-circle-outline';
+    }
+  };
 
   useEffect(() => {
     const initialize = async () => {
@@ -49,14 +78,7 @@ const ApprovalLeaves = () => {
         Alert.alert(
           'Authentication Error',
           'You are not logged in. Please sign in again.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                router.replace('(auth)/signin');
-              },
-            },
-          ]
+          [{ text: 'OK', onPress: () => router.replace('(auth)/signin') }]
         );
         return;
       }
@@ -74,14 +96,51 @@ const ApprovalLeaves = () => {
     }
   }, [fetchUserLeaves]);
 
+  useEffect(() => {
+    (async () => {
+      if (!Array.isArray(userLeaves)) return;
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) return;
+      const uniqueApproverIds = [
+        ...new Set(userLeaves.map((l) => l.approverId).filter(Boolean)),
+      ];
+      for (const approverId of uniqueApproverIds) {
+        if (!approverEmails[approverId]) {
+          const userData = await fetchUserById(approverId, token);
+          if (userData?.email) {
+            setApproverEmails((prev) => ({ ...prev, [approverId]: userData.email }));
+          }
+        }
+      }
+    })();
+  }, [userLeaves, approverEmails, fetchUserById]);
+
+  useEffect(() => {
+    (async () => {
+      if (!Array.isArray(userLeaves)) return;
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) return;
+      const uniqueRequesterIds = [
+        ...new Set(userLeaves.map((l) => l.userId).filter(Boolean)),
+      ];
+      for (const userId of uniqueRequesterIds) {
+        if (!requesterEmails[userId]) {
+          const userData = await fetchUserById(userId, token);
+          if (userData?.email) {
+            setRequesterEmails((prev) => ({ ...prev, [userId]: userData.email }));
+          }
+        }
+      }
+    })();
+  }, [userLeaves, requesterEmails, fetchUserById]);
+
   const getFilteredAndSortedLeaves = () => {
     let filtered = Array.isArray(userLeaves) ? [...userLeaves] : [];
 
-    if (filterStatus && filterStatus !== 'ALL') {
+    if (filterStatus !== 'ALL') {
       filtered = filtered.filter((leave) => leave.status === filterStatus);
     }
-
-    if (filterType && filterType !== 'ALL') {
+    if (filterType !== 'ALL') {
       filtered = filtered.filter((leave) => leave.type === filterType);
     }
 
@@ -113,71 +172,92 @@ const ApprovalLeaves = () => {
   };
 
   const renderLeaveItem = ({ item }) => (
-    <View className={`
-      p-4 rounded-lg mb-4 
-      ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}
-    `}>
+    <View className={`p-4 rounded-lg mb-4 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
       <View className="flex-row justify-between items-center mb-2">
         <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
           {item.type}
         </Text>
-        <Text className={`font-semibold ${getStatusColor(item.status)}`}>
-          {item.status}
-        </Text>
+        <Text className={`font-semibold ${getStatusColor(item.status)}`}>{item.status}</Text>
       </View>
 
-      {/* From Date (separate row, single icon) */}
-      <View className="flex-row items-center mt-2">
-        <Ionicons
-          name="arrow-up-circle-outline"
-          size={20}
-          color={isLightTheme ? '#374151' : '#9ca3af'}
-          className="mr-2"
-        />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
-          From: {formatDateTime(item.fromDate)}
-        </Text>
-      </View>
-
-      {/* To Date (separate row, single icon) */}
-      <View className="flex-row items-center mt-2">
-        <Ionicons
-          name="arrow-down-circle-outline"
-          size={20}
-          color={isLightTheme ? '#374151' : '#9ca3af'}
-          className="mr-2"
-        />
-        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
-          To: {formatDateTime(item.toDate)}
-        </Text>
-      </View>
-
-      {/* Reason Section */}
-      {item.reason ? (
-        <View className="mt-3 flex-row items-start">
-          <Ionicons
-            name="information-circle-outline"
+      {item.userId && (
+        <View className="mt-1 flex-row items-start">
+          <FontAwesome5
+            name="user-alt"
             size={18}
             color={isLightTheme ? '#374151' : '#9ca3af'}
-            className="mr-2 mt-1"
+            className="mr-1 mt-1"
           />
-          <Text className={`text-sm ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
-            {item.reason}
+          <Text className={`text-sm my-auto ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
+            <Text className="font-bold">Requester:</Text>{' '}
+            {requesterEmails[item.userId] || 'Fetching requester email...'}
           </Text>
         </View>
-      ) : null}
+      )}
 
-      {/* If Rejected, show rejection reason */}
-      {item.status === 'Rejected' && item.rejectionReason && (
-        <View className="mt-3 flex-row items-start">
-          <Ionicons
-            name="close-circle"
+      {item.approverId && (
+        <View className="mt-1 flex-row items-start">
+          <FontAwesome5
+            name="user-cog"
             size={18}
+            color={isLightTheme ? '#374151' : '#9ca3af'}
+            className="mr-1 mt-1"
+          />
+          <Text className={`text-sm my-auto ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
+            <Text className="font-bold">Approver:</Text>{' '}
+            {approverEmails[item.approverId] || 'Fetching approver email...'}
+          </Text>
+        </View>
+      )}
+
+      <View className="flex-row items-center mt-2">
+        <FontAwesome5
+          name="arrow-alt-circle-up"
+          size={20}
+          color={isLightTheme ? '#374151' : '#9ca3af'}
+          className="mr-2"
+        />
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-bold">Start: </Text>{formatDateTime(item.fromDate)}
+        </Text>
+      </View>
+
+      <View className="flex-row items-center mt-2">
+        <FontAwesome5
+          name="arrow-alt-circle-down"
+          size={20}
+          color={isLightTheme ? '#374151' : '#9ca3af'}
+          className="mr-2"
+        />
+        <Text className={`text-sm font-medium ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+          <Text className="font-bold">End: </Text>{formatDateTime(item.toDate)}
+        </Text>
+      </View>
+
+      {item.reason && (
+        <View className="mt-1 flex-row items-start">
+          <FontAwesome5
+            name="info-circle"
+            size={20}
+            color={isLightTheme ? '#374151' : '#9ca3af'}
+            className="mr-2 mt-1 my-auto"
+          />
+          <Text className={`text-sm my-auto ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
+            <Text className="font-bold">Reason: </Text>{item.reason}
+          </Text>
+        </View>
+      )}
+
+      {item.status === 'Rejected' && item.rejectionReason && (
+        <View className="mt-1 flex-row items-start">
+          <AntDesign
+            name="closecircle"
+            size={20}
             color="#ef4444"
             className="mr-2 mt-1"
           />
-          <Text className="text-sm text-red-500 flex-1">
-            {`Rejection Reason: ${item.rejectionReason}`}
+          <Text className={`text-sm my-auto ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} flex-1`}>
+            <Text className="font-bold text-red-500">Rejected: </Text>{item.rejectionReason}
           </Text>
         </View>
       )}
@@ -185,146 +265,79 @@ const ApprovalLeaves = () => {
   );
 
   const toggleSortOrder = () => {
-    setSortOrder((prevOrder) => (prevOrder === 'desc' ? 'asc' : 'desc'));
+    setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'));
   };
 
-  const handleFilterOption = (option) => {
-    setSelectedFilterOption(option);
-  };
-
+  const handleFilterOption = (option) => setSelectedFilterOption(option);
   const handleStatusSelection = (status) => {
     setFilterStatus(status);
     setIsFilterModalVisible(false);
     setSelectedFilterOption(null);
   };
-
   const handleTypeSelection = (type) => {
     setFilterType(type);
     setIsFilterModalVisible(false);
     setSelectedFilterOption(null);
   };
-
   const removeFilter = (filterTypeToRemove) => {
-    if (filterTypeToRemove === 'status') {
-      setFilterStatus('ALL');
-    } else if (filterTypeToRemove === 'type') {
-      setFilterType('ALL');
-    }
-  };
-
-  const statusIcons = {
-    'All': 'layers-outline',
-    'Pending': 'time-outline',
-    'Approved': 'checkmark-circle-outline',
-    'Rejected': 'close-circle-outline',
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'Sick Leave':
-        return 'medkit';
-      case 'Vacation Leave':
-        return 'umbrella';
-      case 'Emergency Leave':
-        return 'exclamation-triangle';
-      case 'Maternity/Paternity Leave':
-        return 'baby';
-      case 'Casual Leave':
-        return 'coffee';
-      default:
-        return 'file-alt';
-    }
+    if (filterTypeToRemove === 'status') setFilterStatus('ALL');
+    else if (filterTypeToRemove === 'type') setFilterType('ALL');
   };
 
   return (
-    <SafeAreaView className={`flex-1 px-4 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} style={{ paddingTop: 60 }}>
-      {/* Header with Active Filters and Sort/Filter Icons */}
+    <SafeAreaView
+      className={`flex-1 px-4 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
+      style={{ paddingTop: 60 }}
+    >
       <View className="flex-row justify-between items-center mb-4">
-        {/* Active Filters */}
         <View className="flex-row flex-wrap">
           {filterStatus !== 'ALL' && (
-            <View className={`
-              flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-sky-100' : 'bg-slate-700'}
-            `}>
-              <Text className={`
-                text-sm mr-1
-                ${isLightTheme ? 'text-blue-900' : 'text-sky-300'}
-              `}>
+            <View
+              className={`flex-row items-center px-2 py-1 rounded-full mr-2 mb-1 ${
+                isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+              }`}
+            >
+              <Text className={`text-sm mr-1 ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}`}>
                 {filterStatus}
               </Text>
               <Pressable onPress={() => removeFilter('status')}>
-                <Ionicons
-                  name="close-circle"
-                  size={16}
-                  color={isLightTheme ? '#374151' : '#9ca3af'}
-                  className="ml-1"
-                />
+                <Ionicons name="close-circle" size={16} color={isLightTheme ? '#374151' : '#9ca3af'} />
               </Pressable>
             </View>
           )}
-
           {filterType !== 'ALL' && (
-            <View className={`
-              flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}
-            `}>
-              <Text className={`
-                text-sm mr-1
-                ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}
-              `}>
+            <View
+              className={`flex-row items-center px-2 py-1 rounded-full mr-2 mb-1 ${
+                isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+              }`}
+            >
+              <Text className={`text-sm mr-1 ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}`}>
                 {filterType}
               </Text>
               <Pressable onPress={() => removeFilter('type')}>
-                <Ionicons
-                  name="close-circle"
-                  size={16}
-                  color={isLightTheme ? '#374151' : '#9ca3af'}
-                  className="ml-1"
-                />
+                <Ionicons name="close-circle" size={16} color={isLightTheme ? '#374151' : '#9ca3af'} />
               </Pressable>
             </View>
           )}
         </View>
 
-        {/* Sort and Filter Icons */}
         <View className="flex-row">
-          <Pressable
-            onPress={toggleSortOrder}
-            className="mr-4"
-            accessibilityLabel="Sort by Date"
-          >
+          <Pressable onPress={toggleSortOrder} className="mr-4" accessibilityLabel="Sort by Date">
             <MaterialIcons
               name="sort"
               size={24}
-              color={
-                sortOrder === 'asc'
-                  ? '#f97316'
-                  : isLightTheme
-                    ? '#374151'
-                    : '#9ca3af'
-              }
+              color={sortOrder === 'asc' ? '#f97316' : isLightTheme ? '#374151' : '#9ca3af'}
             />
           </Pressable>
-
-          <Pressable
-            onPress={() => setIsFilterModalVisible(true)}
-            className="mr-4"
-            accessibilityLabel="Filter Options"
-          >
-            <Ionicons
-              name="filter"
-              size={24}
-              color={isLightTheme ? '#374151' : '#9ca3af'}
-            />
+          <Pressable onPress={() => setIsFilterModalVisible(true)} className="mr-4" accessibilityLabel="Filter Options">
+            <Ionicons name="filter" size={24} color={isLightTheme ? '#374151' : '#9ca3af'} />
           </Pressable>
         </View>
       </View>
 
-      {/* Filter Modal */}
       <Modal
         visible={isFilterModalVisible}
-        transparent={true}
+        transparent
         animationType="fade"
         onRequestClose={() => {
           setIsFilterModalVisible(false);
@@ -332,16 +345,25 @@ const ApprovalLeaves = () => {
         }}
       >
         <TouchableOpacity
-          className={`flex-1 justify-center items-center ${isLightTheme? `bg-slate-100`: `bg-slate-800`}`}
+          className="flex-1 justify-center items-center"
           activeOpacity={1}
           onPressOut={() => {
             setIsFilterModalVisible(false);
             setSelectedFilterOption(null);
           }}
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)' }}
         >
-          <View className={`w-11/12 max-h-3/4 p-6 rounded-lg ${isLightTheme ? `bg-white` : `bg-slate-900`}`}>
+          <View
+            className={`w-11/12 max-h-3/4 p-6 rounded-2xl ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            }`}
+          >
             <View className="flex-row justify-between items-center mb-4">
-              <Text className={`text-xl font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+              <Text
+                className={`text-xl font-semibold ${
+                  isLightTheme ? 'text-slate-800' : 'text-slate-100'
+                }`}
+              >
                 {selectedFilterOption === 'status'
                   ? 'Filter by Status'
                   : selectedFilterOption === 'type'
@@ -354,11 +376,7 @@ const ApprovalLeaves = () => {
                   setSelectedFilterOption(null);
                 }}
               >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isLightTheme ? '#374151' : '#9ca3af'}
-                />
+                <Ionicons name="close" size={24} color={isLightTheme ? '#374151' : '#9ca3af'} />
               </Pressable>
             </View>
 
@@ -366,11 +384,11 @@ const ApprovalLeaves = () => {
               <View>
                 <Pressable
                   className="flex-row items-center mb-4 p-2 rounded-lg"
-                  android_ripple={{color: isLightTheme ? '#e5e7eb' : '#4b5563'}}
+                  android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                   onPress={() => handleFilterOption('status')}
                 >
                   <Ionicons
-                    name="time"
+                    name={getStatusIcon('Pending')}
                     size={24}
                     color={isLightTheme ? '#374151' : '#9ca3af'}
                     className="mr-3"
@@ -382,11 +400,11 @@ const ApprovalLeaves = () => {
 
                 <Pressable
                   className="flex-row items-center p-2 rounded-lg"
-                  android_ripple={{color: isLightTheme ? '#e5e7eb' : '#4b5563'}}
+                  android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                   onPress={() => handleFilterOption('type')}
                 >
                   <Ionicons
-                    name="document-text"
+                    name={getStatusIcon('All')}
                     size={24}
                     color={isLightTheme ? '#374151' : '#9ca3af'}
                     className="mr-3"
@@ -400,26 +418,37 @@ const ApprovalLeaves = () => {
 
             {selectedFilterOption === 'status' && (
               <View>
-                {[
-                  { label: 'All', value: 'ALL', icon: 'layers-outline' },
-                  { label: 'Pending', value: 'Pending', icon: 'time-outline' },
-                  { label: 'Approved', value: 'Approved', icon: 'checkmark-circle-outline' },
-                  { label: 'Rejected', value: 'Rejected', icon: 'close-circle-outline' },
-                ].map((status) => (
+                {['Pending', 'Approved', 'Rejected'].map((status) => (
                   <Pressable
-                    key={status.value}
-                    className={`flex-row items-center mb-3 p-2 rounded-lg ${filterStatus === status.value ? 'bg-blue-200' : ''}`}
-                    onPress={() => handleStatusSelection(status.value)}
-                    android_ripple={{color: isLightTheme ? '#e5e7eb' : '#4b5563'}}
+                    key={status}
+                    className={`flex-row items-center mb-3 p-2 rounded-lg ${
+                      filterStatus === status ? 'bg-slate-200' : ''
+                    }`}
+                    onPress={() => handleStatusSelection(status)}
+                    android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                   >
                     <Ionicons
-                      name={status.icon}
+                      name={getStatusIcon(status)}
                       size={24}
-                      color={filterStatus === status.value ? '#1e3a8a' : (isLightTheme ? '#374151' : '#9ca3af')}
+                      color={
+                        filterStatus === status
+                          ? '#1e3a8a'
+                          : isLightTheme
+                          ? '#374151'
+                          : '#9ca3af'
+                      }
                       className="mr-3"
                     />
-                    <Text className={`text-lg ${filterStatus === status.value ? 'text-blue-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}`}>
-                      {status.label}
+                    <Text
+                      className={`text-lg ${
+                        filterStatus === status
+                          ? 'text-slate-900'
+                          : isLightTheme
+                          ? 'text-slate-800'
+                          : 'text-slate-100'
+                      }`}
+                    >
+                      {status}
                     </Text>
                   </Pressable>
                 ))}
@@ -429,27 +458,50 @@ const ApprovalLeaves = () => {
             {selectedFilterOption === 'type' && (
               <View>
                 {[
-                  { label: 'All', value: 'ALL' },
-                  { label: 'Sick Leave', value: 'Sick Leave' },
-                  { label: 'Vacation Leave', value: 'Vacation Leave' },
-                  { label: 'Emergency Leave', value: 'Emergency Leave' },
-                  { label: 'Maternity/Paternity Leave', value: 'Maternity/Paternity Leave' },
-                  { label: 'Casual Leave', value: 'Casual Leave' },
+                  'Sick Leave',
+                  'Vacation Leave',
+                  'Emergency Leave',
+                  'Maternity/Paternity Leave',
+                  'Casual Leave',
                 ].map((type) => (
                   <Pressable
-                    key={type.value}
-                    className={`flex-row items-center mb-3 p-2 rounded-lg ${filterType === type.value ? 'bg-blue-200' : ''}`}
-                    onPress={() => handleTypeSelection(type.value)}
-                    android_ripple={{color: isLightTheme ? '#e5e7eb' : '#4b5563'}}
+                    key={type}
+                    className={`flex-row items-center mb-3 p-2 rounded-lg ${
+                      filterType === type
+                        ? isLightTheme
+                          ? 'bg-slate-200'
+                          : 'bg-slate-600'
+                        : ''
+                    }`}
+                    onPress={() => handleTypeSelection(type)}
+                    android_ripple={{ color: isLightTheme ? '#e5e7eb' : '#4b5563' }}
                   >
-                    <FontAwesome5
-                      name={getTypeIcon(type.value)}
+                    <Ionicons
+                      name={getTypeIcon(type)}
                       size={24}
-                      color={filterType === type.value ? '#1e3a8a' : (isLightTheme ? '#374151' : '#9ca3af')}
+                      color={
+                        filterType === type
+                          ? isLightTheme
+                            ? '#44403c'
+                            : '#d6d3d1'
+                          : isLightTheme
+                          ? '#44403c'
+                          : '#d6d3d1'
+                      }
                       className="mr-3"
                     />
-                    <Text className={`text-lg ${filterType === type.value ? 'text-blue-900' : (isLightTheme ? 'text-slate-800' : 'text-slate-100')}`}>
-                      {type.label}
+                    <Text
+                      className={`text-lg ${
+                        filterType === type
+                          ? isLightTheme
+                            ? 'text-slate-700'
+                            : 'text-slate-300'
+                          : isLightTheme
+                          ? 'text-slate-700'
+                          : 'text-slate-300'
+                      }`}
+                    >
+                      {type}
                     </Text>
                   </Pressable>
                 ))}
@@ -470,7 +522,7 @@ const ApprovalLeaves = () => {
           data={getFilteredAndSortedLeaves()}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderLeaveItem}
-          showsVerticalScrollIndicator={true} 
+          showsVerticalScrollIndicator
           contentContainerStyle={
             getFilteredAndSortedLeaves().length === 0
               ? { flexGrow: 1, justifyContent: 'center', alignItems: 'center' }

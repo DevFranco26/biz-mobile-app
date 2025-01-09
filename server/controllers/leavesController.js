@@ -23,7 +23,7 @@ const submitLeaveRequest = async (req, res) => {
       where: {
         id: approverId,
         companyId: req.user.companyId,
-        role: { [Op.in]: ['admin', 'supervisor'] },
+        role: { [Op.in]: ['admin', 'supervisor', 'superAdmin'] },
       },
     });
 
@@ -224,8 +224,8 @@ const getApprovers = async (req, res) => {
     const approvers = await User.findAll({
       where: {
         companyId: req.user.companyId,
-        role: { [Op.in]: ['admin', 'supervisor'] },
-        id: { [Op.ne]: req.user.id }, // Exclude current user
+        role: { [Op.in]: ['admin', 'supervisor', 'superAdmin'] },
+        id: { [Op.ne]: req.user.id }, 
       },
       attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
     });

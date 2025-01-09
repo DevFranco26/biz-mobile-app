@@ -58,6 +58,30 @@ const useUsersStore = create((set) => ({
       return { success: false, message: 'An error occurred while deleting the user.' };
     }
   },
+
+  // Action to fetch a single user by ID (to get email, etc.)
+  fetchUserById: async (userId, token) => {
+     try {
+        const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}/detail`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (response.ok) {
+          return data.data; // e.g. { id, email, ... }
+        } else {
+          Alert.alert('Error', data.message || 'Failed to fetch user details.');
+          return null;
+      }
+      } catch (error) {
+        console.error('fetchUserById Error:', error);
+        Alert.alert('Error', 'An error occurred while fetching user details.');
+        return null;
+      }
+    },
+
 }));
 
 export default useUsersStore;

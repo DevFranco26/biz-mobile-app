@@ -342,11 +342,39 @@ const changeUserPassword = async (req, res) => {
   }
 };
 
+/**
+ * Get User by ID
+ * Allows an admin, superAdmin, or supervisor to fetch a single user’s details.
+ */
+const getUserById = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await User.findByPk(id, {
+        attributes: ['id', 'email', 'firstName', 'lastName', 'role', 'companyId']
+      });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+  
+      // If not superAdmin, ensure user belongs to same company
+      if (req.user.role !== 'superAdmin' && user.companyId !== req.user.companyId) {
+        return res.status(403).json({ message: 'Unauthorized request.' });
+      }
+  
+      return res.status(200).json({ data: user });
+    } catch (error) {
+      console.error('Error in getUserById:', error);
+      return res.status(500).json({ message: 'Internal server error.' });
+    }
+  };
+
 module.exports = {
   getAllUsers,
   createUser,
   updateUser,
   deleteUser,
   updateUserPresence,
-  changeUserPassword
+  changeUserPassword,
+  getUserById
 };

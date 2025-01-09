@@ -11,6 +11,7 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
+  Platform as RNPlatform,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -31,18 +32,14 @@ import {
   endOfDay,
 } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Platform as RNPlatform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import DropDownPicker from 'react-native-dropdown-picker';
 
 const TimeCard = () => {
-  const { user } = useUserStore();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
-
   const insets = useSafeAreaInsets();
 
-  // State Variables
   const [shiftLogs, setShiftLogs] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
@@ -50,17 +47,14 @@ const TimeCard = () => {
   const [logsWithDuration, setLogsWithDuration] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Range Selection States
   const [rangeType, setRangeType] = useState('Monthly');
   const [customStartDate, setCustomStartDate] = useState(new Date());
   const [customEndDate, setCustomEndDate] = useState(new Date());
 
-  // DateTime picker states
-  const [currentPicker, setCurrentPicker] = useState(null); // 'startDate' or 'endDate'
+  const [currentPicker, setCurrentPicker] = useState(null);
   const [tempStartDate, setTempStartDate] = useState(customStartDate);
   const [tempEndDate, setTempEndDate] = useState(customEndDate);
 
-  // DropDownPicker states
   const [openRangeType, setOpenRangeType] = useState(false);
   const [rangeTypeItems, setRangeTypeItems] = useState([
     { label: 'Monthly', value: 'Monthly' },
@@ -69,50 +63,33 @@ const TimeCard = () => {
     { label: 'Custom Range', value: 'Custom' },
   ]);
 
-  // 1) Modify combineDateTime to parse the date/time as UTC:
   const combineDateTime = (date, time) => {
-    // Suppose `timeInDate="2024-12-28" and timeInTime="14:00:00"` are in UTC
-    // Add 'Z' so JS parses them as UTC
     const dateTimeString = `${date}T${time}Z`;
     const dateObj = new Date(dateTimeString);
     return !isNaN(dateObj) ? dateObj : null;
   };
 
-  // 2) Format for display in local time:
-  const formatDateWithDay = (dateObj) => {
-    // dateObj is already local
-    return format(dateObj, 'EEEE, MMMM d, yyyy'); 
-    // e.g. "Saturday, December 28, 2024" (in local time)
-  };
+  const formatDateWithDay = (dateObj) => format(dateObj, 'EEEE, MMMM d, yyyy');
+  const formatTime = (dateObj) => format(dateObj, 'p');
 
-  // For time display:
-  const formatTime = (dateObj) => {
-    // e.g. "h:mm aa" => "2:00 PM"
-    return format(dateObj, 'p'); // date-fns 'p' uses local time
-  };
-
-  // Hook: fetch logs every time range changes
   useEffect(() => {
     fetchTimeLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeType, selectedDate, customStartDate, customEndDate]);
 
-  // Build logsWithDuration
   useEffect(() => {
     let totalDuration = 0;
-
     const validLogs = shiftLogs
       .map((log) => {
-        const timeIn = combineDateTime(log.timeInDate, log.timeInTime);   // local Date
-        const timeOut = combineDateTime(log.timeOutDate, log.timeOutTime); // local Date
+        const timeIn = combineDateTime(log.timeInDate, log.timeInTime);
+        const timeOut = combineDateTime(log.timeOutDate, log.timeOutTime);
 
         if (timeIn && timeOut && timeOut > timeIn) {
-          const diffMs = timeOut - timeIn; // local time difference
+          const diffMs = timeOut - timeIn;
           totalDuration += diffMs;
 
           return {
-            timeInObj: timeIn,   // store the actual Date for display
-            timeOutObj: timeOut, 
+            timeInObj: timeIn,
+            timeOutObj: timeOut,
             duration: `${Math.floor(diffMs / 3600000)}h ${Math.floor(
               (diffMs % 3600000) / 60000
             )}m`,
@@ -126,14 +103,12 @@ const TimeCard = () => {
     setTotalDurationMs(totalDuration);
   }, [shiftLogs]);
 
-  // Format total duration
   const formatTotalDuration = (durationMs) => {
     const hrs = Math.floor(durationMs / 3600000);
     const mins = Math.floor((durationMs % 3600000) / 60000);
     return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
   };
 
-  // Range logic: local date boundaries
   const getDateRangeBounds = () => {
     let startDate, endDate;
     switch (rangeType) {
@@ -142,20 +117,11 @@ const TimeCard = () => {
         endDate = endOfMonth(selectedDate);
         break;
       case 'Bi-Monthly':
-        const dayOfMonth = selectedDate.getDate();
-        if (dayOfMonth <= 15) {
+        if (selectedDate.getDate() <= 15) {
           startDate = startOfMonth(selectedDate);
-          endDate = new Date(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth(),
-            15
-          );
+          endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 15);
         } else {
-          startDate = new Date(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth(),
-            16
-          );
+          startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 16);
           endDate = endOfMonth(selectedDate);
         }
         break;
@@ -179,34 +145,25 @@ const TimeCard = () => {
     return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
   };
 
-  // Fetch logs from server
   const fetchTimeLogs = async () => {
     setLoading(true);
     try {
       const { startDate, endDate } = getDateRangeBounds();
-
-      // Retrieve the token from SecureStore
       const token = await SecureStore.getItemAsync('token');
       if (!token) {
         Alert.alert(
           'Authentication Error',
           'You are not logged in. Please sign in again.',
-          [{ text: 'OK', onPress: () => {} }]
+          [{ text: 'OK' }]
         );
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      // If your server wants these in UTC,
-      // you might do something like: 
-      // const startDateUTC = startDate.toISOString().slice(0, 10);
-      // const endDateUTC = endDate.toISOString().slice(0, 10);
-
       const response = await axios.get('http://192.168.100.8:5000/api/timelogs/range', {
         headers: { Authorization: `Bearer ${token}` },
         params: {
-          // pass them as local or UTC depending on your backend needs
           startDate: format(startDate, 'yyyy-MM-dd'),
           endDate: format(endDate, 'yyyy-MM-dd'),
         },
@@ -237,13 +194,11 @@ const TimeCard = () => {
     }
   };
 
-  // Refresh logic
   const onRefresh = () => {
     setRefreshing(true);
     fetchTimeLogs();
   };
 
-  // Range navigation for monthly, etc.
   const handlePrev = () => {
     switch (rangeType) {
       case 'Monthly':
@@ -290,7 +245,6 @@ const TimeCard = () => {
     }
   };
 
-  // iOS datepicker
   const renderIOSPickerModal = () => {
     if (!currentPicker || RNPlatform.OS !== 'ios') return null;
     return (
@@ -333,8 +287,6 @@ const TimeCard = () => {
                   }}
                   textColor={isLightTheme ? '#000' : '#FFF'}
                 />
-
-                {/* Buttons */}
                 <View className="flex-row justify-end mt-5">
                   <Pressable
                     onPress={() => setCurrentPicker(null)}
@@ -342,15 +294,10 @@ const TimeCard = () => {
                       isLightTheme ? 'bg-slate-300' : 'bg-slate-600'
                     }`}
                   >
-                    <Text
-                      className={`${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      }`}
-                    >
+                    <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
                       Cancel
                     </Text>
                   </Pressable>
-
                   <Pressable
                     onPress={() => {
                       if (currentPicker === 'startDate') {
@@ -379,7 +326,6 @@ const TimeCard = () => {
     );
   };
 
-  // Android datepicker
   const renderAndroidPicker = () => {
     if (!currentPicker || RNPlatform.OS !== 'android') return null;
     return (
@@ -410,15 +356,11 @@ const TimeCard = () => {
     );
   };
 
-  // Open date picker
   const openPicker = (pickerType) => {
     setCurrentPicker(pickerType);
     if (RNPlatform.OS !== 'android') {
-      if (pickerType === 'startDate') {
-        setTempStartDate(customStartDate);
-      } else {
-        setTempEndDate(customEndDate);
-      }
+      setTempStartDate(customStartDate);
+      setTempEndDate(customEndDate);
     }
   };
 
@@ -430,7 +372,6 @@ const TimeCard = () => {
         paddingTop: insets.top + 60,
       }}
     >
-      {/* Top Section */}
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         <Text
           className={`text-base mb-2 ${
@@ -450,12 +391,12 @@ const TimeCard = () => {
             setItems={setRangeTypeItems}
             placeholder="Select Range"
             style={{
-              borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-              backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             }}
             dropDownContainerStyle={{
-              borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-              backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             }}
             textStyle={{
               color: isLightTheme ? '#374151' : '#9CA3AF',
@@ -464,7 +405,7 @@ const TimeCard = () => {
               color: isLightTheme ? '#6B7280' : '#9CA3AF',
             }}
             arrowIconStyle={{
-              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
             }}
             tickIconStyle={{
               tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -482,11 +423,7 @@ const TimeCard = () => {
                 isLightTheme ? 'bg-slate-200' : 'bg-slate-800'
               }`}
             >
-              <Text
-                className={`${
-                  isLightTheme ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
+              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-400'}`}>
                 Start Date: {format(customStartDate, 'MMMM d, yyyy')}
               </Text>
             </Pressable>
@@ -497,11 +434,7 @@ const TimeCard = () => {
                 isLightTheme ? 'bg-slate-200' : 'bg-slate-800'
               }`}
             >
-              <Text
-                className={`${
-                  isLightTheme ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
+              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-400'}`}>
                 End Date: {format(customEndDate, 'MMMM d, yyyy')}
               </Text>
             </Pressable>
@@ -509,9 +442,9 @@ const TimeCard = () => {
         )}
 
         {rangeType !== 'Custom' && (
-          <View className="flex-row items-center my-2 ">
+          <View className="flex-row items-center my-2">
             <Text
-              className={`text-base font-medium ${
+              className={`text-base font-semibold ${
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
@@ -550,7 +483,7 @@ const TimeCard = () => {
         {rangeType === 'Custom' && (
           <View className="mb-4">
             <Text
-              className={`text-base font-medium ${
+              className={`text-base font-semibold ${
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
@@ -569,10 +502,10 @@ const TimeCard = () => {
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
-            Total Hours
+            Total Hours:
           </Text>
           <Text
-            className={`text-xl font-bold ${
+            className={`text-xl font-semibold ${
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
@@ -581,7 +514,6 @@ const TimeCard = () => {
         </View>
       </View>
 
-      {/* Logs Scrollable */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
@@ -598,7 +530,6 @@ const TimeCard = () => {
           <ActivityIndicator size="large" color="#475569" className="mt-12" />
         ) : logsWithDuration.length > 0 ? (
           logsWithDuration.map((log, index) => {
-            // Now we use the local Date objects for display
             const localDateFormatted = formatDateWithDay(log.timeInObj);
             const timeInFormatted = formatTime(log.timeInObj);
             const timeOutFormatted = formatTime(log.timeOutObj);
@@ -617,8 +548,6 @@ const TimeCard = () => {
                 >
                   {localDateFormatted}
                 </Text>
-
-                {/* Time in / time out in local */}
                 <Text
                   className={`text-md ${
                     isLightTheme ? 'text-slate-600' : 'text-slate-400'
@@ -626,7 +555,6 @@ const TimeCard = () => {
                 >
                   {timeInFormatted} - {timeOutFormatted}
                 </Text>
-
                 <Text
                   className={`text-md mt-2 text-right ${
                     isLightTheme ? 'text-slate-600' : 'text-slate-400'
@@ -648,7 +576,6 @@ const TimeCard = () => {
         )}
       </ScrollView>
 
-      {/* iOS & Android DatePicker Modals */}
       {renderIOSPickerModal()}
       {renderAndroidPicker()}
     </View>

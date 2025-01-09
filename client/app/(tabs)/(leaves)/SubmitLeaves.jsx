@@ -283,7 +283,7 @@ const SubmitLeaves = () => {
           onRequestClose={() => setCurrentPicker(null)}
         >
           <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
-            <View className="flex-1 justify-center items-center bg-slate-900 ">
+            <View className="flex-1 justify-center items-center bg-slate-950/70 ">
               <TouchableWithoutFeedback>
                 <View
                   className={`w-11/12 max-w-lg p-6 rounded-lg ${
@@ -312,7 +312,7 @@ const SubmitLeaves = () => {
                   <View className="flex-row justify-between mt-4">
                     <Pressable
                       onPress={() => setCurrentPicker(null)}
-                      className={`p-3 rounded-lg ${
+                      className={`p-4 rounded-lg ${
                         isLightTheme ? 'bg-slate-200' : 'bg-slate-700'
                       } flex-1 mr-2`}
                     >
@@ -356,7 +356,7 @@ const SubmitLeaves = () => {
                         }
                         setCurrentPicker(null);
                       }}
-                      className="p-3 rounded-lg bg-orange-500 flex-1 ml-2"
+                      className="p-4 rounded-lg bg-orange-500 flex-1 ml-2"
                     >
                       <Text className="text-center text-white">Confirm</Text>
                     </Pressable>
@@ -375,9 +375,9 @@ const SubmitLeaves = () => {
       className={`flex-1 bg-${isLightTheme ? 'white' : 'slate-900'} px-4 `}
       style={{ paddingTop: 60 }}
     >
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'padding'} className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-between">
+          <View className="flex-1">
             {/* Form Fields */}
             <View className="space-y-4">
               {/* Leave Type Dropdown */}
@@ -398,12 +398,12 @@ const SubmitLeaves = () => {
                   }}
                   className="mb-4"
                   style={{
-                    borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                    borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
                   }}
                   dropDownContainerStyle={{
-                    borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                    borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
                   }}
                   arrowIconStyle={{
                     tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
@@ -437,12 +437,12 @@ const SubmitLeaves = () => {
                   }}
                   className="mb-4"
                   style={{
-                    borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                    borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
                   }}
                   dropDownContainerStyle={{
-                    borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-                    backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+                    borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+                    backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
                   }}
                   arrowIconStyle={{
                     tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
@@ -579,7 +579,7 @@ const SubmitLeaves = () => {
             </View>
 
             {/* Submit Button */}
-            <View className="mt-4 mb-4">
+            <View className="mt-auto mb-4">
               <Pressable
                 onPress={handleSubmit}
                 className={`bg-orange-500 py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
@@ -590,8 +590,8 @@ const SubmitLeaves = () => {
                 {isSubmitting && (
                   <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
                 )}
-                <Text className="text-white text-center text-lg font-medium">
-                  {isSubmitting ? 'Submitting...' : 'Request Leave'}
+                <Text className="text-white text-center text-lg font-medium rounded-2xl">
+                  {isSubmitting ? 'Submitting...' : 'Submit Leave'}
                 </Text>
               </Pressable>
               {errorSubmitting && (
