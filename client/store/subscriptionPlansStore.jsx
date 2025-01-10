@@ -13,11 +13,20 @@ const useSubscriptionPlansStore = create((set, get) => ({
    * Endpoint: GET /api/subscription-plans
    */
   fetchSubscriptionPlans: async (token) => {
+    // If the server no longer requires a token for GET, we can omit passing it
+    // But if you want to pass the token anyway, that's okay. The server will ignore it
     set({ loadingPlans: true, errorPlans: null });
     try {
+      // We do NOT need the token in the header if the route is open. 
+      // If you still want to pass it, that’s fine—server will ignore it for GET.
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/subscription-plans`, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: headers,
       });
       const data = await response.json();
       if (response.ok) {

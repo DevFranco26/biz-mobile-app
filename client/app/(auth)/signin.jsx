@@ -1,17 +1,6 @@
 // File: app/(auth)/signin.jsx
-
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from 'react-native';
+import { View, Text, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import * as SecureStore from 'expo-secure-store';
@@ -22,65 +11,38 @@ import { useRouter } from 'expo-router';
 
 const API_BASE_URL = 'http://192.168.100.8:5000/api';
 
+// Validation
 const SigninSchema = Yup.object().shape({
-  email: Yup.string().email('Invalid email address').required('Email is required'),
-  password: Yup.string().min(6, 'Password should be at least 6 characters').required('Password is required'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().min(6, 'Min 6 chars').required('Password is required'),
 });
 
-const Signin = () => {
+export default function Signin() {
   const { theme } = useThemeStore();
   const { setUser } = useUserStore();
+  const isLightTheme = theme === 'light';
   const router = useRouter();
 
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const handleSignin = async (values) => {
     const { email, password } = values;
-
     try {
       const response = await fetch(`${API_BASE_URL}/auth/sign-in`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await response.json();
-      console.log('Signin Response:', data);
 
       if (response.ok) {
         if (data.token && data.user) {
-          // Store token & user in SecureStore
           await SecureStore.setItemAsync('token', data.token);
           await SecureStore.setItemAsync('user', JSON.stringify(data.user));
-
-          // Update user in Zustand
           setUser(data.user);
 
-          // 1) Immediately set the presence to "active"
-          try {
-            const setActiveResponse = await fetch(`${API_BASE_URL}/users/me/presence`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${data.token}`,
-              },
-              body: JSON.stringify({ presenceStatus: 'active' }),
-            });
-
-            if (setActiveResponse.ok) {
-              const updatedPresenceData = await setActiveResponse.json();
-              // Update user store again to reflect new presence status
-              setUser(updatedPresenceData.data);
-            } else {
-              console.log('Failed to set presence to active');
-            }
-          } catch (err) {
-            console.error('Error setting presence to active:', err);
-          }
-
-          // 2) Navigate to Profile
+          // Set presence to 'active' if desired...
+          // Then navigate to profile or wherever
           router.replace('(tabs)/profile');
         } else {
           Alert.alert('Error', 'Missing token or user data in response.');
@@ -89,67 +51,56 @@ const Signin = () => {
         Alert.alert('Error', data.message || 'Invalid credentials');
       }
     } catch (error) {
-      console.error('Signin Error:', error);
-      Alert.alert('Error', 'An error occurred. Please try again later.');
+      Alert.alert('Error', 'An error occurred. Try again later.');
     }
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View className={`flex-1 justify-center items-center px-6 ${theme === 'light' ? 'bg-white' : 'bg-slate-900'}`}>
-          <Formik initialValues={{ email: '', password: '' }} validationSchema={SigninSchema} onSubmit={handleSignin}>
+        <View className={`flex-1 justify-center items-center px-6 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+          <Formik
+            initialValues={{ email: '', password: '' }}
+            validationSchema={SigninSchema}
+            onSubmit={handleSignin}
+          >
             {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
               <>
-                <Text
-                  className={`text-5xl font-extrabold text-center mb-12 ${
-                    theme === 'light' ? 'text-slate-800' : 'text-slate-100'
-                  }`}
-                >
+                <Text className={`text-5xl font-extrabold text-center mb-12 ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                   Biz Buddy
                 </Text>
 
                 {/* Email Input */}
                 <View className="mb-4 w-full">
-                  <Text
-                    className={`text-lg ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'} text-left`}
-                  >
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'} text-left`}>
                     Email
                   </Text>
                   <TextInput
-                    className={`w-full p-4 my-2 rounded-lg ${
-                      theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
-                    } ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}
+                    className={`w-full p-4 my-2 rounded-lg ${isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-100'}`}
                     keyboardType="email-address"
                     value={values.email}
                     onChangeText={handleChange('email')}
                     onBlur={handleBlur('email')}
-                    selectionColor="#0f766e"
                     placeholder="Enter your email"
-                    placeholderTextColor={theme === 'light' ? '#6b7280' : '#9ca3af'}
+                    placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                   />
                   {touched.email && errors.email && <Text className="text-red-500 text-sm">{errors.email}</Text>}
                 </View>
 
                 {/* Password Input */}
                 <View className="mb-6 w-full">
-                  <Text
-                    className={`text-lg ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'} text-left`}
-                  >
+                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'} text-left`}>
                     Password
                   </Text>
                   <View className="relative">
                     <TextInput
-                      className={`w-full p-4 my-2 rounded-lg ${
-                        theme === 'light' ? 'bg-slate-100' : 'bg-slate-800'
-                      } ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}
+                      className={`w-full p-4 my-2 rounded-lg ${isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-100'}`}
                       secureTextEntry={!passwordVisible}
                       value={values.password}
                       onChangeText={handleChange('password')}
                       onBlur={handleBlur('password')}
-                      selectionColor="#0f766e"
                       placeholder="Enter your password"
-                      placeholderTextColor={theme === 'light' ? '#6b7280' : '#9ca3af'}
+                      placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                     />
                     <Pressable
                       onPress={() => setPasswordVisible(!passwordVisible)}
@@ -163,7 +114,7 @@ const Signin = () => {
                       <Ionicons
                         name={passwordVisible ? 'eye-off' : 'eye'}
                         size={24}
-                        color={theme === 'light' ? '#6b7280' : '#9ca3af'}
+                        color={isLightTheme ? '#6b7280' : '#9ca3af'}
                       />
                     </Pressable>
                   </View>
@@ -171,25 +122,24 @@ const Signin = () => {
                 </View>
 
                 {/* Sign In Button */}
-                <Pressable className="w-full py-4 rounded-lg mt-7 bg-orange-500/90" onPress={handleSubmit}>
+                <Pressable
+                  className="w-full py-4 rounded-lg mt-7 bg-orange-500/90"
+                  onPress={handleSubmit}
+                >
                   <Text className="text-white text-center text-lg font-medium">Sign In</Text>
                 </Pressable>
 
-                {/* Get Started Button */}
+                {/* Some "Get Started" button */}
                 <Pressable
                   className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
-                  onPress={() => router.push('(auth)/get-started')}
+                  onPress={() => router.push('(auth)/OnboardingStep1')}
                 >
                   <Text className="text-orange-500/90 text-center text-lg font-medium">Get Started</Text>
                 </Pressable>
 
-                {/* Forgot Password */}
-                <Pressable onPress={() => Alert.alert('Forgot Password')}>
-                  <Text
-                    className={`text-blue-500 text-sm mt-4 text-center ${
-                      theme === 'light' ? 'text-blue-700' : 'text-blue-400'
-                    }`}
-                  >
+                {/* Forgot Password? (optional) */}
+                <Pressable onPress={() => Alert.alert('Forgot Password?')}>
+                  <Text className={`text-blue-500 text-sm mt-4 text-center ${isLightTheme ? 'text-blue-700' : 'text-blue-400'}`}>
                     Forgot Password?
                   </Text>
                 </Pressable>
@@ -200,6 +150,4 @@ const Signin = () => {
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
-};
-
-export default Signin;
+}

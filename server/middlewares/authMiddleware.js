@@ -15,7 +15,6 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch the user from the database to attach full user details
     const user = await User.findOne({ where: { id: decoded.userId } }); 
 
     if (!user) {
@@ -28,7 +27,6 @@ const authenticateToken = async (req, res, next) => {
       email: user.email,
       role: user.role,
       companyId: user.companyId,
-      // Add other necessary fields
     };
 
     next();

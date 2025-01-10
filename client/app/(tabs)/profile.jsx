@@ -394,7 +394,7 @@ const Profile = () => {
                 isLightTheme ? 'text-slate-600' : 'text-slate-300'
               }`}
             >
-              {user.position || 'Software Engineer'}
+              {user.position || getCompanyName(user.companyId)}
             </Text>
           </View>
         </View>

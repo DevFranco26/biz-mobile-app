@@ -93,6 +93,10 @@ const CurrentSubscription = () => {
     );
   };
 
+  const planName = currentSubscription?.plan?.name || 'N/A';
+  // Check if current plan is "Free Plan"
+  const isFreePlan = planName.toLowerCase() === 'free plan';
+
   return (
     <SafeAreaView
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
@@ -129,7 +133,7 @@ const CurrentSubscription = () => {
                 isLightTheme ? 'text-slate-800' : 'text-slate-200'
               }`}
             >
-              Current Plan: {currentSubscription.plan?.name || 'N/A'}
+              Current Plan: {planName}
             </Text>
             <Text
               className={`text-base mt-2 ${
@@ -174,22 +178,24 @@ const CurrentSubscription = () => {
             </Text>
 
             <View className="flex-row mt-4">
-              {/* Cancel Button */}
-              <Pressable
-                onPress={handleCancel}
-                className="mr-4 p-3 rounded-lg"
-                style={{
-                  backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
-                }}
-              >
-                <Text
-                  className={`${
-                    isLightTheme ? 'text-red-600' : 'text-red-400'
-                  } font-semibold`}
+              {/* Hide Cancel button if it's a Free Plan */}
+              {!isFreePlan && (
+                <Pressable
+                  onPress={handleCancel}
+                  className="mr-4 p-3 rounded-lg"
+                  style={{
+                    backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
+                  }}
                 >
-                  Cancel
-                </Text>
-              </Pressable>
+                  <Text
+                    className={`${
+                      isLightTheme ? 'text-red-600' : 'text-red-400'
+                    } font-semibold`}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+              )}
 
               {/* Upgrade Button */}
               <Pressable
@@ -199,7 +205,9 @@ const CurrentSubscription = () => {
                   backgroundColor: accentColor,
                 }}
               >
-                <Text className="text-white font-semibold">Upgrade</Text>
+                <Text className="text-white font-semibold">
+                  {isFreePlan ? 'Choose Plan' : 'Upgrade'}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -243,7 +251,7 @@ const CurrentSubscription = () => {
         >
           <View
             style={{
-              marginTop: Platform.OS === 'ios' ? 20 : 0, // Adjust top spacing
+              marginTop: Platform.OS === 'ios' ? 60 : 0, 
             }}
           >
             <View className="flex-row justify-end items-center p-4">

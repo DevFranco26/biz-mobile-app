@@ -1,11 +1,11 @@
 // File: app/(auth)/_layout.jsx
-
+import React from 'react';
 import { Stack } from 'expo-router';
 
-const AuthLayout = () => {
+export default function AuthLayout() {
   return (
     <Stack>
-      {/* Sign-in screen */}
+
       <Stack.Screen
         name="signin"
         options={{
@@ -13,15 +13,23 @@ const AuthLayout = () => {
           headerShown: false,
         }}
       />
+
        <Stack.Screen
-        name="get-started"
+        name="OnboardingStep1"
         options={{
-          title: 'Get Started',
+          title: 'OnboardingStep1',
           headerShown: false,
         }}
       />
+
+        <Stack.Screen
+        name="OnboardingStep2"
+        options={{
+          title: 'OnboardingStep2',
+          headerShown: false,
+        }}
+      />
+
     </Stack>
   );
-};
-
-export default AuthLayout;
+}

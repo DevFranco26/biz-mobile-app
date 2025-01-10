@@ -291,8 +291,8 @@ const ManageSubscriptionPlans = () => {
                 <TextInput
                   className={`w-full p-3 mb-2 rounded-lg border ${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100 text-slate-800'
-                      : 'border-slate-700 bg-slate-800 text-slate-300'
+                      ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
                   value={planName}
                   onChangeText={setPlanName}
@@ -311,8 +311,8 @@ const ManageSubscriptionPlans = () => {
                 <TextInput
                   className={`w-full p-3 mb-2 rounded-lg border ${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100 text-slate-800'
-                      : 'border-slate-700 bg-slate-800 text-slate-300'
+                     ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
                   value={planDesc}
                   onChangeText={setPlanDesc}
@@ -331,8 +331,8 @@ const ManageSubscriptionPlans = () => {
                 <TextInput
                   className={`w-full p-3 mb-2 rounded-lg border ${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100 text-slate-800'
-                      : 'border-slate-700 bg-slate-800 text-slate-300'
+                     ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
                   value={planPrice}
                   onChangeText={setPlanPrice}
@@ -352,8 +352,8 @@ const ManageSubscriptionPlans = () => {
                 <TextInput
                   className={`w-full p-3 mb-2 rounded-lg border ${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100 text-slate-800'
-                      : 'border-slate-700 bg-slate-800 text-slate-300'
+                    ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
                   value={planMaxUsers}
                   onChangeText={setPlanMaxUsers}
@@ -373,8 +373,8 @@ const ManageSubscriptionPlans = () => {
                 <TextInput
                   className={`w-full p-3 mb-4 rounded-lg border ${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100 text-slate-800'
-                      : 'border-slate-700 bg-slate-800 text-slate-300'
+                     ? 'border-slate-100 bg-slate-100 text-slate-800'
+                      : 'border-slate-800 bg-slate-800 text-slate-300'
                   }`}
                   value={planFeatures}
                   onChangeText={setPlanFeatures}
