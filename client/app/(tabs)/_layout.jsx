@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Alert, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,8 +28,8 @@ const TabsLayout = () => {
   const [isLocked, setIsLocked] = useState(false);
   const userRole = (user?.role || '').toLowerCase();
 
-  // Allowed (unlocked) plans
-  const ALLOWED_PLANS = ['basic plan', 'pro plan'];
+  // Allowed (unlocked) plans for non-superadmins
+  const ALLOWED_PLANS = ['basic', 'pro'];
 
   // Fetch current subscription for locking logic
   useEffect(() => {
@@ -46,19 +46,16 @@ const TabsLayout = () => {
   // Determine lock status based on subscription plan
   useEffect(() => {
     if (!currentSubscription || !currentSubscription.plan) {
-      // No active subscription => lock features (unless superadmin)
       setIsLocked(userRole !== 'superadmin');
     } else {
-      const planName = (currentSubscription.plan?.name || '').toLowerCase();
+      const planName = (currentSubscription.plan?.planName || '').toLowerCase();
       
-      // If role is superadmin => always unlocked
       if (userRole === 'superadmin') {
         setIsLocked(false);
         return;
       }
 
-      // Lock if plan is "Free Plan" OR plan is not in our allowed list
-      if (planName === 'free plan' || !ALLOWED_PLANS.includes(planName)) {
+      if (planName !== 'pro' && planName !== 'basic') {
         setIsLocked(true);
       } else {
         setIsLocked(false);
@@ -113,7 +110,6 @@ const TabsLayout = () => {
         {...props}
         style={[props.style, styles.button]}
         onPress={(e) => {
-          // Prevent the default navigation
           e.preventDefault();
           Alert.alert(
             'Upgrade Subscription',
@@ -133,7 +129,7 @@ const TabsLayout = () => {
           backgroundColor: isLightTheme ? '#ffffff' : '#0f172a',
           borderTopColor: isLightTheme ? '#ffffff' : '#0f172a',
         },
-        tabBarActiveTintColor: '#f97316',  
+        tabBarActiveTintColor: '#f97316',
         tabBarInactiveTintColor: '#9ca3af',
       }}
     >
@@ -168,7 +164,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="(shifts)"
         options={{
-          title: 'Shifts',
+          title: 'Timekeeping',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time-outline" size={size} color={color} />

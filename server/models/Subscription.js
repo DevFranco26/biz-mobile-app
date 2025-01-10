@@ -1,23 +1,41 @@
-// File: server/models/Subscription.js
-
+// server/models/Subscription.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database.js');
-
-// We'll reference existing models
-const Company = require('./Company.js');
-const SubscriptionPlan = require('./SubscriptionPlan.js');
+const sequelize = require('../config/database');
 
 const Subscription = sequelize.define('Subscription', {
-  startDate: {
-    type: DataTypes.DATE,
-    allowNull: false
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
   },
-  endDate: {
-    type: DataTypes.DATE,
+  companyId: {
+    type: DataTypes.INTEGER,
     allowNull: false
+    // references, etc. if needed
+  },
+  planId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+    // references, etc. if needed
+  },
+  paymentMethod: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  paymentDateTime: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  expirationDateTime: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  renewalDateTime: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('active', 'inactive', 'canceled'),
+    type: DataTypes.ENUM('active', 'canceled', 'expired'),
     allowNull: false,
     defaultValue: 'active'
   }
@@ -25,7 +43,5 @@ const Subscription = sequelize.define('Subscription', {
   tableName: 'Subscriptions',
   timestamps: true
 });
-
-// Create associations here or in index.js. For clarity, we'll do it in index.js
 
 module.exports = Subscription;

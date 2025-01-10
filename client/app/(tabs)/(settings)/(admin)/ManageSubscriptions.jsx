@@ -1,4 +1,3 @@
-// File: app/(tabs)/(settings)/(admin)/ManageSubscriptions.jsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -220,14 +219,15 @@ const ManageSubscriptions = () => {
 
               {/* Table Body */}
               {allSubscriptions.map((sub) => {
-                const companyId = sub.company?.id;
+                const companyId = sub.companyId;
                 const companyName = sub.company?.name || 'No Company';
-                const planName = sub.plan?.name || 'N/A';
-                const maxUsers = sub.plan?.maxUsers || 0;
+                const planName = sub.plan?.planName || 'N/A';
+                const maxUsers = sub.plan?.rangeOfUsers || 0;
                 const userCount = companyUserCounts[companyId] || 0;
                 const status = sub.status;
-                const startStr = formatDate(sub.startDate);
-                const endStr = formatDate(sub.endDate);
+                const startStr = formatDate(sub.paymentDateTime);
+                const endStr = formatDate(sub.expirationDateTime);
+                
 
                 return (
                   <View

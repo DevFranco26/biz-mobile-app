@@ -4,13 +4,12 @@ const { Subscription, SubscriptionPlan, Company } = require('../models');
 const { Op } = require('sequelize');
 
 /**
- * @desc    Get All Subscriptions (superAdmin only)
- * @route   GET /api/subscriptions/all
- * @access  superAdmin
+ * @desc  Get All Subscriptions (superAdmin only)
+ * @route GET /api/subscriptions/all
+ * @access superAdmin
  */
 exports.getAllSubscriptionsForSuperAdmin = async (req, res) => {
   try {
-    // Retrieve all subscriptions, including the associated Company & Plan
     const subscriptions = await Subscription.findAll({
       order: [['createdAt', 'DESC']],
       include: [
@@ -22,7 +21,7 @@ exports.getAllSubscriptionsForSuperAdmin = async (req, res) => {
         {
           model: SubscriptionPlan,
           as: 'plan',
-          attributes: ['id', 'name', 'price', 'maxUsers', 'features']
+          attributes: ['id', 'planName', 'rangeOfUsers', 'price', 'features']
         }
       ]
     });
@@ -38,51 +37,73 @@ exports.getAllSubscriptionsForSuperAdmin = async (req, res) => {
 };
 
 /**
- * @desc    Get Current Subscription for the Authenticated User's Company
- * @route   GET /api/subscriptions/current
- * @access  admin, superAdmin
+ * @desc  Get Current Subscription for the Authenticated User's Company
+ * @route GET /api/subscriptions/current
+ * @access admin, superAdmin
  */
 exports.getCurrentSubscription = async (req, res) => {
   try {
     const companyId = req.user.companyId;
 
-    const subscription = await Subscription.findOne({
+    // Find an active sub where expirationDateTime > now
+    let subscription = await Subscription.findOne({
       where: {
         companyId,
         status: 'active',
-        startDate: { [Op.lte]: new Date() },
-        endDate: { [Op.gte]: new Date() }
+        expirationDateTime: { [Op.gt]: new Date() }
       },
       include: [{ model: SubscriptionPlan, as: 'plan' }]
     });
 
+    // If none found, create a free sub on the fly
     if (!subscription) {
-      return res
-        .status(404)
-        .json({ message: 'No active subscription found for your company.' });
+      const freePlan = await SubscriptionPlan.findOne({
+        where: { planName: 'Free', rangeOfUsers: '1' }
+      });
+      if (!freePlan) {
+        return res.status(500).json({
+          message: 'No Free plan found. Please ensure a free plan is seeded.'
+        });
+      }
+      const now = new Date();
+      const expiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      // Create subscription
+      subscription = await Subscription.create({
+        companyId,
+        planId: freePlan.id,
+        paymentMethod: null,
+        paymentDateTime: now,
+        expirationDateTime: expiration,
+        renewalDateTime: expiration,
+        status: 'active'
+      });
+
+      // Re-fetch with plan
+      subscription = await Subscription.findByPk(subscription.id, {
+        include: [{ model: SubscriptionPlan, as: 'plan' }]
+      });
     }
 
-    res.status(200).json({
-      message: 'Active subscription retrieved.',
+    return res.status(200).json({
+      message: 'Current subscription retrieved',
       data: subscription
     });
   } catch (error) {
-    console.error('Error getting current subscription:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error('Error in getCurrentSubscription:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
 /**
- * @desc    Upgrade or Create a Subscription
- *          - startDate = now
- *          - endDate = now + 30 days
- * @route   PUT /api/subscriptions/upgrade
- * @access  admin, superAdmin
+ * @desc  Upgrade or Create a Subscription (30 days)
+ * @route PUT /api/subscriptions/upgrade
+ * @access admin, superAdmin
  */
 exports.upgradeSubscription = async (req, res) => {
   try {
     const companyId = req.user.companyId;
-    const { planId } = req.body;
+    const { planId, paymentMethod } = req.body; // optional paymentMethod
 
     // Validate plan
     const plan = await SubscriptionPlan.findByPk(planId);
@@ -90,45 +111,34 @@ exports.upgradeSubscription = async (req, res) => {
       return res.status(400).json({ message: 'Invalid subscription plan ID.' });
     }
 
-    // Generate startDate = now, endDate = 30 days from now
-    const startDate = new Date();
-    const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-    // Check for existing active subscription
-    let existingSubscription = await Subscription.findOne({
-      where: {
-        companyId,
-        status: 'active',
-        endDate: { [Op.gte]: new Date() }
+    // 1) Cancel any existing active subscription
+    await Subscription.update(
+      { status: 'canceled' },
+      {
+        where: {
+          companyId,
+          status: 'active',
+          expirationDateTime: { [Op.gt]: new Date() }
+        }
       }
-    });
+    );
 
-    if (existingSubscription) {
-      // If an active subscription is found, update it (upgrade/downgrade)
-      await existingSubscription.update({
-        planId,
-        startDate,
-        endDate,
-        status: 'active'
-      });
+    // 2) Create a new subscription record
+    const now = new Date();
+    const expiration = new Date(now.getTime() + 30*24*60*60*1000);
 
-      return res.status(200).json({
-        message: 'Subscription upgraded successfully.',
-        data: existingSubscription
-      });
-    }
-
-    // If no active subscription, create a new one
     const newSubscription = await Subscription.create({
       companyId,
-      planId,
-      startDate,
-      endDate,
+      planId: plan.id,
+      paymentMethod: paymentMethod || null,
+      paymentDateTime: now,
+      expirationDateTime: expiration,
+      renewalDateTime: expiration,
       status: 'active'
     });
 
-    res.status(201).json({
-      message: 'New subscription created successfully.',
+    return res.status(201).json({
+      message: 'Subscription upgraded successfully.',
       data: newSubscription
     });
   } catch (error) {
@@ -138,38 +148,54 @@ exports.upgradeSubscription = async (req, res) => {
 };
 
 /**
- * @desc    Cancel current active subscription immediately
- * @route   PUT /api/subscriptions/cancel
- * @access  admin, superAdmin
+ * @desc  Cancel current active subscription => revert to Free
+ * @route PUT /api/subscriptions/cancel
+ * @access admin, superAdmin
  */
 exports.cancelCurrentSubscription = async (req, res) => {
   try {
     const companyId = req.user.companyId;
 
-    // Find the active subscription for this company
-    const existingSubscription = await Subscription.findOne({
+    // 1) find the active subscription
+    const currentSub = await Subscription.findOne({
       where: {
         companyId,
         status: 'active',
-        endDate: { [Op.gte]: new Date() }
+        expirationDateTime: { [Op.gt]: new Date() }
       }
     });
 
-    if (!existingSubscription) {
-      return res.status(404).json({
-        message: 'No active subscription to cancel.'
-      });
+    if (!currentSub) {
+      return res.status(404).json({ message: 'No active subscription to cancel.' });
     }
 
-    // Hard-cancel immediately: set status to 'canceled' and endDate to now
-    await existingSubscription.update({
-      status: 'canceled',
-      endDate: new Date()
+    // 2) set old sub to canceled
+    await currentSub.update({ status: 'canceled' });
+
+    // 3) Revert to Free plan automatically
+    const freePlan = await SubscriptionPlan.findOne({
+      where: { planName: 'Free', rangeOfUsers: '1' }
+    });
+    if (!freePlan) {
+      return res.status(500).json({ message: 'No free plan found. Could not revert.' });
+    }
+
+    const now = new Date();
+    const expiration = new Date(now.getTime() + 30*24*60*60*1000);
+
+    const newFreeSub = await Subscription.create({
+      companyId,
+      planId: freePlan.id,
+      paymentMethod: null,
+      paymentDateTime: now,
+      expirationDateTime: expiration,
+      renewalDateTime: expiration,
+      status: 'active'
     });
 
     return res.status(200).json({
-      message: 'Subscription canceled successfully.',
-      data: existingSubscription
+      message: 'Subscription canceled, reverted to Free plan.',
+      data: newFreeSub
     });
   } catch (error) {
     console.error('Error canceling subscription:', error);

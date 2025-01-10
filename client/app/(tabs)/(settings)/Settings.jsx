@@ -17,8 +17,7 @@ const Settings = () => {
 
   const { user } = useUserStore();
   const { getCompanyName, fetchCompanyById } = useCompanyStore();
-  const { currentSubscription, loadingCurrent, fetchCurrentSubscription } =
-    useSubscriptionStore();
+  const { currentSubscription, loadingCurrent, fetchCurrentSubscription } = useSubscriptionStore();
 
   // Theming constants
   const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-slate-300';
@@ -35,7 +34,7 @@ const Settings = () => {
   const [isLocked, setIsLocked] = useState(false);
 
   // Array of allowed plans — everything else is locked unless superadmin
-  const ALLOWED_PLANS = ['basic plan', 'pro plan'];
+  const ALLOWED_PLANS = ['basic', 'pro'];
 
   // Whenever subscription or role changes, update lock logic
   useEffect(() => {
@@ -44,7 +43,7 @@ const Settings = () => {
       setSubscriptionName('No active subscription');
       setIsLocked(userRole !== 'superadmin');
     } else {
-      const planName = currentSubscription.plan.name || 'Unknown Plan';
+      const planName = currentSubscription.plan?.planName || 'Unknown Plan';
       setSubscriptionName(planName);
 
       if (userRole === 'superadmin') {
@@ -96,7 +95,13 @@ const Settings = () => {
   };
   const roleIconName = roleIconByRole[userRole] || 'person-outline';
 
-  // Reusable pressable card for a feature
+  // Determine if Punch Locations should be locked specifically
+  const punchLocationsLocked = (
+    userRole !== 'superadmin' &&
+    subscriptionName.toLowerCase() !== 'pro'
+  );
+
+  // Reusable pressable card for other features
   const renderFeature = (
     IconComponent,
     iconName,
@@ -278,21 +283,53 @@ const Settings = () => {
                 'Create, update, assign shift schedules.',
                 './ManageShiftSchedules'
               )}
-              {/*
-                For "Punch Locations," we only want it unlocked if:
-                - The user is superadmin, OR
-                - The user’s current plan is Pro Plan
-                Everything else (including Basic Plan) should be locked for non-superadmins.
-              */}
-              {renderFeature(
-                Ionicons,
-                'location-outline',
-                'Punch Locations',
-                'Create, update, assign or delete punch locations.',
-                './ManageLocations',
-                userRole === 'superadmin' ||
-                  subscriptionName.toLowerCase() === 'pro plan'
-              )}
+              {/* Custom Punch Locations feature */}
+              <Pressable
+                onPress={() => {
+                  if (!punchLocationsLocked) {
+                    router.push('./ManageLocations');
+                  }
+                }}
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginVertical: 4,
+                  backgroundColor: isLightTheme ? '#f1f5f9' : '#2d3748',
+                  opacity: punchLocationsLocked ? 0.5 : 1,
+                }}
+                disabled={punchLocationsLocked}
+              >
+                <Ionicons
+                  name="location-outline"
+                  size={28}
+                  color={accentColor}
+                  style={{ marginRight: 12 }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '600',
+                      color: isLightTheme ? '#1f2937' : '#f1f5f9',
+                    }}
+                  >
+                    Punch Locations
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: isLightTheme ? '#4b5563' : '#a0aec0',
+                    }}
+                  >
+                    Create, update, assign or delete punch locations.
+                  </Text>
+                </View>
+                {punchLocationsLocked && (
+                  <MaterialIcons name="lock" size={24} color="#f97316" />
+                )}
+              </Pressable>
               {renderFeature(
                 Ionicons,
                 'calendar-outline',

@@ -1,4 +1,3 @@
-// File: server/routes/subscriptionsRoutes.js
 const express = require('express');
 const subscriptionController = require('../controllers/subscriptionController.js');
 const authenticate = require('../middlewares/authMiddleware.js');

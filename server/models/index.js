@@ -85,14 +85,13 @@ PayrollRecords.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Company.hasMany(PayrollRecords, { foreignKey: 'companyId', as: 'companyPayrollRecords' });
 PayrollRecords.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 
-// Company <-> Subscription
-Company.hasOne(Subscription, { foreignKey: 'companyId', as: 'subscription' });
-Subscription.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
-
 // SubscriptionPlan <-> Subscription
 SubscriptionPlan.hasMany(Subscription, { foreignKey: 'planId', as: 'subscriptions' });
 Subscription.belongsTo(SubscriptionPlan, { foreignKey: 'planId', as: 'plan' });
 
+// Company <-> Subscription
+Company.hasMany(Subscription, { foreignKey: 'companyId', as: 'subscriptions' });
+Subscription.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
 module.exports = {
   User,
   Company,

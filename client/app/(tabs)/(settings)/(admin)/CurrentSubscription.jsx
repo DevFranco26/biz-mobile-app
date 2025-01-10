@@ -1,5 +1,3 @@
-// File: app/(tabs)/(settings)/(admin)/CurrentSubscription.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -19,8 +17,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import useThemeStore from '../../../../store/themeStore';
 import useUserStore from '../../../../store/userStore';
-import useSubscriptionStore from '../../../../store/subscriptionStore';
+import useSubscriptionStore from '../../../../store/subscriptionStore';       
 import useSubscriptionPlansStore from '../../../../store/subscriptionPlansStore';
+
+/** Format a date/time or return 'N/A' if falsy */
+const formatDateTime = (dt) => {
+  if (!dt) return 'N/A';
+  return new Date(dt).toLocaleString();
+};
 
 const CurrentSubscription = () => {
   const router = useRouter();
@@ -29,24 +33,22 @@ const CurrentSubscription = () => {
   const accentColor = isLightTheme ? '#c2410c' : '#f97316';
 
   const { user } = useUserStore();
+
   const {
     currentSubscription,
     loadingCurrent,
-    errorCurrent,
     fetchCurrentSubscription,
     upgradeSubscription,
     cancelSubscription,
   } = useSubscriptionStore();
+  
   const {
     subscriptionPlans,
     loadingPlans,
-    errorPlans,
     fetchSubscriptionPlans,
   } = useSubscriptionPlansStore();
 
   const [token, setToken] = useState(null);
-
-  // For choose-plan modal
   const [planModalVisible, setPlanModalVisible] = useState(false);
 
   useEffect(() => {
@@ -59,9 +61,10 @@ const CurrentSubscription = () => {
       }
       setToken(storedToken);
 
-      // Fetch the company's current subscription
+      // Fetch current subscription for this company
       await fetchCurrentSubscription(storedToken);
-      // Also fetch subscription plans (so admin can pick a new one)
+
+      // Also fetch subscription plans for the upgrade modal
       await fetchSubscriptionPlans(storedToken);
     };
     init();
@@ -93,14 +96,12 @@ const CurrentSubscription = () => {
     );
   };
 
-  const planName = currentSubscription?.plan?.name || 'N/A';
-  // Check if current plan is "Free Plan"
-  const isFreePlan = planName.toLowerCase() === 'free plan';
+  const planName = currentSubscription?.plan?.planName || 'N/A';
+  const isFreePlan = planName.toLowerCase().includes('free');
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
-    >
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+      {/* Header */}
       <View className="px-4 py-3 flex-row items-center">
         <Pressable onPress={() => router.back()} className="mr-3">
           <Ionicons
@@ -109,11 +110,7 @@ const CurrentSubscription = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text
-          className={`text-xl font-bold ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-100'
-          }`}
-        >
+        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
           My Subscription
         </Text>
       </View>
@@ -121,64 +118,66 @@ const CurrentSubscription = () => {
       {loadingCurrent ? (
         <ActivityIndicator size="large" color={accentColor} className="mt-8" />
       ) : currentSubscription ? (
-        // Show the current subscription details
+        // Active subscription info
         <View className="px-4 mt-4">
           <View
-            className={`p-4 rounded-lg ${
-              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            }`}
+            className={`p-4 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}
           >
-            <Text
-              className={`text-lg font-semibold ${
-                isLightTheme ? 'text-slate-800' : 'text-slate-200'
-              }`}
-            >
+            <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-200'}`}>
               Current Plan: {planName}
             </Text>
-            <Text
-              className={`text-base mt-2 ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
-              }`}
-            >
-              Price: ${currentSubscription.plan?.price}
+
+            <Text className={`text-base mt-2 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              Price: ${currentSubscription?.plan?.price ?? '0.00'}
             </Text>
-            <Text
-              className={`text-base ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
-              }`}
-            >
-              Max Users: {currentSubscription.plan?.maxUsers}
+
+            <Text className={`text-base ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              Max Users: {currentSubscription?.plan?.maxUsers || 1}
             </Text>
-            <Text
-              className={`text-sm mt-2 ${
-                isLightTheme ? 'text-slate-600' : 'text-slate-400'
-              }`}
-            >
-              Start:{' '}
-              {currentSubscription.startDate
-                ? new Date(currentSubscription.startDate).toLocaleString()
-                : 'N/A'}
+
+            {/* PaymentMethod & paymentDateTime */}
+            <Text className={`text-sm mt-2 ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+              Payment Method: {currentSubscription.paymentMethod || 'N/A'}
             </Text>
-            <Text
-              className={`text-sm ${
-                isLightTheme ? 'text-slate-600' : 'text-slate-400'
-              }`}
-            >
-              End:{' '}
-              {currentSubscription.endDate
-                ? new Date(currentSubscription.endDate).toLocaleString()
-                : 'N/A'}
+            <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+              Payment Date: {formatDateTime(currentSubscription.paymentDateTime)}
             </Text>
-            <Text
-              className={`text-sm ${
-                isLightTheme ? 'text-slate-600' : 'text-slate-400'
-              }`}
-            >
+
+            {/* Expiration & renewal */}
+            <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+              Expiration: {formatDateTime(currentSubscription.expirationDateTime)}
+            </Text>
+            <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+              Renewal: {formatDateTime(currentSubscription.renewalDateTime)}
+            </Text>
+
+            <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
               Status: {currentSubscription.status}
             </Text>
 
+            {/* Features Section */}
+            {currentSubscription.plan?.features && (
+              <View className="mt-2">
+                <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+                  Features:
+                </Text>
+                {Object.entries(currentSubscription.plan.features).map(([feature, available]) => (
+                  <View key={feature} className="flex-row items-center mt-1">
+                    <Ionicons
+                      name={available ? 'checkmark-circle' : 'lock-closed'}
+                      size={16}
+                      color={available ? 'gray' : 'gray'}
+                    />
+                    <Text className={`ml-2 text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-400'}`}>
+                      {feature.charAt(0).toUpperCase() + feature.slice(1)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Buttons row */}
             <View className="flex-row mt-4">
-              {/* Hide Cancel button if it's a Free Plan */}
               {!isFreePlan && (
                 <Pressable
                   onPress={handleCancel}
@@ -187,23 +186,16 @@ const CurrentSubscription = () => {
                     backgroundColor: isLightTheme ? '#ffffff' : '#1e293b',
                   }}
                 >
-                  <Text
-                    className={`${
-                      isLightTheme ? 'text-red-600' : 'text-red-400'
-                    } font-semibold`}
-                  >
+                  <Text className={`${isLightTheme ? 'text-red-600' : 'text-red-400'} font-semibold`}>
                     Cancel
                   </Text>
                 </Pressable>
               )}
 
-              {/* Upgrade Button */}
               <Pressable
                 onPress={() => setPlanModalVisible(true)}
                 className="p-3 rounded-lg"
-                style={{
-                  backgroundColor: accentColor,
-                }}
+                style={{ backgroundColor: accentColor }}
               >
                 <Text className="text-white font-semibold">
                   {isFreePlan ? 'Choose Plan' : 'Upgrade'}
@@ -213,47 +205,31 @@ const CurrentSubscription = () => {
           </View>
         </View>
       ) : (
-        // No active subscription
+        // No active subscription => Possibly new user or canceled
         <View className="px-4 mt-4">
-          <Text
-            className={`text-lg font-semibold ${
-              isLightTheme ? 'text-slate-800' : 'text-slate-200'
-            }`}
-          >
+          <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-200'}`}>
             You have no active subscription.
           </Text>
           <Pressable
             onPress={() => setPlanModalVisible(true)}
-            className={`mt-4 p-3 rounded-lg ${
-              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-            }`}
+            className={`mt-4 p-3 rounded-lg ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}
           >
-            <Text
-              className={`text-center font-semibold ${
-                isLightTheme ? 'text-slate-800' : 'text-slate-100'
-              }`}
-            >
+            <Text className={`text-center font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
               Create/Upgrade Subscription
             </Text>
           </Pressable>
         </View>
       )}
 
-      {/* Choose Plan Modal */}
+      {/* Choose a Plan Modal */}
       <Modal
         visible={planModalVisible}
         transparent={false}
         animationType="fade"
         onRequestClose={() => setPlanModalVisible(false)}
       >
-        <SafeAreaView
-          className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
-        >
-          <View
-            style={{
-              marginTop: Platform.OS === 'ios' ? 60 : 0, 
-            }}
-          >
+        <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+          <View style={{ marginTop: Platform.OS === 'ios' ? 60 : 0 }}>
             <View className="flex-row justify-end items-center p-4">
               <TouchableOpacity onPress={() => setPlanModalVisible(false)}>
                 <Ionicons
@@ -269,18 +245,12 @@ const CurrentSubscription = () => {
             <ActivityIndicator size="large" color={accentColor} className="mt-8" />
           ) : (
             <ScrollView className="px-4">
-              <Text
-                className={`text-xl font-bold mb-4 ${
-                  isLightTheme ? 'text-slate-800' : 'text-slate-100'
-                }`}
-              >
+              <Text className={`text-xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
                 Choose a Subscription Plan
               </Text>
-              {subscriptionPlans.map((plan) => {
-                // Check if this plan is the user's current plan
-                const isCurrentPlan =
-                  currentSubscription?.plan?.id === plan.id;
 
+              {subscriptionPlans.map((plan) => {
+                const isCurrentPlan = currentSubscription?.plan?.id === plan.id;
                 return (
                   <Pressable
                     key={plan.id}
@@ -293,26 +263,19 @@ const CurrentSubscription = () => {
                         : 'bg-slate-800'
                     }`}
                   >
-                    <Text
-                      className={`text-base font-semibold ${
-                        isLightTheme ? 'text-slate-800' : 'text-slate-200'
-                      }`}
-                    >
+                    <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-200'}`}>
                       {plan.name} — ${plan.price} / 30 days
                     </Text>
-                    <Text
-                      className={`text-sm ${
-                        isLightTheme ? 'text-slate-600' : 'text-slate-300'
-                      }`}
-                    >
+                    <Text className={`text-sm ${isLightTheme ? 'text-slate-600' : 'text-slate-300'}`}>
                       Max Users: {plan.maxUsers}
                     </Text>
+                    {plan.rangeOfUsers && (
+                      <Text className={`text-xs ${isLightTheme ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Range of Users: {plan.rangeOfUsers}
+                      </Text>
+                    )}
                     {isCurrentPlan && (
-                      <Text
-                        className={`mt-1 text-sm font-semibold ${
-                          isLightTheme ? 'text-green-700' : 'text-green-400'
-                        }`}
-                      >
+                      <Text className={`mt-1 text-sm font-semibold ${isLightTheme ? 'text-green-700' : 'text-green-400'}`}>
                         (Current Plan)
                       </Text>
                     )}

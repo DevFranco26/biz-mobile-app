@@ -1,30 +1,32 @@
-// File: server/models/SubscriptionPlan.js
-
+// server/models/SubscriptionPlan.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database.js');
+const sequelize = require('../config/database');
 
 const SubscriptionPlan = sequelize.define('SubscriptionPlan', {
-  name: {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  planName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  rangeOfUsers: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+    defaultValue: '1'
+  },
+  price: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: false,
+    defaultValue: 0.00
   },
   description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  price: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.0
-  },
-  maxUsers: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 10
-  },
   features: {
-    // Store feature flags or additional details
     type: DataTypes.JSON,
     allowNull: false,
     defaultValue: {}

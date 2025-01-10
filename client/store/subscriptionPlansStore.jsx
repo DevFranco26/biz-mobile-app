@@ -1,3 +1,5 @@
+// File: client/store/subscriptionPlansStore.jsx
+
 import create from 'zustand';
 import { Alert } from 'react-native';
 
@@ -8,17 +10,11 @@ const useSubscriptionPlansStore = create((set, get) => ({
   loadingPlans: false,
   errorPlans: null,
 
-  /**
-   * Fetch all subscription plans (superAdmin to manage, or admin can view).
-   * Endpoint: GET /api/subscription-plans
-   */
+  // e.g. GET /api/subscription-plans
   fetchSubscriptionPlans: async (token) => {
-    // If the server no longer requires a token for GET, we can omit passing it
-    // But if you want to pass the token anyway, that's okay. The server will ignore it
     set({ loadingPlans: true, errorPlans: null });
     try {
-      // We do NOT need the token in the header if the route is open. 
-      // If you still want to pass it, that’s fine—server will ignore it for GET.
+      // If your server doesn't require a token to view plans, omit. Or keep it.
       const headers = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -26,25 +22,31 @@ const useSubscriptionPlansStore = create((set, get) => ({
 
       const response = await fetch(`${API_BASE_URL}/subscription-plans`, {
         method: 'GET',
-        headers: headers,
+        headers,
       });
       const data = await response.json();
       if (response.ok) {
+        // data.data => array of plans
+        // e.g. each plan: { id, planName, rangeOfUsers, price, features, ... }
         set({ subscriptionPlans: data.data || [], loadingPlans: false });
       } else {
-        set({ errorPlans: data.message || 'Failed to fetch subscription plans.', loadingPlans: false });
+        set({
+          errorPlans: data.message || 'Failed to fetch subscription plans.',
+          loadingPlans: false,
+        });
         Alert.alert('Error', data.message || 'Failed to fetch subscription plans.');
       }
     } catch (error) {
-      set({ errorPlans: 'An error occurred while fetching subscription plans.', loadingPlans: false });
+      console.error('fetchSubscriptionPlans Error:', error);
+      set({
+        errorPlans: 'An error occurred while fetching subscription plans.',
+        loadingPlans: false,
+      });
       Alert.alert('Error', 'An error occurred while fetching subscription plans.');
     }
   },
 
-  /**
-   * Create a new subscription plan (superAdmin only).
-   * Endpoint: POST /api/subscription-plans
-   */
+  // POST /api/subscription-plans (superAdmin)
   createSubscriptionPlan: async (token, planData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans`, {
@@ -57,25 +59,22 @@ const useSubscriptionPlansStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Success', data.message || 'Subscription plan created successfully.');
-        // Refresh the list
+        Alert.alert('Success', data.message || 'Plan created successfully.');
+        // Refresh
         await get().fetchSubscriptionPlans(token);
         return { success: true };
       } else {
-        Alert.alert('Error', data.message || 'Failed to create subscription plan.');
+        Alert.alert('Error', data.message || 'Failed to create plan.');
         return { success: false };
       }
     } catch (error) {
-      console.error('Create Plan Error:', error);
+      console.error('createSubscriptionPlan Error:', error);
       Alert.alert('Error', 'An error occurred while creating the plan.');
       return { success: false };
     }
   },
 
-  /**
-   * Update an existing subscription plan (superAdmin only).
-   * Endpoint: PUT /api/subscription-plans/:id
-   */
+  // PUT /api/subscription-plans/:id (superAdmin)
   updateSubscriptionPlan: async (token, planId, updatedFields) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans/${planId}`, {
@@ -88,24 +87,21 @@ const useSubscriptionPlansStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Success', data.message || 'Subscription plan updated successfully.');
+        Alert.alert('Success', data.message || 'Plan updated successfully.');
         await get().fetchSubscriptionPlans(token);
         return { success: true };
       } else {
-        Alert.alert('Error', data.message || 'Failed to update subscription plan.');
+        Alert.alert('Error', data.message || 'Failed to update plan.');
         return { success: false };
       }
     } catch (error) {
-      console.error('Update Plan Error:', error);
-      Alert.alert('Error', 'An error occurred while updating the subscription plan.');
+      console.error('updateSubscriptionPlan Error:', error);
+      Alert.alert('Error', 'An error occurred while updating the plan.');
       return { success: false };
     }
   },
 
-  /**
-   * Delete a subscription plan (superAdmin only).
-   * Endpoint: DELETE /api/subscription-plans/:id
-   */
+  // DELETE /api/subscription-plans/:id (superAdmin)
   deleteSubscriptionPlan: async (token, planId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans/${planId}`, {
@@ -116,16 +112,16 @@ const useSubscriptionPlansStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Success', data.message || 'Subscription plan deleted successfully.');
+        Alert.alert('Success', data.message || 'Plan deleted successfully.');
         await get().fetchSubscriptionPlans(token);
         return { success: true };
       } else {
-        Alert.alert('Error', data.message || 'Failed to delete subscription plan.');
+        Alert.alert('Error', data.message || 'Failed to delete plan.');
         return { success: false };
       }
     } catch (error) {
-      console.error('Delete Plan Error:', error);
-      Alert.alert('Error', 'An error occurred while deleting the subscription plan.');
+      console.error('deleteSubscriptionPlan Error:', error);
+      Alert.alert('Error', 'An error occurred while deleting the plan.');
       return { success: false };
     }
   },
