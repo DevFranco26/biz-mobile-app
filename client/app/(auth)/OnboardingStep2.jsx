@@ -129,7 +129,7 @@ export default function OnboardingStep2() {
                 }) => (
                   <>
                     <Text
-                      className={`text-4xl font-extrabold text-center mb-8 ${
+                      className={`text-2xl font-extrabold text-center mb-4 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-100'
                       }`}
                     >
@@ -137,7 +137,7 @@ export default function OnboardingStep2() {
                     </Text>
 
                     {/* Company Name */}
-                    <View className="mb-6 w-full">
+                    <View className=" w-full">
                       <Text
                         className={`text-base mb-1 ${
                           isLightTheme ? 'text-slate-800' : 'text-slate-200'
@@ -165,21 +165,10 @@ export default function OnboardingStep2() {
                         </Text>
                       )}
                     </View>
-
-                    {/* Back Button */}
-                    <Pressable
-                      className="w-full py-4 rounded-lg bg-slate-600/90"
-                      onPress={() => router.back()}
-                      disabled={isSubmitting}
-                    >
-                      <Text className="text-white text-center text-base font-semibold">
-                        Back
-                      </Text>
-                    </Pressable>
-
+                    
                     {/* Submit / Subscribe Button */}
                     <Pressable
-                      className="w-full py-4 rounded-lg mt-4 bg-orange-500/90"
+                      className="w-full py-4 rounded-lg mt-6 bg-orange-500/90"
                       onPress={handleSubmit}
                       disabled={isSubmitting}
                     >
@@ -191,6 +180,19 @@ export default function OnboardingStep2() {
                         </Text>
                       )}
                     </Pressable>
+
+                    {/* Back Button */}
+                    <Pressable
+                      className="w-full py-4 rounded-lg border-orange-500 border mt-4 "
+                      onPress={() => router.back()}
+                      disabled={isSubmitting}
+                    >
+                      <Text className="text-orange-500 text-center text-base font-semibold">
+                        Back to Create Account 
+                      </Text>
+                    </Pressable>
+
+                    
                   </>
                 )}
               </Formik>

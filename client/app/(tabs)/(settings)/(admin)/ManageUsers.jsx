@@ -579,7 +579,7 @@ const ManageUsers = () => {
   onRequestClose={() => setEditUserModalVisible(false)}
 >
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-    <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+    <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="w-11/12"
@@ -826,7 +826,7 @@ const ManageUsers = () => {
   transparent={true}
   onRequestClose={() => setUserSettingsModalVisible(false)}
 >
-  <View className={`flex-1 justify-center items-center bg-slate-900 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+  <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
     <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
         User Location Restriction
@@ -921,7 +921,7 @@ const ManageUsers = () => {
             </>
           )}
 
-          <View className="flex-row justify-end">
+          <View className="flex-row justify-end mt-6">
             <TouchableOpacity
               onPress={() => setUserSettingsModalVisible(false)}
               className="mr-4"
@@ -935,7 +935,7 @@ const ManageUsers = () => {
               className="bg-orange-500 py-3 px-6 rounded-lg"
             >
               <Text className="text-white text-base font-semibold">
-                Confirm
+                Save
               </Text>
             </TouchableOpacity>
           </View>

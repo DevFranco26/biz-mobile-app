@@ -178,7 +178,7 @@ const CalculatePayrollManually = () => {
       </View>
 
       {/* Calculation Form */}
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 mt-4">
         {/* Select User */}
         <Text
           className={`font-semibold mb-2 ${
@@ -198,14 +198,13 @@ const CalculatePayrollManually = () => {
           textStyle={{
             color: isLightTheme ? '#374151' : '#9ca3af',
           }}
-          className="mb-3"
           style={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           dropDownContainerStyle={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           arrowIconStyle={{
             tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -222,15 +221,15 @@ const CalculatePayrollManually = () => {
 
         {/* Start Date */}
         <Text
-          className={`font-semibold mb-1 ${
+          className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
           Start Date
         </Text>
         <Pressable
-          className={`mb-3 p-3 rounded ${
-            isLightTheme ? 'bg-white' : 'bg-slate-700'
+          className={`mb-4 p-4 rounded-lg ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
           onPress={() => setShowStartPicker(true)}
         >
@@ -262,8 +261,8 @@ const CalculatePayrollManually = () => {
           End Date
         </Text>
         <Pressable
-          className={`mb-4 p-3 rounded ${
-            isLightTheme ? 'bg-white' : 'bg-slate-700'
+           className={`mb-4 p-4 rounded-lg ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
           onPress={() => setShowEndPicker(true)}
         >
@@ -288,7 +287,7 @@ const CalculatePayrollManually = () => {
 
         {/* Calculate Payroll Button */}
         <Pressable
-          className="bg-green-600 p-3 rounded"
+          className="bg-orange-500 p-4 rounded-lg"
           onPress={handleCalculatePayrollManually}
         >
           <Text className="text-white text-center font-semibold">

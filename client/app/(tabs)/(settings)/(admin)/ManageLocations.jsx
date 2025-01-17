@@ -375,7 +375,7 @@ const ManageLocations = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+          <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"
@@ -387,7 +387,7 @@ const ManageLocations = () => {
               >
                 <View
                   className={`p-6 rounded-lg ${
-                    isLightTheme ? 'bg-white' : 'bg-slate-800'
+                    isLightTheme ? 'bg-white' : 'bg-slate-900'
                   }`}
                 >
                   <Text 
@@ -402,15 +402,17 @@ const ManageLocations = () => {
                   <Text 
                     // updated style to be more visible/bold
                     className={`text-base  ${
-                      isLightTheme ? 'text-slate-700' : 'text-blue-300'
+                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     } mb-1`}
                   >
-                    Label
+                    Location Name
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${
-                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
-                    } ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}
+                     className={`w-full p-3 mb-2 rounded-lg border ${
+                      isLightTheme
+                        ? 'border-slate-100 bg-slate-100 text-slate-800'
+                        : 'border-slate-800 bg-slate-800 text-slate-300'
+                    }`}
                     value={label}
                     onChangeText={setLabel}
                     placeholder="e.g., Main Office"
@@ -420,7 +422,7 @@ const ManageLocations = () => {
                   {/* Map Selection */}
                   <Text 
                     className={`text-base mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
                   >
                     Select Location on Map
@@ -463,58 +465,67 @@ const ManageLocations = () => {
                     </MapView>
                   </View>
 
-                  {/* Latitude */}
-                  <Text 
-                    className={`text-base mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-200'
-                    }`}
-                  >
-                    Latitude
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${
-                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
-                    } ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}
-                    value={latitude}
-                    onChangeText={setLatitude}
-                    placeholder="e.g., 37.7749"
-                    keyboardType="numeric"
-                    placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
-                    editable={false}
-                  />
+                  <View className="flex-row gap-2 my-3 justify-center items-center">
+                    {/* Latitude */}
+                    <Text 
+                      className={`text-base mb-1 ${
+                        isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                      }`}
+                    >
+                      Latitude:
+                    </Text>
+                    <TextInput
+                      className={` p-3 mb-2 rounded-lg border ${
+                        isLightTheme
+                          ? 'border-slate-100 bg-slate-100 text-slate-800'
+                          : 'border-slate-800 bg-slate-800 text-slate-300'
+                      }`}
+                      value={latitude}
+                      onChangeText={setLatitude}
+                      placeholder="e.g., 37.7749"
+                      keyboardType="numeric"
+                      placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
+                      editable={false}
+                    />
 
-                  {/* Longitude */}
-                  <Text 
-                    className={`text-base mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-200'
-                    }`}
-                  >
-                    Longitude
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-3 rounded-lg ${
-                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
-                    } ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}
-                    value={longitude}
-                    onChangeText={setLongitude}
-                    placeholder="e.g., -122.4194"
-                    keyboardType="numeric"
-                    placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
-                    editable={false}
-                  />
+                    {/* Longitude */}
+                    <Text 
+                      className={`text-base mb-1 ${
+                        isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                      }`}
+                    >
+                      Longitude:
+                    </Text>
+                    <TextInput
+                      className={` p-3 mb-2 rounded-lg border ${
+                        isLightTheme
+                          ? 'border-slate-100 bg-slate-100 text-slate-800'
+                          : 'border-slate-800 bg-slate-800 text-slate-300'
+                      }`}
+                      value={longitude}
+                      onChangeText={setLongitude}
+                      placeholder="e.g., -122.4194"
+                      keyboardType="numeric"
+                      placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
+                      editable={false}
+                    />
+                  </View>
+                  
 
                   {/* Radius */}
                   <Text 
                     className={`text-base mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
                   >
                     Radius (meters)
                   </Text>
                   <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg ${
-                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
-                    } ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}
+                    className={`w-full p-3 mb-2 rounded-lg border ${
+                      isLightTheme
+                        ? 'border-slate-100 bg-slate-100 text-slate-800'
+                        : 'border-slate-800 bg-slate-800 text-slate-300'
+                    }`}
                     value={radius}
                     onChangeText={setRadius}
                     placeholder="e.g., 500"
@@ -523,7 +534,7 @@ const ManageLocations = () => {
                   />
 
                   {/* Action Buttons */}
-                  <View className="flex-row justify-end items-center">
+                  <View className="flex-row justify-end items-center mt-6">
                     <TouchableOpacity
                       onPress={() => setModalVisible(false)}
                       className="mr-4"

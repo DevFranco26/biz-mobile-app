@@ -22,11 +22,11 @@ import DropDownPicker from 'react-native-dropdown-picker';
 const getPayTypeColor = (payType) => {
   switch (payType) {
     case 'hourly':
-      return '#3b82f6'; // Blue
+      return '#3b82f6'; 
     case 'monthly':
-      return '#ef4444'; // Red
+      return '#ef4444'; 
     default:
-      return '#3b82f6'; // Default Blue
+      return '#3b82f6'; 
   }
 };
 

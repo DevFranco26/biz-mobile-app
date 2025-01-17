@@ -61,7 +61,7 @@ export default function OnboardingStep1() {
   };
 
   return (
-    <View className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+    <View className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'} ${Platform.OS === `ios`? `pt-16`: `pt-2`}`}>
       <StatusBar barStyle={isLightTheme ? 'dark-content' : 'light-content'} />
 
       <KeyboardAvoidingView
@@ -89,18 +89,18 @@ export default function OnboardingStep1() {
                 }) => (
                   <>
                     <Text
-                      className={`text-4xl font-extrabold text-center mb-8 ${
+                      className={`text-2xl font-extrabold text-center mb-4 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-100'
                       }`}
                     >
-                      Get Started
+                      Create Account
                     </Text>
 
                     {/* First Name */}
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         First Name <Text className="text-red-500">*</Text>
@@ -130,7 +130,7 @@ export default function OnboardingStep1() {
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Middle Name
@@ -160,7 +160,7 @@ export default function OnboardingStep1() {
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Last Name <Text className="text-red-500">*</Text>
@@ -190,7 +190,7 @@ export default function OnboardingStep1() {
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Email <Text className="text-red-500">*</Text>
@@ -221,7 +221,7 @@ export default function OnboardingStep1() {
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Phone Number <Text className="text-red-500">*</Text>
@@ -252,7 +252,7 @@ export default function OnboardingStep1() {
                     <View className="mb-4 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Password <Text className="text-red-500">*</Text>
@@ -295,7 +295,7 @@ export default function OnboardingStep1() {
                     <View className="mb-6 w-full">
                       <Text
                         className={`text-base mb-1 ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-200'
+                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
                         }`}
                       >
                         Confirm Password <Text className="text-red-500">*</Text>

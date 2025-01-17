@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Tabs } from 'expo-router';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { Tabs, useRouter  } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
+// Stores
 import useThemeStore from '../../store/themeStore';
 import useUserStore from '../../store/userStore';
 import useSubscriptionStore from '../../store/subscriptionStore';

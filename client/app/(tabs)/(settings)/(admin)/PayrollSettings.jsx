@@ -72,7 +72,7 @@ const PayrollSettings = () => {
     initialize();
   }, [fetchPayrollSettings]);
 
-  // Update state when payrollSettings changes
+  // Update local state when payrollSettings changes
   useEffect(() => {
     if (payrollSettings) {
       setCutoffValue(payrollSettings.cutoffCycle || 'bi-weekly');
@@ -104,6 +104,7 @@ const PayrollSettings = () => {
     }
   };
 
+  // 1) Show loading indicator if still fetching data
   if (loading) {
     return (
       <SafeAreaView
@@ -113,7 +114,7 @@ const PayrollSettings = () => {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0f766e" />
           <Text
-            className={`mt-4 ${isLightTheme ? 'text-slate-700' : 'text-gray-300'}`}
+            className={`mt-4 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}
           >
             Loading Payroll Settings...
           </Text>
@@ -122,6 +123,168 @@ const PayrollSettings = () => {
     );
   }
 
+  // 2) If no payroll settings exist, show a prompt + form to create them
+  if (!payrollSettings) {
+    return (
+      <SafeAreaView
+        className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
+        edges={['top']}
+      >
+        {/* Header */}
+        <View className="flex-row items-center px-4 py-4">
+          <Pressable onPress={() => router.back()} className="mr-2">
+            <Ionicons
+              name="chevron-back-outline"
+              size={24}
+              color={isLightTheme ? '#333' : '#fff'}
+            />
+          </Pressable>
+          <Text
+            className={`text-xl font-bold ${
+              isLightTheme ? 'text-slate-800' : 'text-white'
+            }`}
+          >
+            Company Payroll Settings
+          </Text>
+        </View>
+
+        {/* Content + Form */}
+        <View className="flex-1 px-4 mt-4">
+          <Text
+            className={`text-lg font-semibold text-center ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-200'
+            }`}
+          >
+            No payroll settings found.
+          </Text>
+          <Text
+            className={`mt-2 mb-4 text-center ${
+              isLightTheme ? 'text-slate-700' : 'text-slate-300'
+            }`}
+          >
+            Please set up your company’s payroll settings below.
+          </Text>
+
+          {/* --- Same form fields as "Edit" scenario --- */}
+          {/* Cutoff Cycle */}
+          <Text
+            className={`font-semibold mb-1 mt-4 ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            Cutoff Cycle
+          </Text>
+          <DropDownPicker
+            open={cutoffOpen}
+            value={cutoffValue}
+            items={cutoffItems}
+            setOpen={setCutoffOpen}
+            setValue={setCutoffValue}
+            setItems={setCutoffItems}
+            placeholder="Select Cutoff Cycle"
+            textStyle={{
+              color: isLightTheme ? '#374151' : '#9ca3af',
+            }}
+            className="mb-3"
+            style={{
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            }}
+            dropDownContainerStyle={{
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            }}
+            arrowIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
+            }}
+            tickIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
+            }}
+            zIndex={5000}
+            zIndexInverse={1000}
+            placeholderStyle={{
+              color: isLightTheme ? '#6B7280' : '#9CA3AF',
+            }}
+          />
+
+          {/* Currency */}
+          <Text
+            className={`font-semibold mb-1 mt-4 ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            Currency
+          </Text>
+          <DropDownPicker
+            open={currencyOpen}
+            value={currencyValue}
+            items={currencyItems}
+            setOpen={setCurrencyOpen}
+            setValue={setCurrencyValue}
+            setItems={setCurrencyItems}
+            placeholder="Select Currency"
+            textStyle={{
+              color: isLightTheme ? '#374151' : '#9ca3af',
+            }}
+            className="mb-3"
+            style={{
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            }}
+            dropDownContainerStyle={{
+              borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+              backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            }}
+            arrowIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
+            }}
+            tickIconStyle={{
+              tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
+            }}
+            zIndex={4000}
+            zIndexInverse={1000}
+            placeholderStyle={{
+              color: isLightTheme ? '#6B7280' : '#9CA3AF',
+            }}
+          />
+
+          {/* Overtime Rate */}
+          <Text
+            className={`font-semibold mb-1 mt-4 ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            Overtime Rate
+          </Text>
+          <View
+            className={`mb-3 p-4 rounded-lg ${
+              isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+            }`}
+          >
+            <TextInput
+              placeholder="e.g. 1.5"
+              value={overtimeRate}
+              onChangeText={setOvertimeRate}
+              keyboardType="numeric"
+              placeholderTextColor={isLightTheme ? '#6B7280' : '#9CA3AF'}
+              className={isLightTheme ? 'text-slate-800' : 'text-slate-100'}
+            />
+          </View>
+
+          <Pressable
+            className="bg-orange-500 p-4 rounded-lg mt-6"
+            onPress={handleUpdateSettings}
+          >
+            <Text className="text-white text-center font-semibold">
+              Create Payroll Settings
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 3) Otherwise, existing payroll settings exist -> show the usual form
   return (
     <SafeAreaView
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
@@ -136,16 +299,20 @@ const PayrollSettings = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
-          Payroll Settings
+        <Text
+          className={`text-xl font-bold ${
+            isLightTheme ? 'text-slate-800' : 'text-white'
+          }`}
+        >
+          Company Payroll Settings
         </Text>
       </View>
 
       {/* Settings Form */}
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 mt-4">
         {/* Cutoff Cycle */}
         <Text
-          className={`font-semibold mb-2 ${
+          className={`font-semibold mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
@@ -164,12 +331,12 @@ const PayrollSettings = () => {
           }}
           className="mb-3"
           style={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           dropDownContainerStyle={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           arrowIconStyle={{
             tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -186,7 +353,7 @@ const PayrollSettings = () => {
 
         {/* Currency */}
         <Text
-          className={`font-semibold mb-2 ${
+          className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
@@ -205,12 +372,12 @@ const PayrollSettings = () => {
           }}
           className="mb-3"
           style={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           dropDownContainerStyle={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           arrowIconStyle={{
             tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -227,15 +394,15 @@ const PayrollSettings = () => {
 
         {/* Overtime Rate */}
         <Text
-          className={`font-semibold mb-1 ${
+          className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
           Overtime Rate
         </Text>
         <View
-          className={`mb-3 p-3 rounded ${
-            isLightTheme ? 'bg-white' : 'bg-slate-700'
+          className={`mb-3 p-4 rounded-lg ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
         >
           <TextInput
@@ -250,11 +417,11 @@ const PayrollSettings = () => {
 
         {/* Update Settings Button */}
         <Pressable
-          className="bg-orange-500 p-3 rounded"
+          className="bg-orange-500 p-4 rounded-lg mt-6"
           onPress={handleUpdateSettings}
         >
           <Text className="text-white text-center font-semibold">
-            Update Settings
+            Save
           </Text>
         </Pressable>
       </View>

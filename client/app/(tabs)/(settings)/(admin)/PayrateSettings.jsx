@@ -151,10 +151,10 @@ const PayrateSettings = () => {
       </View>
 
       {/* Settings Form */}
-      <View className="flex-1 px-4">
+      <View className="flex-1 px-4 mt-4">
         {/* Select User */}
         <Text
-          className={`font-semibold mb-2 ${
+          className={`font-semibold mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
@@ -173,12 +173,12 @@ const PayrateSettings = () => {
           }}
           className="mb-3"
           style={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           dropDownContainerStyle={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           arrowIconStyle={{
             tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -195,7 +195,7 @@ const PayrateSettings = () => {
 
         {/* Pay Type */}
         <Text
-          className={`font-semibold mb-2 ${
+          className={`font-semibold mt-4 mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
@@ -214,12 +214,12 @@ const PayrateSettings = () => {
           }}
           className="mb-3"
           style={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           dropDownContainerStyle={{
-            borderColor: isLightTheme ? '#E5E7EB' : '#1E293B',
-            backgroundColor: isLightTheme ? '#E5E7EB' : '#1E293B',
+            borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
+            backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
           arrowIconStyle={{
             tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
@@ -236,19 +236,19 @@ const PayrateSettings = () => {
 
         {/* Rate */}
         <Text
-          className={`font-semibold mb-2 ${
+          className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
-          Rate
+          Rate (USD)
         </Text>
         <View
-          className={`mb-3 p-3 rounded ${
-            isLightTheme ? 'bg-white' : 'bg-slate-700'
+          className={`mb-3 p-4 rounded-lg ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
         >
           <TextInput
-            placeholder="Enter rate"
+            placeholder="e.g., 500"
             value={rate}
             onChangeText={setRate}
             keyboardType="numeric"
@@ -258,8 +258,8 @@ const PayrateSettings = () => {
         </View>
 
         {/* Set Pay Rate Button */}
-        <Pressable className="bg-blue-600 p-3 rounded" onPress={handleSetPayRate}>
-          <Text className="text-white text-center font-semibold">Set Pay Rate</Text>
+        <Pressable className="bg-orange-500 p-4 rounded-lg mt-6" onPress={handleSetPayRate}>
+          <Text className="text-white text-center font-semibold">Save</Text>
         </Pressable>
       </View>
     </SafeAreaView>

@@ -726,7 +726,7 @@ const Profile = () => {
                       placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                     />
 
-                    {/* Buttons row: Cancel (left) and Confirm (right) */}
+                    {/* Buttons row: Cancel (left) and Save (right) */}
                     <View className="flex-row justify-end mt-4">
                       <Pressable
                         onPress={() => setEditProfileModalVisible(false)}
@@ -737,9 +737,9 @@ const Profile = () => {
 
                       <Pressable
                         onPress={handleSaveProfileEdits}
-                        className="p-4 rounded-lg bg-orange-500"
+                        className="bg-orange-500 py-3 px-6 rounded-lg"
                       >
-                        <Text className="text-white text-center font-semibold">Confirm</Text>
+                        <Text className="text-white text-base font-semibold">Save</Text>
                       </Pressable>
                     </View>
                   </ScrollView>
@@ -897,9 +897,9 @@ const Profile = () => {
 
                       <Pressable
                         onPress={handleChangePassword}
-                        className="p-4 rounded-lg bg-orange-500"
+                        className="bg-orange-500 py-3 px-6 rounded-lg"
                       >
-                        <Text className="text-white text-center font-semibold">Confirm</Text>
+                        <Text className="text-white text-base font-semibold">Save</Text>
                       </Pressable>
                     </View>
                   </ScrollView>

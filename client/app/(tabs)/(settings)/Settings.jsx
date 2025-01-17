@@ -123,7 +123,7 @@ const Settings = () => {
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: 4,
-        backgroundColor: isLightTheme ? '#f1f5f9' : '#2d3748',
+        backgroundColor: isLightTheme ? '#f1f5f9' : '#1e293b',
         // Dim the card if locked and not overridden
         opacity: isLocked && !overrideLock ? 0.5 : 1,
       }}
@@ -147,9 +147,10 @@ const Settings = () => {
         </Text>
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 11,
             color: isLightTheme ? '#4b5563' : '#a0aec0',
           }}
+          className="mt-1"
         >
           {description}
         </Text>
@@ -296,7 +297,7 @@ const Settings = () => {
                   flexDirection: 'row',
                   alignItems: 'center',
                   marginVertical: 4,
-                  backgroundColor: isLightTheme ? '#f1f5f9' : '#2d3748',
+                  backgroundColor: isLightTheme ? '#f1f5f9' : '#1e293b',
                   opacity: punchLocationsLocked ? 0.5 : 1,
                 }}
                 disabled={punchLocationsLocked}
@@ -319,9 +320,10 @@ const Settings = () => {
                   </Text>
                   <Text
                     style={{
-                      fontSize: 14,
+                      fontSize: 11,
                       color: isLightTheme ? '#4b5563' : '#a0aec0',
                     }}
+                    className = "mt-1"
                   >
                     Create, update, assign or delete punch locations.
                   </Text>
@@ -349,19 +351,19 @@ const Settings = () => {
                       isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
                   >
-                    {userCompanyName} Payroll
+                    Company: {userCompanyName} Payroll
                   </Text>
                   {renderFeature(
                     MaterialIcons,
                     'attach-money',
-                    'Payroll Settings',
+                    'Company Payroll Settings',
                     'Configure cutoff cycles, currency, and overtime rates.',
                     './PayrollSettings'
                   )}
                   {renderFeature(
                     Ionicons,
                     'cash-outline',
-                    'Payrate Settings',
+                    'Employee Payrate Settings',
                     'Set or update pay rates for users.',
                     './PayrateSettings'
                   )}

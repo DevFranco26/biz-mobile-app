@@ -295,7 +295,7 @@ const ManageDepartments = () => {
         onRequestClose={() => setEditDeptModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-white'  : 'bg-slate-900'}`}>
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"

@@ -332,7 +332,7 @@ export const ManageLeaves = () => {
           {localFilterStatus !== 'All' && (
             <View className={`
               flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-sky-100' : 'bg-slate-700'}
+              ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}
             `}>
               <Text className={`
                 text-sm mr-1
@@ -354,11 +354,11 @@ export const ManageLeaves = () => {
           {filterUserEmail !== 'ALL' && (
             <View className={`
               flex-row items-center px-2 py-1 rounded-full mr-2 mb-1
-              ${isLightTheme ? 'bg-sky-100' : 'bg-slate-700'}
+              ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}
             `}>
               <Text className={`
                 text-sm mr-1
-                ${isLightTheme ? 'text-slate-900' : 'text-sky-300'}
+                ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}
               `}>
                 {filterUserEmail}
               </Text>

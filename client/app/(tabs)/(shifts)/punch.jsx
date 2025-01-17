@@ -15,11 +15,14 @@ import * as Location from 'expo-location';
 import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import useUserStore from '../../../store/userStore';
-import useThemeStore from '../../../store/themeStore';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// -- Stores
+import useUserStore from '../../../store/userStore';
+import useThemeStore from '../../../store/themeStore';
+import useSubscriptionStore from '../../../store/subscriptionStore'; // <-- (1) Import the Subscription Store
 
 const Punch = () => {
   const { user } = useUserStore();
@@ -27,6 +30,9 @@ const Punch = () => {
   const isLightTheme = theme === 'light';
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  // -- Subscription store states & methods
+  const { currentSubscription, fetchCurrentSubscription } = useSubscriptionStore(); // <-- (2) Destructure subscription data
 
   const [isTimeIn, setIsTimeIn] = useState(false);
   const [punchedInTime, setPunchedInTime] = useState('Not Time In');
@@ -41,23 +47,40 @@ const Punch = () => {
   const isSyncingRef = useRef(false);
   const prevIsConnected = useRef(true);
 
+  // -- (3) Fetch current subscription once on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        if (token) {
+          await fetchCurrentSubscription(token);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      }
+    })();
+  }, [fetchCurrentSubscription]);
+
+  // Keep punchQueueRef in sync
   useEffect(() => {
     punchQueueRef.current = punchQueue;
   }, [punchQueue]);
 
+  // Get local timeZone
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     setTimeZone(tz);
   }, []);
 
+  // Example unused interval for future expansions
   useEffect(() => {
     const interval = setInterval(() => {
-      // This interval could be repurposed if needed.
-      // Currently, it was used to update currentTime which has been removed.
+      // This interval is intentionally left as-is.
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
+  // Load any stored offline punches on mount
   useEffect(() => {
     const loadQueue = async () => {
       try {
@@ -84,6 +107,20 @@ const Punch = () => {
   const getLocalDate = () => new Date().toLocaleDateString('en-CA');
   const getDayName = () => new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
+  // -- (4) Check if current subscription allows offline punch
+  const canOfflinePunch = useCallback(() => {
+    if (
+      !currentSubscription ||
+      !currentSubscription.plan ||
+      !currentSubscription.plan.features
+    ) {
+      return false;
+    }
+    // The specific feature we care about
+    return currentSubscription.plan.features['timekeeping-punch-offline'] === true;
+  }, [currentSubscription]);
+
+  // Offline queue sync logic
   const syncPunchQueue = useCallback(async () => {
     if (isSyncingRef.current || punchQueueRef.current.length === 0) return;
     isSyncingRef.current = true;
@@ -143,6 +180,7 @@ const Punch = () => {
     isSyncingRef.current = false;
   }, []);
 
+  // Watch for network changes to trigger sync
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       if (state.isConnected !== prevIsConnected.current) {
@@ -194,6 +232,16 @@ const Punch = () => {
   const handlePunch = async () => {
     setIsLoading(true);
     try {
+      // -- (5) If user is offline but subscription doesn't allow offline punch, block action
+      if (!isConnected && !canOfflinePunch()) {
+        Alert.alert(
+          'Subscription Notice',
+          'Your current plan does not allow offline punching. Please ensure you are online to punch in/out.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
       const deviceInfo = {
         deviceName: Device.deviceName,
         systemName: Device.osName,
@@ -280,6 +328,7 @@ const Punch = () => {
           Alert.alert('Error', error.message);
         }
       } else {
+        // -- Offline handling (already checked subscription above)
         try {
           let updatedQueue = [...punchQueueRef.current];
           updatedQueue = updatedQueue.filter(item => item.isTimeIn !== punchData.isTimeIn);
@@ -329,6 +378,7 @@ const Punch = () => {
     }
   };
 
+  // Clear timer if component unmounts
   useEffect(() => {
     return () => {
       if (timer) clearInterval(timer);
@@ -338,7 +388,7 @@ const Punch = () => {
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: isLightTheme ? 'white' : '#0f172a', paddingTop: insets.top,  }}>
+    <View style={{ flex: 1, backgroundColor: isLightTheme ? 'white' : '#0f172a', paddingTop: insets.top }}>
       <View className="mx-4 mt-20 space-y-4">
         {/* Date Box */}
         <View className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
@@ -443,7 +493,9 @@ const Punch = () => {
         <Pressable
           onPress={handlePunch}
           disabled={isLoading}
-          className={`py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${isTimeIn ? 'bg-red-500' : 'bg-orange-500'} ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+          className={`py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
+            isTimeIn ? 'bg-red-500' : 'bg-orange-500'
+          } ${isLoading ? 'opacity-50' : 'opacity-100'}`}
         >
           {isLoading && (
             <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
