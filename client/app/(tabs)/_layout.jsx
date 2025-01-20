@@ -34,7 +34,7 @@ const TabsLayout = () => {
   // Fetch current subscription for locking logic
   useEffect(() => {
     const fetchSub = async () => {
-      if (!user || !['admin','superadmin'].includes(userRole)) return;
+      if (!user || !['user', 'supervisor', 'admin','superadmin'].includes(userRole)) return;
       const token = await SecureStore.getItemAsync('token');
       if (token) {
         await fetchCurrentSubscription(token);

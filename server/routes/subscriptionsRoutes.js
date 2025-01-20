@@ -16,7 +16,7 @@ router.get('/all', authorizeRoles('superAdmin'), subscriptionController.getAllSu
 /**
  * GET /api/subscriptions/current (admin or superAdmin)
  */
-router.get('/current', authorizeRoles('admin', 'superAdmin'), subscriptionController.getCurrentSubscription);
+router.get('/current', authorizeRoles('admin', 'superAdmin', 'user', 'supervisor'), subscriptionController.getCurrentSubscription);
 
 /**
  * PUT /api/subscriptions/upgrade (admin or superAdmin)

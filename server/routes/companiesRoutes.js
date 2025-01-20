@@ -57,6 +57,6 @@ router.delete('/delete/:id', authorizeRoles('superAdmin'), deleteCompany);
  * @desc    Get the user count for a company
  * @access  superAdmin
  */
-router.get('/:id/user-count', authorizeRoles('superAdmin'), getCompanyUserCount);
+router.get('/:id/user-count', authorizeRoles('superAdmin', 'admin', 'supervisor'), getCompanyUserCount);
 
 module.exports = router;
