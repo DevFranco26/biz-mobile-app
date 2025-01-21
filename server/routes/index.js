@@ -13,6 +13,7 @@ const payrollRoutes = require('./payrollRoutes.js');
 const departmentsRoutes = require('./departmentsRoutes.js');
 const subscriptionPlansRoutes = require('./subscriptionPlansRoutes.js');
 const subscriptionsRoutes = require('./subscriptionsRoutes.js');
+const paymentsRoutes = require('./paymentsRoutes.js');
 
 // Middlewares
 const authenticate = require('../middlewares/authMiddleware.js');
@@ -37,5 +38,6 @@ router.use('/leaves', leavesRoutes);
 router.use('/shiftschedules', shiftSchedulesRoutes);
 router.use('/payroll', payrollRoutes);
 router.use('/departments', departmentsRoutes);
+router.use('/payments', paymentsRoutes);
 
 module.exports = router;

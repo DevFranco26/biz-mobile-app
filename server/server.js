@@ -5,6 +5,7 @@ const app = require('./app.js');
 const sequelize = require('./config/database.js');
 const router = require('./routes/index.js');
 const errorHandler = require('./middlewares/errorHandler.js');;
+const stripe = require('stripe')('sk_test_...');
 
 dotenv.config();
 

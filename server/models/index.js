@@ -14,9 +14,8 @@ const PayrollSettings = require('./PayrollSettings.js');
 const Department = require('./Department.js');
 const SubscriptionPlan = require('./SubscriptionPlan.js');
 const Subscription = require('./Subscription.js');
+const Payment = require('./Payment.js')
 
-
-// Define Associations
 
 // User <-> Company
 User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
@@ -92,6 +91,15 @@ Subscription.belongsTo(SubscriptionPlan, { foreignKey: 'planId', as: 'plan' });
 // Company <-> Subscription
 Company.hasMany(Subscription, { foreignKey: 'companyId', as: 'subscriptions' });
 Subscription.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
+// Payment <-> Subscription
+Subscription.hasMany(Payment, { foreignKey: 'subscriptionId', as: 'payments' });
+Payment.belongsTo(Subscription, { foreignKey: 'subscriptionId', as: 'subscription' });
+
+// Payment <-> Company
+Company.hasMany(Payment, { foreignKey: 'companyId', as: 'payments' });
+Payment.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+
 module.exports = {
   User,
   Company,
@@ -106,5 +114,6 @@ module.exports = {
   PayRates,
   Department,
   SubscriptionPlan,
-  Subscription
+  Subscription,
+  Payment
 };
