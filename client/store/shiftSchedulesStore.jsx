@@ -1,9 +1,8 @@
 // store/shiftScheduleStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api'; // Ensure this is correct
+import { API_BASE_URL } from '../config/constant';
 
 const useShiftSchedulesStore = create((set, get) => ({
   shiftSchedules: [],
@@ -123,7 +122,6 @@ const useShiftSchedulesStore = create((set, get) => ({
     }
   },
 
-  // **Updated Function: Delete User from Shift with Enhanced Logging and Correct `get` Usage**
   deleteUserFromShift: async (token, shiftScheduleId, userId) => {
     try {
       console.log(`Attempting to delete user ID ${userId} from shift ID ${shiftScheduleId}`);
@@ -134,19 +132,18 @@ const useShiftSchedulesStore = create((set, get) => ({
         },
       });
       const data = await response.json();
-      console.log('deleteUserFromShift response:', response.status, data); // Log response status and data
+      console.log('deleteUserFromShift response:', response.status, data);
       if (response.ok) {
         Alert.alert('Success', data.message || 'User successfully removed from the shift.');
-        // **Use `get()` to access fetchShiftSchedules**
         await get().fetchShiftSchedules(token);
         return { success: true };
       } else {
-        console.log('deleteUserFromShift failed:', data); // Log failure details
+        console.log('deleteUserFromShift failed:', data);
         Alert.alert('Error', data.message || 'Failed to remove user from the shift.');
         return { success: false };
       }
     } catch (error) {
-      console.log('deleteUserFromShift error:', error); // Log actual error
+      console.log('deleteUserFromShift error:', error);
       Alert.alert('Error', 'An error occurred while removing user from the shift.');
       return { success: false };
     }

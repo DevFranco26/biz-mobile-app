@@ -1,5 +1,3 @@
-// File: app/(tabs)/(settings)/(admin)/CalculatePayrollManually.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,6 +5,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,43 +26,27 @@ const formatDate = (dateObj) => {
   return `${year}-${month}-${day}`;
 };
 
-const CalculatePayrollManually = () => {
+const GeneratePayroll = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
-
-  const {
-    calculatePayroll,
-    loading,
-  } = usePayrollStore();
-
-  const {
-    users,
-    fetchUsers,
-    loading: usersLoading,
-  } = useUsersStore();
-
+  const { calculatePayroll, loading } = usePayrollStore();
+  const { users, fetchUsers, loading: usersLoading } = useUsersStore();
   const [token, setToken] = useState(null);
-
-  // Manual Calculation State
   const [calcUserOpen, setCalcUserOpen] = useState(false);
   const [calcUserValue, setCalcUserValue] = useState(null);
   const [calcUserItems, setCalcUserItems] = useState([]);
-
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
-  // Load token and fetch users
   useEffect(() => {
     const initialize = async () => {
       try {
         const storedToken = await SecureStore.getItemAsync('token');
         if (!storedToken) {
           Alert.alert('Authentication Error', 'Please sign in again.');
-          // Optionally navigate to sign-in screen
           return;
         }
         setToken(storedToken);
@@ -76,7 +59,6 @@ const CalculatePayrollManually = () => {
     initialize();
   }, [fetchUsers]);
 
-  // Populate user picker items when users data changes
   useEffect(() => {
     if (users && Array.isArray(users) && users.length > 0) {
       const items = users.map((u) => ({
@@ -102,7 +84,6 @@ const CalculatePayrollManually = () => {
       Alert.alert('Validation Error', 'Start Date cannot be after End Date.');
       return;
     }
-
     try {
       await calculatePayroll(token, {
         userId: calcUserValue,
@@ -110,7 +91,6 @@ const CalculatePayrollManually = () => {
         endDate: formatDate(endDate),
       });
       Alert.alert('Success', 'Payroll calculated successfully.');
-      // Optionally, reset the form
       setCalcUserValue(null);
       setStartDate(new Date());
       setEndDate(new Date());
@@ -120,7 +100,6 @@ const CalculatePayrollManually = () => {
     }
   };
 
-  // Date-time pickers (start date)
   const onStartDateChange = (event, selectedDate) => {
     if (selectedDate) {
       setStartDate(selectedDate);
@@ -130,7 +109,6 @@ const CalculatePayrollManually = () => {
     }
   };
 
-  // Date-time pickers (end date)
   const onEndDateChange = (event, selectedDate) => {
     if (selectedDate) {
       setEndDate(selectedDate);
@@ -163,7 +141,6 @@ const CalculatePayrollManually = () => {
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
-      {/* Header */}
       <View className="flex-row items-center px-4 py-4">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -172,14 +149,15 @@ const CalculatePayrollManually = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+        <Text
+          className={`text-xl font-bold ${
+            isLightTheme ? 'text-slate-800' : 'text-white'
+          }`}
+        >
           Calculate Payroll Manually
         </Text>
       </View>
-
-      {/* Calculation Form */}
       <View className="flex-1 px-4 mt-4">
-        {/* Select User */}
         <Text
           className={`font-semibold mb-2 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -195,9 +173,7 @@ const CalculatePayrollManually = () => {
           setValue={setCalcUserValue}
           setItems={setCalcUserItems}
           placeholder="Select a user"
-          textStyle={{
-            color: isLightTheme ? '#374151' : '#9ca3af',
-          }}
+          textStyle={{ color: isLightTheme ? '#374151' : '#9ca3af' }}
           style={{
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
@@ -206,20 +182,12 @@ const CalculatePayrollManually = () => {
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
-          arrowIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
-          tickIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
+          arrowIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
+          tickIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
           zIndex={2000}
           zIndexInverse={1000}
-          placeholderStyle={{
-            color: isLightTheme ? '#6B7280' : '#9CA3AF',
-          }}
+          placeholderStyle={{ color: isLightTheme ? '#6B7280' : '#9CA3AF' }}
         />
-
-        {/* Start Date */}
         <Text
           className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -234,9 +202,7 @@ const CalculatePayrollManually = () => {
           onPress={() => setShowStartPicker(true)}
         >
           <Text
-            className={`${
-              isLightTheme ? 'text-slate-800' : 'text-slate-100'
-            }`}
+            className={isLightTheme ? 'text-slate-800' : 'text-slate-100'}
           >
             {formatDate(startDate) || 'YYYY-MM-DD'}
           </Text>
@@ -251,8 +217,6 @@ const CalculatePayrollManually = () => {
             textColor={isLightTheme ? '#000' : '#FFF'}
           />
         )}
-
-        {/* End Date */}
         <Text
           className={`font-semibold mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -261,15 +225,13 @@ const CalculatePayrollManually = () => {
           End Date
         </Text>
         <Pressable
-           className={`mb-4 p-4 rounded-lg ${
+          className={`mb-4 p-4 rounded-lg ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
           }`}
           onPress={() => setShowEndPicker(true)}
         >
           <Text
-            className={`${
-              isLightTheme ? 'text-slate-800' : 'text-slate-100'
-            }`}
+            className={isLightTheme ? 'text-slate-800' : 'text-slate-100'}
           >
             {formatDate(endDate) || 'YYYY-MM-DD'}
           </Text>
@@ -284,8 +246,6 @@ const CalculatePayrollManually = () => {
             textColor={isLightTheme ? '#000' : '#FFF'}
           />
         )}
-
-        {/* Calculate Payroll Button */}
         <Pressable
           className="bg-orange-500 p-4 rounded-lg"
           onPress={handleCalculatePayrollManually}
@@ -299,4 +259,4 @@ const CalculatePayrollManually = () => {
   );
 };
 
-export default CalculatePayrollManually;
+export default GeneratePayroll;

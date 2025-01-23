@@ -3,11 +3,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Slot } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemeStore from '../../../store/themeStore';
 
 const SettingsLayout = () => {
-  const insets = useSafeAreaInsets();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
 

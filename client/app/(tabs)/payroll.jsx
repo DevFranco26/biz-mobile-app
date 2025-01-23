@@ -50,16 +50,9 @@ const Payroll = () => {
     { label: 'All', value: 'all' },
     { label: 'Monthly', value: 'monthly' },
     { label: 'Weekly', value: 'weekly' },
-    { label: 'Daily', value: 'daily' }, // Replaced 'Custom Range' with 'Daily'
+    { label: 'Daily', value: 'daily' },
   ]);
 
-  // Custom Date Range States (Removed as per request)
-  // const [showStartPicker, setShowStartPicker] = useState(false);
-  // const [showEndPicker, setShowEndPicker] = useState(false);
-  // const [customStartDate, setCustomStartDate] = useState(new Date());
-  // const [customEndDate, setCustomEndDate] = useState(new Date());
-
-  // isFetching State
   const [isFetching, setIsFetching] = useState(false);
 
   // Fetch Token and Payroll Records
@@ -105,28 +98,6 @@ const Payroll = () => {
     refreshPayroll();
   }, [fetchMyPayroll]);
 
-  // Handle Start Date Change (Removed as per request)
-  // const onStartDateChange = (event, selectedDate) => {
-  //   setShowStartPicker(false);
-  //   if (selectedDate) {
-  //     setCustomStartDate(selectedDate);
-  //     if (selectedDate > customEndDate) {
-  //       setCustomEndDate(selectedDate);
-  //     }
-  //   }
-  // };
-
-  // Handle End Date Change (Removed as per request)
-  // const onEndDateChange = (event, selectedDate) => {
-  //   setShowEndPicker(false);
-  //   if (selectedDate) {
-  //     setCustomEndDate(selectedDate);
-  //     if (selectedDate < customStartDate) {
-  //       setCustomStartDate(selectedDate);
-  //     }
-  //   }
-  // };
-
   // Sorting Function
   const sortedPayrollRecords = () => {
     let sorted = [...myPayrollRecords];
@@ -161,11 +132,11 @@ const Payroll = () => {
       });
     } else if (filterValue === 'weekly') {
       const today = new Date();
-      const dayOfWeek = today.getDay(); // 0 (Sun) to 6 (Sat)
+      const dayOfWeek = today.getDay();
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - dayOfWeek); // Sunday
+      startOfWeek.setDate(today.getDate() - dayOfWeek);
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 6); // Saturday
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
       filtered = filtered.filter(record => {
         const recordDate = new Date(record.startDate);
         return recordDate >= startOfWeek && recordDate <= endOfWeek;
@@ -179,11 +150,9 @@ const Payroll = () => {
         return recordDate >= startOfDay && recordDate <= endOfDay;
       });
     }
-    // 'all' does not filter anything
     return filtered;
   };
 
-  // Enhanced HTML/CSS for PDF
   const generateHtmlContent = (record) => {
     return `
       <!DOCTYPE html>

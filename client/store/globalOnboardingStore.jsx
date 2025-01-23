@@ -1,7 +1,5 @@
 // File: store/globalOnboardingStore.js
-import { create } from 'zustand'; 
-// ^ If using zustand v4+
-// If you must use older, do: import create from 'zustand';
+import  {create}  from 'zustand'; 
 
 const useOnboardingStore = create((set) => ({
   step1Data: {

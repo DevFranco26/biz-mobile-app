@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/(admin)/ManageLeaves.jsx
+// File: app/(tabs)/(settings)/(management)/manage-leaves.jsx
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -21,7 +21,7 @@ import useThemeStore from '../../../../store/themeStore';
 import useLeaveStore from '../../../../store/leaveStore';
 import useUsersStore from '../../../../store/usersStore';
 
-export const ManageLeaves = () => {
+const Leaves = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
@@ -103,7 +103,7 @@ export const ManageLeaves = () => {
       const token = await SecureStore.getItemAsync('token');
       if (!token) {
         Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
         return;
       }
       try {
@@ -166,7 +166,7 @@ export const ManageLeaves = () => {
       }
     } else {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
     }
   };
 
@@ -191,7 +191,7 @@ export const ManageLeaves = () => {
       }
     } else {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
     }
   };
 
@@ -750,4 +750,4 @@ export const ManageLeaves = () => {
   );
 };
 
-export default ManageLeaves;
+export default Leaves;

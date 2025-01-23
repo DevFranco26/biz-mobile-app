@@ -1,16 +1,14 @@
-import create from 'zustand';
-import { Alert } from 'react-native';
+// File: client/store/timeLogsStore.jsx
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import {create} from 'zustand';
+import { Alert } from 'react-native';
+import { API_BASE_URL } from '../config/constant';
 
 const useTimeLogsStore = create((set, get) => ({
   timeLogs: [],
   loading: false,
   error: null,
 
-  // Fetch time logs within a date range
-  // If user is admin/superAdmin, can specify a userId
-  // If user is a normal user, userId is determined by the backend
   fetchTimeLogs: async (token, { userId = null, startDate = null, endDate = null } = {}) => {
     set({ loading: true, error: null });
 

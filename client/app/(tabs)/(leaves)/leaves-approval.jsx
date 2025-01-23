@@ -1,4 +1,4 @@
-// File: app/(tabs)/(leaves)/ApprovalLeaves.jsx
+// File: app/(tabs)/(leaves)/leaves-approval.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -18,28 +18,23 @@ import useLeaveStore from '../../../store/leaveStore';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, AntDesign, FontAwesome5 } from '@expo/vector-icons';
-import 'nativewind';
 import useUsersStore from '../../../store/usersStore';
 
 const ApprovalLeaves = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
-
   const { userLeaves, fetchUserLeaves, loadingUserLeaves, errorUserLeaves } = useLeaveStore();
   const { fetchUserById } = useUsersStore();
-
   const [sortOrder, setSortOrder] = useState('desc');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedFilterOption, setSelectedFilterOption] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-
   const [approverEmails, setApproverEmails] = useState({});
   const [requesterEmails, setRequesterEmails] = useState({});
 
-  // Unified helper function for Leave Type icons using Ionicons
   const getTypeIcon = (type) => {
     switch (type) {
       case 'Sick Leave':
@@ -78,7 +73,7 @@ const ApprovalLeaves = () => {
         Alert.alert(
           'Authentication Error',
           'You are not logged in. Please sign in again.',
-          [{ text: 'OK', onPress: () => router.replace('(auth)/signin') }]
+          [{ text: 'OK', onPress: () => router.replace('(auth)/login-user') }]
         );
         return;
       }
@@ -512,7 +507,7 @@ const ApprovalLeaves = () => {
       </Modal>
 
       {loadingUserLeaves && !refreshing ? (
-        <ActivityIndicator size="large" color="#10B981" className="mt-10" />
+        <ActivityIndicator size="large" color="#6B7280" className="mt-10" />
       ) : errorUserLeaves ? (
         <Text className={`text-center mt-10 text-base ${isLightTheme ? 'text-red-700' : 'text-red-300'}`}>
           {errorUserLeaves}
@@ -537,8 +532,8 @@ const ApprovalLeaves = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#10B981']}
-              tintColor={isLightTheme ? '#10B981' : '#ffffff'}
+              colors={['#6B7280']}
+              tintColor={isLightTheme ? '#6B7280' : '#6B7280'}
             />
           }
         />

@@ -1,11 +1,9 @@
 // File: store/leaveStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import axios from 'axios';
 import { Alert } from 'react-native';
-
-// Define your API base URL
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../config/constant';
 
 const useLeaveStore = create((set, get) => ({
   // State Variables
@@ -21,8 +19,6 @@ const useLeaveStore = create((set, get) => ({
   loadingUserLeaves: false,
   errorUserLeaves: null,
 
-  // Actions
-
   /**
    * Fetch Approvers within the Same Company
    * @param {string} token - JWT token for authentication
@@ -35,10 +31,10 @@ const useLeaveStore = create((set, get) => ({
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('Fetch Approvers Response:', response.data); // Debugging Log
+      console.log('Fetch Approvers Response:', response.data); 
       if (response.status === 200) {
         set({ approvers: response.data.data, loadingApprovers: false });
-        console.log('Approvers set in store:', response.data.data); // Debugging Log
+        console.log('Approvers set in store:', response.data.data);
       } else {
         set({
           errorApprovers: response.data.message || 'Failed to fetch approvers.',
@@ -70,10 +66,10 @@ const useLeaveStore = create((set, get) => ({
         },
         params: { status },
       });
-      console.log('Fetch Leaves Response:', response.data); // Debugging Log
+      console.log('Fetch Leaves Response:', response.data);
       if (response.status === 200) {
         set({ leaves: response.data.data, loadingLeaves: false });
-        console.log('Leaves set in store:', response.data.data); // Debugging Log
+        console.log('Leaves set in store:', response.data.data); 
       } else {
         set({
           errorLeaves: response.data.message || 'Failed to fetch leaves.',
@@ -93,8 +89,8 @@ const useLeaveStore = create((set, get) => ({
 
   /**
    * Approve a Leave Request
-   * @param {number} leaveId - ID of the leave request to approve
-   * @param {string} token - JWT token for authentication
+   * @param {number} leaveId 
+   * @param {string} token 
    */
   approveLeave: async (leaveId, token) => {
     set({ submittingLeave: true, errorSubmittingLeave: null });
@@ -104,7 +100,7 @@ const useLeaveStore = create((set, get) => ({
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('Approve Leave Response:', response.data); // Debugging Log
+      console.log('Approve Leave Response:', response.data);
       if (response.status === 200) {
         Alert.alert('Success', 'Leave request approved successfully.');
         set({ submittingLeave: false });
@@ -140,9 +136,9 @@ const useLeaveStore = create((set, get) => ({
 
   /**
    * Reject a Leave Request
-   * @param {number} leaveId - ID of the leave request to reject
-   * @param {string} rejectionReason - Reason for rejection
-   * @param {string} token - JWT token for authentication
+   * @param {number} leaveId 
+   * @param {string} rejectionReason
+   * @param {string} token
    */
   rejectLeave: async (leaveId, rejectionReason, token) => {
     set({ submittingLeave: true, errorSubmittingLeave: null });
@@ -153,7 +149,7 @@ const useLeaveStore = create((set, get) => ({
           'Content-Type': 'application/json',
         },
       });
-      console.log('Reject Leave Response:', response.data); // Debugging Log
+      console.log('Reject Leave Response:', response.data);
       if (response.status === 200) {
         Alert.alert('Success', 'Leave request rejected successfully.');
         set({ submittingLeave: false });
@@ -189,8 +185,8 @@ const useLeaveStore = create((set, get) => ({
 
   /**
    * Submit a Leave Request
-   * @param {string} token - JWT token for authentication
-   * @param {object} leaveData - Data for the leave request
+   * @param {string} token
+   * @param {object} leaveData
    */
   submitLeave: async (token, leaveData) => {
     set({ submittingLeave: true, errorSubmittingLeave: null });
@@ -235,7 +231,7 @@ const useLeaveStore = create((set, get) => ({
 
   /**
    * Get Approvers within the Same Company
-   * @param {string} token - JWT token for authentication
+   * @param {string} token
    */
   getApprovers: async (token) => {
     set({ loadingApprovers: true, errorApprovers: null });
@@ -245,10 +241,10 @@ const useLeaveStore = create((set, get) => ({
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('Get Approvers Response:', response.data); // Debugging Log
+      console.log('Get Approvers Response:', response.data);
       if (response.status === 200) {
         set({ approvers: response.data.data, loadingApprovers: false });
-        console.log('Approvers set in store:', response.data.data); // Debugging Log
+        console.log('Approvers set in store:', response.data.data);
       } else {
         set({
           errorApprovers: response.data.message || 'Failed to fetch approvers.',
@@ -268,7 +264,7 @@ const useLeaveStore = create((set, get) => ({
 
   /**
    * Fetch User's Leave Requests
-   * @param {string} token - JWT token for authentication
+   * @param {string} token
    */
   fetchUserLeaves: async (token) => {
     set({ loadingUserLeaves: true, errorUserLeaves: null });
@@ -278,10 +274,10 @@ const useLeaveStore = create((set, get) => ({
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('Fetch User Leaves Response:', response.data); // Debugging Log
+      console.log('Fetch User Leaves Response:', response.data);
       if (response.status === 200) {
         set({ userLeaves: response.data.data, loadingUserLeaves: false });
-        console.log('User Leaves set in store:', response.data.data); // Debugging Log
+        console.log('User Leaves set in store:', response.data.data);
       } else {
         set({
           errorUserLeaves: response.data.message || 'Failed to fetch your leave requests.',
@@ -299,7 +295,6 @@ const useLeaveStore = create((set, get) => ({
     }
   },
 
-  // Additional state for filtering
   filterStatus: 'Pending',
 
   setFilterStatus: (status) => set({ filterStatus: status }),

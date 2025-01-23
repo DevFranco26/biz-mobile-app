@@ -1,9 +1,8 @@
 // File: client/store/departmentStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../config/constant';
 
 const useDepartmentStore = create((set, get) => ({
   departments: [],
@@ -16,7 +15,6 @@ const useDepartmentStore = create((set, get) => ({
   fetchDepartments: async (token) => {
     set({ loading: true, error: null });
     try {
-      // According to your code, the route to get all is: GET /api/departments/all
       const response = await fetch(`${API_BASE_URL}/departments/all`, {
         method: 'GET',
         headers: {
@@ -41,10 +39,9 @@ const useDepartmentStore = create((set, get) => ({
    * Fetch a single department by ID and add to store.
    */
   fetchDepartmentById: async (token, departmentId) => {
-    // Only fetch if we don't already have it
     const { departments } = get();
     if (departments.find((d) => d.id === departmentId)) {
-      return; // Already loaded
+      return; 
     }
 
     try {
@@ -56,7 +53,6 @@ const useDepartmentStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        // data.department is the single department object
         set((state) => ({
           departments: [...state.departments.filter((dep) => dep.id !== departmentId), data.department],
         }));

@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/(admin)/ManageLocations.jsx
+// File: app/(tabs)/(settings)/(management)/manage-locations.jsx
 
 import React, { useEffect, useState } from 'react';
 import { 
@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps'; 
 
-const ManageLocations = () => {
+const Locations = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
@@ -58,7 +58,7 @@ const ManageLocations = () => {
         await fetchLocations(token);
       } else {
         Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
       }
     };
     initialize();
@@ -112,7 +112,7 @@ const ManageLocations = () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -178,7 +178,7 @@ const ManageLocations = () => {
       }
     } else {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
     }
   };
 
@@ -564,4 +564,4 @@ const ManageLocations = () => {
   );
 };
 
-export default ManageLocations;
+export default Locations;

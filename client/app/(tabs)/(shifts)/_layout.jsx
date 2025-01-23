@@ -25,7 +25,7 @@ const ShiftsTabsLayout = () => {
 
   return (
     <Tabs
-      initialRouteName="Punch"
+      initialRouteName="timekeeping-punch"
       screenOptions={{
         headerShown: false,
         tabBarShowIcon: true,
@@ -43,7 +43,7 @@ const ShiftsTabsLayout = () => {
           shadowOpacity: 0,
         },
         tabBarActiveTintColor: '#f97316',
-        tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
+        tabBarInactiveTintColor: isLightTheme ? '#6B7280' : '#6B7280',
         tabBarLabelStyle: {
           fontSize: 12,
           textTransform: 'none',
@@ -59,7 +59,7 @@ const ShiftsTabsLayout = () => {
     >
       {/* Punch Screen */}
       <Tabs.Screen
-        name="Punch"
+        name="timekeeping-punch"
         options={{
           tabBarLabel: 'Punch',
           tabBarIcon: getTabBarIcon('time-outline', 24, 'Punch Tab Icon'),
@@ -68,7 +68,7 @@ const ShiftsTabsLayout = () => {
 
       {/* TimeCard Screen */}
       <Tabs.Screen
-        name="TimeCard"
+        name="timekeeping-timeCard"
         options={{
           tabBarLabel: 'Time Card',
           tabBarIcon: getTabBarIcon('clipboard-outline', 24, 'Time Card Tab Icon'),
@@ -77,7 +77,7 @@ const ShiftsTabsLayout = () => {
 
       {/* Schedule Screen */}
       <Tabs.Screen
-        name="Schedules"
+        name="timekeeping-schedule"
         options={{
           tabBarLabel: 'Schedule',
           tabBarIcon: getTabBarIcon('calendar-outline', 24, 'Shift Schedule Tab Icon'),

@@ -1,3 +1,5 @@
+// File: app/(auth)/registration-company.jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -22,15 +24,14 @@ import { useRouter } from 'expo-router';
 import useThemeStore from '../../store/themeStore';
 import useUserStore from '../../store/userStore';
 import useOnboardingStore from '../../store/globalOnboardingStore';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../../config/constant';
 
 /** Validation for Step 2 form */
 const StepTwoSchema = Yup.object().shape({
   companyName: Yup.string().min(2).max(100).required('Company name is required'),
 });
 
-export default function OnboardingStep2() {
+export default function RegistrationCompany() {
   const router = useRouter();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
@@ -40,10 +41,6 @@ export default function OnboardingStep2() {
     useOnboardingStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // For Step 2, we no longer show plan choices or pax. We force them to:
-  //   { pax: '1', subscriptionPlanId: '1' } (the "Free" plan).
-  // (If needed, adjust the ID to match your server’s free plan.)
   const handleSignup = async (values) => {
     setIsSubmitting(true);
     try {
@@ -55,9 +52,8 @@ export default function OnboardingStep2() {
         password: step1Data.password,
         phone: step1Data.phone,
         companyName: values.companyName,
-        // Force these defaults:
         pax: '1',
-        subscriptionPlanId: '1', // the "Free" plan ID
+        subscriptionPlanId: '1',
       };
 
       const response = await fetch(`${API_BASE_URL}/auth/get-started`, {
@@ -89,7 +85,7 @@ export default function OnboardingStep2() {
         Alert.alert('Error', data.message || 'Failed to create account.');
       }
     } catch (error) {
-      console.error('OnboardingStep2 Error:', error);
+      console.error('Registration Company Error:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -191,8 +187,6 @@ export default function OnboardingStep2() {
                         Back to Create Account 
                       </Text>
                     </Pressable>
-
-                    
                   </>
                 )}
               </Formik>

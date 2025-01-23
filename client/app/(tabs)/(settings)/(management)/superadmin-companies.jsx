@@ -1,6 +1,6 @@
-// File: app/(tabs)/(settings)/(admin)/ManageCompanies.jsx
+// File: app/(tabs)/(settings)/(management)/superadmin-companies.jsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -16,21 +16,19 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   RefreshControl,
-} from 'react-native';
-import useThemeStore from '../../../../store/themeStore';
-import useCompanyStore from '../../../../store/companyStore';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from 'react-native'
+import useThemeStore from '../../../../store/themeStore'
+import useCompanyStore from '../../../../store/companyStore'
+import { useRouter } from 'expo-router'
+import * as SecureStore from 'expo-secure-store'
+import { Ionicons } from '@expo/vector-icons'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { API_BASE_URL } from '../../../../config/constant'
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
-
-const ManageCompanies = () => {
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === 'light';
-  const router = useRouter();
-
+const Companies = () => {
+  const { theme } = useThemeStore()
+  const isLightTheme = theme === 'light'
+  const router = useRouter()
   const {
     companies,
     loading,
@@ -38,74 +36,68 @@ const ManageCompanies = () => {
     fetchCompanies,
     deleteCompany,
     fetchCompanyUserCount,
-    companyUserCounts, // read user counts from store
-  } = useCompanyStore();
+    companyUserCounts,
+  } = useCompanyStore()
 
-  const [selectedCompany, setSelectedCompany] = useState(null);
-
-  // Fields for add/edit company modal
-  const [companyName, setCompanyName] = useState('');
-  const [companyDomain, setCompanyDomain] = useState('');
-
-  const [editCompanyModalVisible, setEditCompanyModalVisible] = useState(false);
-
-  const [refreshing, setRefreshing] = useState(false);
-  const [token, setToken] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null)
+  const [companyName, setCompanyName] = useState('')
+  const [companyDomain, setCompanyDomain] = useState('')
+  const [editCompanyModalVisible, setEditCompanyModalVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [token, setToken] = useState(null)
 
   useEffect(() => {
     const initialize = async () => {
-      const storedToken = await SecureStore.getItemAsync('token');
+      const storedToken = await SecureStore.getItemAsync('token')
       if (!storedToken) {
-        Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
-        return;
+        Alert.alert('Authentication Error', 'Please sign in again.')
+        router.replace('(auth)/login-user')
+        return
       }
-      setToken(storedToken);
-      await fetchCompanies(storedToken);
-    };
-    initialize();
-  }, [fetchCompanies, router]);
+      setToken(storedToken)
+      await fetchCompanies(storedToken)
+    }
+    initialize()
+  }, [fetchCompanies, router])
 
   const onRefresh = async () => {
-    if (!token) return;
-    setRefreshing(true);
-    await fetchCompanies(token);
-    setRefreshing(false);
-  };
+    if (!token) return
+    setRefreshing(true)
+    await fetchCompanies(token)
+    setRefreshing(false)
+  }
 
-  // Once companies are fetched, also fetch user counts
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!token) return;
-      // For each company, call fetchCompanyUserCount
+      if (!token) return
       for (let c of companies) {
-        await fetchCompanyUserCount(token, c.id);
+        await fetchCompanyUserCount(token, c.id)
       }
-    };
-    if (companies.length > 0) {
-      fetchCounts();
     }
-  }, [companies, token, fetchCompanyUserCount]);
+    if (companies.length > 0) {
+      fetchCounts()
+    }
+  }, [companies, token, fetchCompanyUserCount])
 
   const handleAddCompany = () => {
-    setSelectedCompany(null);
-    setCompanyName('');
-    setCompanyDomain('');
-    setEditCompanyModalVisible(true);
-  };
+    setSelectedCompany(null)
+    setCompanyName('')
+    setCompanyDomain('')
+    setEditCompanyModalVisible(true)
+  }
 
-  const handleEditCompany = (company) => {
-    setSelectedCompany(company);
-    setCompanyName(company.name);
-    setCompanyDomain(company.domain);
-    setEditCompanyModalVisible(true);
-  };
+  const handleEditCompany = company => {
+    setSelectedCompany(company)
+    setCompanyName(company.name)
+    setCompanyDomain(company.domain)
+    setEditCompanyModalVisible(true)
+  }
 
-  const handleDeleteCompany = async (companyId) => {
+  const handleDeleteCompany = async companyId => {
     if (!token) {
-      Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
-      return;
+      Alert.alert('Authentication Error', 'Please sign in again.')
+      router.replace('(auth)/login-user')
+      return
     }
     Alert.alert('Confirm Deletion', 'Are you sure you want to delete this company?', [
       { text: 'Cancel', style: 'cancel' },
@@ -113,40 +105,35 @@ const ManageCompanies = () => {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteCompany(companyId, token);
-          await fetchCompanies(token);
+          await deleteCompany(companyId, token)
+          await fetchCompanies(token)
         },
       },
-    ]);
-  };
+    ])
+  }
 
-  const handleCompanyAction = (company) => {
+  const handleCompanyAction = company => {
     Alert.alert('Company Actions', `Choose an action for "${company.name}".`, [
       { text: 'Edit', onPress: () => handleEditCompany(company) },
-      {
-        text: 'Delete',
-        onPress: () => handleDeleteCompany(company.id),
-      },
+      { text: 'Delete', onPress: () => handleDeleteCompany(company.id) },
       { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
+    ])
+  }
 
   const handleSaveCompanyEdits = async () => {
     if (!token) {
-      Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
-      return;
+      Alert.alert('Authentication Error', 'Please sign in again.')
+      router.replace('(auth)/login-user')
+      return
     }
     if (!companyName || !companyDomain) {
-      Alert.alert('Validation Error', 'Name and Domain are required fields.');
-      return;
+      Alert.alert('Validation Error', 'Name and Domain are required fields.')
+      return
     }
-
     try {
-      let res, data;
+      let res, data
       if (selectedCompany) {
-        // Update existing company
-        const url = `${API_BASE_URL}/companies/update/${selectedCompany.id}`;
+        const url = `${API_BASE_URL}/companies/update/${selectedCompany.id}`
         res = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -157,11 +144,10 @@ const ManageCompanies = () => {
             name: companyName,
             domain: companyDomain,
           }),
-        });
-        data = await res.json();
+        })
+        data = await res.json()
       } else {
-        // Create a new company
-        const url = `${API_BASE_URL}/companies/create`;
+        const url = `${API_BASE_URL}/companies/create`
         res = await fetch(url, {
           method: 'POST',
           headers: {
@@ -172,26 +158,24 @@ const ManageCompanies = () => {
             name: companyName,
             domain: companyDomain,
           }),
-        });
-        data = await res.json();
+        })
+        data = await res.json()
       }
-
       if (res.ok) {
-        Alert.alert('Success', selectedCompany ? 'Company updated successfully.' : 'Company created successfully.');
-        setEditCompanyModalVisible(false);
-        await fetchCompanies(token);
+        Alert.alert('Success', selectedCompany ? 'Company updated successfully.' : 'Company created successfully.')
+        setEditCompanyModalVisible(false)
+        await fetchCompanies(token)
       } else {
-        Alert.alert('Error', data.message || 'Failed to save company.');
+        Alert.alert('Error', data.message || 'Failed to save company.')
       }
     } catch (err) {
-      console.error('Error saving company:', err);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      console.error('Error saving company:', err)
+      Alert.alert('Error', 'An unexpected error occurred.')
     }
-  };
+  }
 
   const renderItem = ({ item }) => {
-    // Retrieve the userCount from store
-    const userCount = companyUserCounts[item.id] || 0;
+    const userCount = companyUserCounts[item.id] || 0
     return (
       <View
         className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
@@ -221,70 +205,40 @@ const ManageCompanies = () => {
             Users: {userCount}
           </Text>
         </View>
-
         <Pressable onPress={() => handleCompanyAction(item)} className="p-2">
-          <Ionicons
-            name="ellipsis-vertical"
-            size={24}
-            color={isLightTheme ? '#1f2937' : '#f9fafb'}
-          />
+          <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
         </Pressable>
       </View>
-    );
-  };
+    )
+  }
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
-      edges={['top']}
-    >
-      {/* Header */}
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
-          <Ionicons
-            name="chevron-back-outline"
-            size={24}
-            color={isLightTheme ? '#333' : '#fff'}
-          />
+          <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? '#333' : '#fff'} />
         </Pressable>
-        <Text
-          className={`text-lg font-bold ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-300'
-          }`}
-        >
+        <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           Manage Companies
         </Text>
       </View>
-
-      {/* Title + Add Button */}
       <View className="flex-row justify-between items-center px-4 mb-4 z-50">
-        <Text
-          className={`text-2xl font-bold ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-300'
-          }`}
-        >
+        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           Companies
         </Text>
         <Pressable
           onPress={handleAddCompany}
-          className={`p-2 rounded-full ${
-            isLightTheme ? 'bg-white' : 'bg-slate-900'
-          }`}
+          className={`p-2 rounded-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
         >
-          <Ionicons
-            name="add"
-            size={24}
-            color={isLightTheme ? '#1e293b' : '#cbd5e1'}
-          />
+          <Ionicons name="add" size={24} color={isLightTheme ? '#1e293b' : '#cbd5e1'} />
         </Pressable>
       </View>
-
       {loading ? (
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
         <FlatList
           data={companies}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
           refreshControl={
@@ -306,44 +260,24 @@ const ManageCompanies = () => {
           }
         />
       )}
-
-      {/* Add/Edit Company Modal */}
       <Modal
         visible={editCompanyModalVisible}
         animationType="fade"
-        transparent={true}
+        transparent
         onRequestClose={() => setEditCompanyModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View
-            className={`flex-1 justify-center items-center ${
-              isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'
-            }`}
-          >
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"
               keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
             >
-              <View
-                className={`p-6 rounded-2xl shadow-md w-full ${
-                  isLightTheme ? 'bg-white' : 'bg-slate-900'
-                }`}
-              >
-                <Text
-                  className={`text-xl font-bold mb-4 ${
-                    isLightTheme ? 'text-slate-900' : 'text-slate-300'
-                  }`}
-                >
+              <View className={`p-6 rounded-2xl shadow-md w-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+                <Text className={`text-xl font-bold mb-4 ${isLightTheme ? 'text-slate-900' : 'text-slate-300'}`}>
                   {selectedCompany ? 'Edit Company' : 'Add Company'}
                 </Text>
-
-                {/* Company Name */}
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
+                <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
                   Company Name <Text className="text-red-500">*</Text>
                 </Text>
                 <TextInput
@@ -357,13 +291,7 @@ const ManageCompanies = () => {
                   placeholder="e.g., ACME Inc."
                   placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
                 />
-
-                {/* Company Domain */}
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
+                <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
                   Domain <Text className="text-red-500">*</Text>
                 </Text>
                 <TextInput
@@ -378,13 +306,8 @@ const ManageCompanies = () => {
                   placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
                   autoCapitalize="none"
                 />
-
-                {/* Action Buttons */}
                 <View className="flex-row justify-end">
-                  <TouchableOpacity
-                    onPress={() => setEditCompanyModalVisible(false)}
-                    className="mr-4"
-                  >
+                  <TouchableOpacity onPress={() => setEditCompanyModalVisible(false)} className="mr-4">
                     <Text
                       className={`text-base font-semibold my-auto ${
                         isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -393,13 +316,8 @@ const ManageCompanies = () => {
                       Cancel
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSaveCompanyEdits}
-                    className="bg-orange-500 py-3 px-6 rounded-lg"
-                  >
-                    <Text className="text-white text-base font-semibold">
-                      Save
-                    </Text>
+                  <TouchableOpacity onPress={handleSaveCompanyEdits} className="bg-orange-500 py-3 px-6 rounded-lg">
+                    <Text className="text-white text-base font-semibold">Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -408,7 +326,7 @@ const ManageCompanies = () => {
         </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
-  );
-};
+  )
+}
 
-export default ManageCompanies;
+export default Companies

@@ -1,16 +1,13 @@
 // File: client/store/companyStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../config/constant';
 
 const useCompanyStore = create((set, get) => ({
   companies: [],
   loading: false,
   error: null,
-
-  // We'll store user counts keyed by companyId
   companyUserCounts: {},
 
   /**

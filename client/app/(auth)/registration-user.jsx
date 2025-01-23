@@ -1,3 +1,5 @@
+// File: app/(auth)/registration-user.jsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -46,7 +48,7 @@ const StepOneSchema = Yup.object().shape({
     .required('Confirm Password is required'),
 });
 
-export default function OnboardingStep1() {
+export default function RegistrationUser() {
   const router = useRouter();
   const { theme } = useThemeStore();
   const { step1Data, setStep1Data } = useOnboardingStore();
@@ -57,7 +59,7 @@ export default function OnboardingStep1() {
 
   const handleNext = (values) => {
     setStep1Data(values);
-    router.push('(auth)/OnboardingStep2');
+    router.push('(auth)/registration-company');
   };
 
   return (
@@ -349,7 +351,7 @@ export default function OnboardingStep1() {
                     {/* Back to Sign In */}
                     <Pressable
                       className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
-                      onPress={() => router.replace('(auth)/signin')}
+                      onPress={() => router.replace('(auth)/login-user')}
                     >
                       <Text className="text-orange-500/90 text-center text-base font-semibold">
                         Back to Sign In

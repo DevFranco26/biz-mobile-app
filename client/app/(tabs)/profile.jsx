@@ -26,7 +26,7 @@ import useDepartmentStore from '../../store/departmentStore';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import 'nativewind';
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+const API_BASE_URL = 'https://biz-mobile-app.onrender.com/api';
 
 const Profile = () => {
   const { theme } = useThemeStore();
@@ -130,7 +130,7 @@ const Profile = () => {
         await SecureStore.deleteItemAsync('token');
         await SecureStore.deleteItemAsync('user');
         clearUser();
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
         Alert.alert('Success', 'You have been logged out successfully');
       } else {
         Alert.alert('Error', 'Failed to log out, please try again.');
@@ -151,7 +151,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -246,7 +246,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -295,7 +295,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 

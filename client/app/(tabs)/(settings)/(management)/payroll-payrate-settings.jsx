@@ -1,5 +1,3 @@
-// File: app/(tabs)/(settings)/(admin)/PayrateSettings.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -22,42 +20,26 @@ const PayrateSettings = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
-
-  const {
-    createOrUpdatePayRate,
-    loading,
-  } = usePayrollStore();
-
-  const {
-    users,
-    fetchUsers,
-    loading: usersLoading,
-  } = useUsersStore();
-
+  const { createOrUpdatePayRate, loading } = usePayrollStore();
+  const { users, fetchUsers, loading: usersLoading } = useUsersStore();
   const [token, setToken] = useState(null);
-
-  // Payrate Settings State
   const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [userPickerValue, setUserPickerValue] = useState(null);
   const [userPickerItems, setUserPickerItems] = useState([]);
-
   const [payTypeOpen, setPayTypeOpen] = useState(false);
   const [payTypeValue, setPayTypeValue] = useState('hourly');
   const [payTypeItems, setPayTypeItems] = useState([
     { label: 'Hourly', value: 'hourly' },
     { label: 'Monthly', value: 'monthly' },
   ]);
-
   const [rate, setRate] = useState('');
 
-  // Load token and fetch users
   useEffect(() => {
     const initialize = async () => {
       try {
         const storedToken = await SecureStore.getItemAsync('token');
         if (!storedToken) {
           Alert.alert('Authentication Error', 'Please sign in again.');
-          // Optionally navigate to sign-in screen
           return;
         }
         setToken(storedToken);
@@ -70,7 +52,6 @@ const PayrateSettings = () => {
     initialize();
   }, [fetchUsers]);
 
-  // Populate user picker items when users data changes
   useEffect(() => {
     if (users && Array.isArray(users) && users.length > 0) {
       const items = users.map((u) => ({
@@ -96,14 +77,12 @@ const PayrateSettings = () => {
       Alert.alert('Validation Error', 'Rate must be a number.');
       return;
     }
-
     try {
       await createOrUpdatePayRate(token, userPickerValue, {
         payType: payTypeValue,
         rate: parseFloat(rate),
       });
       Alert.alert('Success', 'Pay rate set successfully.');
-      // Optionally, reset the form
       setUserPickerValue(null);
       setPayTypeValue('hourly');
       setRate('');
@@ -136,7 +115,6 @@ const PayrateSettings = () => {
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
-      {/* Header */}
       <View className="flex-row items-center px-4 py-4">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -145,14 +123,15 @@ const PayrateSettings = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+        <Text
+          className={`text-xl font-bold ${
+            isLightTheme ? 'text-slate-800' : 'text-white'
+          }`}
+        >
           Payrate Settings
         </Text>
       </View>
-
-      {/* Settings Form */}
       <View className="flex-1 px-4 mt-4">
-        {/* Select User */}
         <Text
           className={`font-semibold mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -168,9 +147,7 @@ const PayrateSettings = () => {
           setValue={setUserPickerValue}
           setItems={setUserPickerItems}
           placeholder="Select a user"
-          textStyle={{
-            color: isLightTheme ? '#374151' : '#9ca3af',
-          }}
+          textStyle={{ color: isLightTheme ? '#374151' : '#9ca3af' }}
           className="mb-3"
           style={{
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
@@ -180,20 +157,12 @@ const PayrateSettings = () => {
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
-          arrowIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
-          tickIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
+          arrowIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
+          tickIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
           zIndex={3000}
           zIndexInverse={1000}
-          placeholderStyle={{
-            color: isLightTheme ? '#6B7280' : '#9CA3AF',
-          }}
+          placeholderStyle={{ color: isLightTheme ? '#6B7280' : '#9CA3AF' }}
         />
-
-        {/* Pay Type */}
         <Text
           className={`font-semibold mt-4 mb-1 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -209,9 +178,7 @@ const PayrateSettings = () => {
           setValue={setPayTypeValue}
           setItems={setPayTypeItems}
           placeholder="Select Pay Type"
-          textStyle={{
-            color: isLightTheme ? '#374151' : '#9ca3af',
-          }}
+          textStyle={{ color: isLightTheme ? '#374151' : '#9ca3af' }}
           className="mb-3"
           style={{
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
@@ -221,20 +188,12 @@ const PayrateSettings = () => {
             borderColor: isLightTheme ? '#f1f5f9' : '#1E293B',
             backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
           }}
-          arrowIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
-          tickIconStyle={{
-            tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-          }}
+          arrowIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
+          tickIconStyle={{ tintColor: isLightTheme ? '#1e293b' : '#cbd5e1' }}
           zIndex={2000}
           zIndexInverse={1000}
-          placeholderStyle={{
-            color: isLightTheme ? '#6B7280' : '#9CA3AF',
-          }}
+          placeholderStyle={{ color: isLightTheme ? '#6B7280' : '#9CA3AF' }}
         />
-
-        {/* Rate */}
         <Text
           className={`font-semibold mb-1 mt-4 ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -256,9 +215,10 @@ const PayrateSettings = () => {
             className={isLightTheme ? 'text-slate-800' : 'text-slate-100'}
           />
         </View>
-
-        {/* Set Pay Rate Button */}
-        <Pressable className="bg-orange-500 p-4 rounded-lg mt-6" onPress={handleSetPayRate}>
+        <Pressable
+          className="bg-orange-500 p-4 rounded-lg mt-6"
+          onPress={handleSetPayRate}
+        >
           <Text className="text-white text-center font-semibold">Save</Text>
         </Pressable>
       </View>

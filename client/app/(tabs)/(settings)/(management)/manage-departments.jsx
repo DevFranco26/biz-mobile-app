@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/(admin)/ManageDepartments.jsx
+// File: app/(tabs)/(settings)/(management)/manage-departments.jsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -23,10 +23,9 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_BASE_URL } from '../../../../config/constant';
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
-
-const ManageDepartments = () => {
+const Departments = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
@@ -366,4 +365,4 @@ const ManageDepartments = () => {
   );
 };
 
-export default ManageDepartments;
+export default Departments;

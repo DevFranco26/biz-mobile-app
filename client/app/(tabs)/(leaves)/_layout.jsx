@@ -30,7 +30,7 @@ const LeavesTabsLayout = () => {
 
   return (
     <Tabs
-      initialRouteName="SubmitLeaves"
+      initialRouteName="leaves-request"
       screenOptions={{
         headerShown: false,
         tabBarShowIcon: true,
@@ -48,7 +48,7 @@ const LeavesTabsLayout = () => {
           shadowOpacity: 0,
         },
         tabBarActiveTintColor: '#f97316',
-        tabBarInactiveTintColor: isLightTheme ? 'gray' : '#9ca3af',
+        tabBarInactiveTintColor: isLightTheme ? '#6B7280' : '#6B7280',
         tabBarLabelStyle: {
           fontSize: 12,
           textTransform: 'none',
@@ -64,7 +64,7 @@ const LeavesTabsLayout = () => {
     >
       {/* Submit Leaves Tab */}
       <Tabs.Screen
-        name="SubmitLeaves"
+        name="leaves-request"
         options={{
           tabBarLabel: 'Submit',
           tabBarIcon: getTabBarIcon(
@@ -78,7 +78,7 @@ const LeavesTabsLayout = () => {
 
       {/* Approval Leaves Tab */}
       <Tabs.Screen
-        name="ApprovalLeaves"
+        name="leaves-approval"
         options={{
           tabBarLabel: 'Approval',
           tabBarIcon: getTabBarIcon(

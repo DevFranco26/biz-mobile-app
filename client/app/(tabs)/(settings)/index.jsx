@@ -1,15 +1,16 @@
+// File: client/app/(tabs)/(settings)/index.jsx
+
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View, Text, Pressable } from 'react-native';
 import useUserStore from '../../../store/userStore';
 import { useRouter } from 'expo-router';
-import Settings from './Settings'; // <-- The renamed file that now does dynamic UI
+import Settings from './settings'; 
 
 const SettingsIndex = () => {
   const { user, loading, error, loadUser } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
-    // Load user data when the component mounts
     loadUser();
   }, []);
 
@@ -22,7 +23,6 @@ const SettingsIndex = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
@@ -39,7 +39,6 @@ const SettingsIndex = () => {
     );
   }
 
-  // If no user is signed in, ask them to sign in
   if (!user) {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-slate-900 px-4">
@@ -47,7 +46,7 @@ const SettingsIndex = () => {
           You are not signed in.
         </Text>
         <Pressable
-          onPress={() => router.push('/(auth)/signin')}
+          onPress={() => router.push('/(auth)/login-user')}
           className="bg-blue-500 px-4 py-2 rounded-lg"
         >
           <Text className="text-white">Sign In</Text>

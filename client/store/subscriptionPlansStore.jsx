@@ -1,20 +1,17 @@
 // File: client/store/subscriptionPlansStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../config/constant';
 
 const useSubscriptionPlansStore = create((set, get) => ({
   subscriptionPlans: [],
   loadingPlans: false,
   errorPlans: null,
 
-  // e.g. GET /api/subscription-plans
   fetchSubscriptionPlans: async (token) => {
     set({ loadingPlans: true, errorPlans: null });
     try {
-      // If your server doesn't require a token to view plans, omit. Or keep it.
       const headers = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -26,8 +23,6 @@ const useSubscriptionPlansStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        // data.data => array of plans
-        // e.g. each plan: { id, planName, rangeOfUsers, price, features, ... }
         set({ subscriptionPlans: data.data || [], loadingPlans: false });
       } else {
         set({
@@ -46,7 +41,6 @@ const useSubscriptionPlansStore = create((set, get) => ({
     }
   },
 
-  // POST /api/subscription-plans (superAdmin)
   createSubscriptionPlan: async (token, planData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans`, {
@@ -60,7 +54,6 @@ const useSubscriptionPlansStore = create((set, get) => ({
       const data = await response.json();
       if (response.ok) {
         Alert.alert('Success', data.message || 'Plan created successfully.');
-        // Refresh
         await get().fetchSubscriptionPlans(token);
         return { success: true };
       } else {
@@ -74,7 +67,6 @@ const useSubscriptionPlansStore = create((set, get) => ({
     }
   },
 
-  // PUT /api/subscription-plans/:id (superAdmin)
   updateSubscriptionPlan: async (token, planId, updatedFields) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans/${planId}`, {
@@ -101,7 +93,6 @@ const useSubscriptionPlansStore = create((set, get) => ({
     }
   },
 
-  // DELETE /api/subscription-plans/:id (superAdmin)
   deleteSubscriptionPlan: async (token, planId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscription-plans/${planId}`, {

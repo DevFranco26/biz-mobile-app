@@ -1,4 +1,5 @@
 // File: app/(auth)/_layout.jsx
+
 import React from 'react';
 import { Stack } from 'expo-router';
 
@@ -7,25 +8,25 @@ export default function AuthLayout() {
     <Stack>
 
       <Stack.Screen
-        name="signin"
+        name="login-user"
         options={{
-          title: 'Sign In',
+          title: 'Login User',
           headerShown: false,
         }}
       />
 
        <Stack.Screen
-        name="OnboardingStep1"
+        name="registration-user"
         options={{
-          title: 'OnboardingStep1',
+          title: 'Registration User',
           headerShown: false,
         }}
       />
 
         <Stack.Screen
-        name="OnboardingStep2"
+        name="registration-company"
         options={{
-          title: 'OnboardingStep2',
+          title: 'Registration Company',
           headerShown: false,
         }}
       />

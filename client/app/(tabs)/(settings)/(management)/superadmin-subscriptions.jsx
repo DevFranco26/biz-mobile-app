@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+// File: app/(tabs)/(settings)/(management)/superadmin-subscriptions.jsx
+
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -7,137 +9,93 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import useThemeStore from '../../../../store/themeStore';
-import useUserStore from '../../../../store/userStore';
-import useSubscriptionStore from '../../../../store/subscriptionStore';
-import useCompanyStore from '../../../../store/companyStore';
-import * as SecureStore from 'expo-secure-store';
-import { Ionicons } from '@expo/vector-icons';
+} from 'react-native'
+import { useRouter } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import useThemeStore from '../../../../store/themeStore'
+import useUserStore from '../../../../store/userStore'
+import useSubscriptionStore from '../../../../store/subscriptionStore'
+import useCompanyStore from '../../../../store/companyStore'
+import * as SecureStore from 'expo-secure-store'
+import { Ionicons } from '@expo/vector-icons'
 
-const ManageSubscriptions = () => {
-  const router = useRouter();
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === 'light';
-  const accentColor = isLightTheme ? '#c2410c' : '#f97316';
+const Subscriptions = () => {
+  const router = useRouter()
+  const { theme } = useThemeStore()
+  const isLightTheme = theme === 'light'
+  const accentColor = isLightTheme ? '#c2410c' : '#f97316'
+  const { user } = useUserStore()
+  const { allSubscriptions, loadingAll, fetchAllSubscriptions } = useSubscriptionStore()
+  const { fetchCompanyUserCount, companyUserCounts } = useCompanyStore()
 
-  const { user } = useUserStore();
-  const {
-    allSubscriptions,
-    loadingAll,
-    fetchAllSubscriptions,
-  } = useSubscriptionStore();
-  const {
-    fetchCompanyUserCount,
-    companyUserCounts,
-  } = useCompanyStore();
-
-  const [token, setToken] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [token, setToken] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const init = async () => {
-      const storedToken = await SecureStore.getItemAsync('token');
+      const storedToken = await SecureStore.getItemAsync('token')
       if (!storedToken) {
-        Alert.alert('Auth Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
-        return;
+        Alert.alert('Auth Error', 'Please sign in again.')
+        router.replace('(auth)/login-user')
+        return
       }
-      setToken(storedToken);
-      await fetchAllSubscriptions(storedToken);
-    };
-    init();
-  }, [fetchAllSubscriptions, router]);
+      setToken(storedToken)
+      await fetchAllSubscriptions(storedToken)
+    }
+    init()
+  }, [fetchAllSubscriptions, router])
 
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!token || !allSubscriptions?.length) return;
+      if (!token || !allSubscriptions?.length) return
       for (const sub of allSubscriptions) {
-        const cId = sub.company?.id;
+        const cId = sub.company?.id
         if (cId) {
-          await fetchCompanyUserCount(token, cId);
+          await fetchCompanyUserCount(token, cId)
         }
       }
-    };
-    fetchCounts();
-  }, [allSubscriptions, token, fetchCompanyUserCount]);
+    }
+    fetchCounts()
+  }, [allSubscriptions, token, fetchCompanyUserCount])
 
   const onRefresh = async () => {
-    if (!token) return;
-    setRefreshing(true);
-    await fetchAllSubscriptions(token);
-    setRefreshing(false);
-  };
+    if (!token) return
+    setRefreshing(true)
+    await fetchAllSubscriptions(token)
+    setRefreshing(false)
+  }
 
-  // Updated to remove the time from the displayed date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    // This will show only the date (no time)
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate = dateString => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString()
+  }
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
-    >
-      {/* Header */}
+    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
       <View className="px-4 py-3 flex-row items-center">
         <Pressable onPress={() => router.back()} className="mr-3">
-          <Ionicons
-            name="chevron-back-outline"
-            size={24}
-            color={isLightTheme ? '#333' : '#fff'}
-          />
+          <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? '#333' : '#fff'} />
         </Pressable>
-        <Text
-          className={`text-xl font-bold ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-100'
-          }`}
-        >
+        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
           Manage Subscriptions
         </Text>
       </View>
-
-      {/* Outer ScrollView for vertical scrolling */}
       <ScrollView
         className="flex-1 px-4"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text
-          className={`text-lg font-bold mt-4 ${
-            isLightTheme ? 'text-slate-800' : 'text-slate-100'
-          }`}
-        >
+        <Text className={`text-lg font-bold mt-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
           Monitor subscriptions
         </Text>
-
         {loadingAll ? (
           <ActivityIndicator size="large" color={accentColor} className="mt-4" />
         ) : !allSubscriptions?.length ? (
-          <Text
-            className={`text-center mt-4 ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
+          <Text className={`text-center mt-4 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
             No subscriptions found.
           </Text>
         ) : (
-          // Horizontal ScrollView to let columns be scrollable left-right
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator
-            style={{ marginTop: 10 }}
-          >
-            {/* 
-              We wrap the entire "table" (header + rows) in a view 
-              that has a minimum width so columns won't shrink on small screens.
-            */}
+          <ScrollView horizontal showsHorizontalScrollIndicator style={{ marginTop: 10 }}>
             <View style={{ minWidth: 600 }}>
-              {/* Table Header */}
               <View
                 className={`flex-row items-center px-2 py-2 rounded-md ${
                   isLightTheme ? 'bg-slate-200' : 'bg-slate-800'
@@ -148,9 +106,9 @@ const ManageSubscriptions = () => {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   style={{
-                    width: 80, 
+                    width: 80,
                     color: isLightTheme ? '#1e293b' : '#cbd5e1',
-                    flexShrink: 0, 
+                    flexShrink: 0,
                   }}
                 >
                   COMPANY
@@ -184,7 +142,7 @@ const ManageSubscriptions = () => {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   style={{
-                    width: 60, 
+                    width: 60,
                     color: isLightTheme ? '#1e293b' : '#cbd5e1',
                     flexShrink: 0,
                   }}
@@ -208,7 +166,7 @@ const ManageSubscriptions = () => {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   style={{
-                    width: 60, 
+                    width: 60,
                     color: isLightTheme ? '#1e293b' : '#cbd5e1',
                     flexShrink: 0,
                   }}
@@ -216,19 +174,15 @@ const ManageSubscriptions = () => {
                   END
                 </Text>
               </View>
-
-              {/* Table Body */}
-              {allSubscriptions.map((sub) => {
-                const companyId = sub.companyId;
-                const companyName = sub.company?.name || 'No Company';
-                const planName = sub.plan?.planName || 'N/A';
-                const maxUsers = sub.plan?.rangeOfUsers || 0;
-                const userCount = companyUserCounts[companyId] || 0;
-                const status = sub.status;
-                const startStr = formatDate(sub.paymentDateTime);
-                const endStr = formatDate(sub.expirationDateTime);
-                
-
+              {allSubscriptions.map(sub => {
+                const companyId = sub.companyId
+                const companyName = sub.company?.name || 'No Company'
+                const planName = sub.plan?.planName || 'N/A'
+                const maxUsers = sub.plan?.rangeOfUsers || 0
+                const userCount = companyUserCounts[companyId] || 0
+                const status = sub.status
+                const startStr = formatDate(sub.paymentDateTime)
+                const endStr = formatDate(sub.expirationDateTime)
                 return (
                   <View
                     key={sub.id}
@@ -303,14 +257,14 @@ const ManageSubscriptions = () => {
                       {endStr}
                     </Text>
                   </View>
-                );
+                )
               })}
             </View>
           </ScrollView>
         )}
       </ScrollView>
     </SafeAreaView>
-  );
-};
+  )
+}
 
-export default ManageSubscriptions;
+export default Subscriptions

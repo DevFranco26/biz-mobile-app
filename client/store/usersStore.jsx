@@ -1,18 +1,18 @@
 // File: client/store/usersStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
+import { API_BASE_URL } from '../config/constant';
 
 const useUsersStore = create((set) => ({
   users: [],
   loading: false,
   error: null,
 
-  // Action to fetch users
   fetchUsers: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/users', { 
+      const response = await fetch(`${API_BASE_URL}/users`, { 
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -31,10 +31,9 @@ const useUsersStore = create((set) => ({
     }
   },
 
-  // Action to delete a user
   deleteUser: async (userId, token) => {
     try {
-      const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}`, { // Updated endpoint
+      const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -42,7 +41,6 @@ const useUsersStore = create((set) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        // Remove the deleted user from the state
         set((state) => ({
           users: state.users.filter((user) => user.id !== userId),
         }));
@@ -59,7 +57,6 @@ const useUsersStore = create((set) => ({
     }
   },
 
-  // Action to fetch a single user by ID (to get email, etc.)
   fetchUserById: async (userId, token) => {
      try {
         const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}/detail`, {
@@ -70,7 +67,7 @@ const useUsersStore = create((set) => ({
         });
         const data = await response.json();
         if (response.ok) {
-          return data.data; // e.g. { id, email, ... }
+          return data.data;
         } else {
           Alert.alert('Error', data.message || 'Failed to fetch user details.');
           return null;

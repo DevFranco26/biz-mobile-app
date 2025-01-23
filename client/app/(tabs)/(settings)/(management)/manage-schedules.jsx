@@ -1,4 +1,4 @@
-// File: src/components/ManageShiftSchedules.jsx
+// File: app/(tabs)/(settings)/(management)/manage-schedules.jsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -103,7 +103,7 @@ function computeTotalHours(startUTC, endUTC) {
   return diffMs / (1000 * 60 * 60);
 }
 
-const ManageShiftSchedules = () => {
+const Schedules = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
@@ -151,7 +151,7 @@ const ManageShiftSchedules = () => {
       const storedToken = await SecureStore.getItemAsync('token');
       if (!storedToken) {
         Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
         return;
       }
       setToken(storedToken);
@@ -1000,4 +1000,4 @@ const ManageShiftSchedules = () => {
   );
 };
 
-export default ManageShiftSchedules;
+export default Schedules;

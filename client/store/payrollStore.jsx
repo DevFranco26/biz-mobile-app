@@ -1,7 +1,8 @@
 // File: store/payrollStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
+import { API_BASE_URL } from '../config/constant';
 
 const usePayrollStore = create((set, get) => ({
   loading: false,
@@ -18,7 +19,7 @@ const usePayrollStore = create((set, get) => ({
   fetchAllPayroll: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/payroll', {
+      const response = await fetch(`${API_BASE_URL}/payroll`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -38,7 +39,7 @@ const usePayrollStore = create((set, get) => ({
   fetchMyPayroll: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://192.168.100.8:5000/api/payroll/my', {
+      const response = await fetch(`${API_BASE_URL}/payroll/my`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -58,7 +59,7 @@ const usePayrollStore = create((set, get) => ({
   fetchPayrollSettings: async (token) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch('http://192.168.100.8:5000/api/payroll/settings', {
+      const res = await fetch(`${API_BASE_URL}/payroll/settings`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -78,7 +79,7 @@ const usePayrollStore = create((set, get) => ({
   updatePayrollSettings: async (token, { cutoffCycle, currency, overtimeRate }) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch('http://192.168.100.8:5000/api/payroll/settings', {
+      const res = await fetch(`${API_BASE_URL}/payroll/settings`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -103,7 +104,7 @@ const usePayrollStore = create((set, get) => ({
   createOrUpdatePayRate: async (token, userId, { payType, rate }) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`http://192.168.100.8:5000/api/payroll/payrate/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/payroll/payrate/${userId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -129,13 +130,13 @@ const usePayrollStore = create((set, get) => ({
   calculatePayroll: async (token, payload) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch('http://192.168.100.8:5000/api/payroll/calculate', {
+      const res = await fetch(`${API_BASE_URL}/payroll/calculate`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload), // { userId, startDate, endDate }
+        body: JSON.stringify(payload), 
       });
       const data = await res.json();
       if (res.ok) {

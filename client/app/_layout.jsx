@@ -7,7 +7,6 @@ export default function RootLayout() {
   return (
     <>
       <Stack>
-        {/* Entry point of the app */}
         <Stack.Screen
           name="index"
           options={{
@@ -15,7 +14,6 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
-        {/* Tab navigation screens */}
         <Stack.Screen
           name="(tabs)"
           options={{
@@ -23,7 +21,6 @@ export default function RootLayout() {
             title: 'Biz University',
           }}
         />
-        {/* Authentication screens */}
         <Stack.Screen
           name="(auth)"
           options={{

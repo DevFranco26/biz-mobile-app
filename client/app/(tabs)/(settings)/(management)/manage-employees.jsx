@@ -1,4 +1,4 @@
-// File: app/(tabs)/(settings)/(admin)/ManageUsers.jsx
+// File: app/(tabs)/(settings)/(management)/manage-employees.jsx
 
 import React, { useEffect, useState } from 'react';
 import { 
@@ -30,8 +30,7 @@ import useUsersStore from '../../../../store/usersStore';
 import useLocationsStore from '../../../../store/locationsStore';
 import useSubscriptionStore from '../../../../store/subscriptionStore';
 import useCompanyStore from '../../../../store/companyStore';
-
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
+import { API_BASE_URL } from '../../../../config/constant';
 
 // Parse the plan’s rangeOfUsers string (e.g. "2-9", "100+", "1") to get maxUsers
 const getMaxUsersFromRange = (rangeOfUsers) => {
@@ -101,7 +100,7 @@ const getPresenceIconInfo = (presenceStatus) => {
   }
 };
 
-const ManageUsers = () => {
+const Employees = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
@@ -163,7 +162,7 @@ const ManageUsers = () => {
         }
       } else {
         Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
       }
     };
     initialize();
@@ -286,7 +285,7 @@ const ManageUsers = () => {
   const handleSaveUserEdits = async () => {
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -362,7 +361,7 @@ const ManageUsers = () => {
   const handleDeleteUser = async (userId) => {
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -406,7 +405,7 @@ const ManageUsers = () => {
     setUserSettingsLoading(true);
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -439,7 +438,7 @@ const ManageUsers = () => {
     if (!selectedUser) return;
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
-      router.replace('(auth)/signin');
+      router.replace('(auth)/login-user');
       return;
     }
 
@@ -607,7 +606,7 @@ const ManageUsers = () => {
           />
         </Pressable>
         <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-          Manage Users
+          Employees
         </Text>
       </View>
       
@@ -1014,4 +1013,4 @@ const ManageUsers = () => {
   );
 };
 
-export default ManageUsers;
+export default Employees;

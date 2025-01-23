@@ -1,3 +1,5 @@
+// File: client/app/(tabs)/(settings)/settings.jsx
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'; 
@@ -124,7 +126,6 @@ const Settings = () => {
         alignItems: 'center',
         marginVertical: 4,
         backgroundColor: isLightTheme ? '#f1f5f9' : '#1e293b',
-        // Dim the card if locked and not overridden
         opacity: isLocked && !overrideLock ? 0.5 : 1,
       }}
       disabled={isLocked && !overrideLock}
@@ -222,7 +223,7 @@ const Settings = () => {
                   'business-outline',
                   'Manage Companies',
                   'Create, update, remove companies.',
-                  './ManageCompanies'
+                  './superadmin-companies'
                 )}
 
                 {renderFeature(
@@ -230,7 +231,7 @@ const Settings = () => {
                   'reader-outline',
                   'Manage Subscriptions',
                   'Track all companies’ subscriptions.',
-                  './ManageSubscriptions'
+                  './superadmin-subscriptions'
                 )}
 
                 {renderFeature(
@@ -238,7 +239,7 @@ const Settings = () => {
                   'settings-outline',
                   'Manage Plans',
                   'Create or update subscription plans.',
-                  './ManageSubscriptionPlans'
+                  './superadmin-subscription-plans'
                 )}
               </View>
             )}
@@ -257,7 +258,7 @@ const Settings = () => {
                 'briefcase-outline',
                 'Manage Departments',
                 'Organize departments and teams.',
-                './ManageDepartments'
+                './manage-departments'
               )}
             </View>
 
@@ -275,20 +276,20 @@ const Settings = () => {
                 'people-outline',
                 'Manage Employees',
                 'Monitor, create, update, remove employees.',
-                './ManageUsers'
+                './manage-employees'
               )}
               {renderFeature(
                 Ionicons,
                 'calendar-outline',
                 'Employee Shifts',
                 'Create, update, assign shift schedules.',
-                './ManageShiftSchedules'
+                './manage-schedules'
               )}
               {/* Custom Punch Locations feature */}
               <Pressable
                 onPress={() => {
                   if (!punchLocationsLocked) {
-                    router.push('./ManageLocations');
+                    router.push('./manage-locations');
                   }
                 }}
                 style={{
@@ -337,7 +338,7 @@ const Settings = () => {
                 'calendar-outline',
                 'Leave Request',
                 'Approve and reject employee leaves.',
-                './ManageLeaves'
+                './manage-leaves'
               )}
             </View>
 
@@ -358,28 +359,28 @@ const Settings = () => {
                     'attach-money',
                     'Company Payroll Settings',
                     'Configure cutoff cycles, currency, and overtime rates.',
-                    './PayrollSettings'
+                    './payroll-payroll-settings'
                   )}
                   {renderFeature(
                     Ionicons,
                     'cash-outline',
                     'Employee Payrate Settings',
                     'Set or update pay rates for users.',
-                    './PayrateSettings'
+                    './payroll-payrate-settings'
                   )}
                   {renderFeature(
                     Ionicons,
                     'calculator-outline',
                     'Calculate Payroll Manually',
                     'Manually calculate payroll for a user/period.',
-                    './CalculatePayrollManually'
+                    './payroll-generate-payroll'
                   )}
                   {renderFeature(
                     Ionicons,
                     'document-text-outline',
                     'Payroll Records',
                     'View & manage all payroll records.',
-                    './PayrollRecords'
+                    './payroll-payroll-records'
                   )}
                 </View>
 
@@ -399,7 +400,7 @@ const Settings = () => {
                       ? 'Checking subscription...'
                       : subscriptionName,
                     'View or manage your company’s subscription plan.',
-                    './CurrentSubscription',
+                    './manage-mysubscriptions',
                     true // Always unlocked so you can view/update your plan
                   )}
                 </View>

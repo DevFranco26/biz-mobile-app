@@ -1,24 +1,9 @@
 // File: client/store/subscriptionStore.jsx
 
-import create from 'zustand';
+import {create} from 'zustand';
 import { Alert } from 'react-native';
+import { API_BASE_URL } from '../config/constant';
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
-
-/**
- * The subscription object from the server might look like:
- * {
- *   id: 123,
- *   companyId: 7,
- *   planId: 1,
- *   paymentMethod: 'card',
- *   paymentDateTime: '2025-01-12T10:23:00Z',
- *   expirationDateTime: '2025-02-11T10:23:00Z',
- *   renewalDateTime: '2025-02-11T10:23:00Z',
- *   status: 'active' | 'canceled' | ...
- *   plan: { id, name, rangeOfUsers, price, maxUsers, ... }
- * }
- */
 
 const useSubscriptionStore = create((set, get) => ({
   // For superAdmin to see ALL subscriptions
@@ -71,7 +56,6 @@ const useSubscriptionStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        // data.data is the single subscription object
         set({ currentSubscription: data.data, loadingCurrent: false });
       } else {
         set({ currentSubscription: null, loadingCurrent: false });

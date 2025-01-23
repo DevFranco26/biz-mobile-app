@@ -1,4 +1,4 @@
-// File: app/(tabs)/(leaves)/SubmitLeaves.jsx
+// File: app/(tabs)/(leaves)/leaves-request.jsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -96,7 +96,7 @@ const SubmitLeaves = () => {
               text: 'OK',
               onPress: () => {
                 // Navigate to sign-in screen or handle accordingly
-                router.replace('(auth)/signin');
+                router.replace('(auth)/login-user');
               },
             },
           ]
@@ -150,7 +150,7 @@ const SubmitLeaves = () => {
       if (!token) {
         Alert.alert('Authentication Error', 'Please sign in again.');
         setIsSubmitting(false);
-        router.replace('(auth)/signin');
+        router.replace('(auth)/login-user');
         return;
       }
 

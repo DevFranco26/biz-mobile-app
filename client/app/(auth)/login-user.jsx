@@ -1,4 +1,5 @@
-// File: app/(auth)/signin.jsx
+// File: app/(auth)/login-user.jsx
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Formik } from 'formik';
@@ -8,16 +9,14 @@ import useThemeStore from '../../store/themeStore';
 import useUserStore from '../../store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL } from '../../config/constant';
 
-const API_BASE_URL = 'http://192.168.100.8:5000/api';
-
-// Validation
 const SigninSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
   password: Yup.string().min(6, 'Min 6 chars').required('Password is required'),
 });
 
-export default function Signin() {
+export default function Login() {
   const { theme } = useThemeStore();
   const { setUser } = useUserStore();
   const isLightTheme = theme === 'light';
@@ -40,9 +39,6 @@ export default function Signin() {
           await SecureStore.setItemAsync('token', data.token);
           await SecureStore.setItemAsync('user', JSON.stringify(data.user));
           setUser(data.user);
-
-          // Set presence to 'active' if desired...
-          // Then navigate to profile or wherever
           router.replace('(tabs)/profile');
         } else {
           Alert.alert('Error', 'Missing token or user data in response.');
@@ -132,7 +128,7 @@ export default function Signin() {
                 {/* Some "Get Started" button */}
                 <Pressable
                   className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
-                  onPress={() => router.push('(auth)/OnboardingStep1')}
+                  onPress={() => router.push('(auth)/registration-user')}
                 >
                   <Text className="text-orange-500/90 text-center text-lg font-medium">Get Started</Text>
                 </Pressable>
