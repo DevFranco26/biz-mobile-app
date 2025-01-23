@@ -1,4 +1,5 @@
 // File: server/controllers/onboardingController.js
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Company, Subscription, SubscriptionPlan } = require('../models');
@@ -9,10 +10,18 @@ exports.getStarted = async (req, res) => {
     const {
       firstName, middleName, lastName,
       email, password, phone,
-      companyName
+      companyName,
+      country, // Extract country
+      currency, // Extract currency
+      language  // Extract language
     } = req.body;
 
-    // 1) Create user
+    // 1) Validate Required Fields
+    if (!firstName || !lastName || !email || !password || !companyName || !country || !currency || !language) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
+
+    // 2) Create user
     const hashedPassword = bcrypt.hashSync(password, 10);
     const newUser = await User.create({
       firstName,
@@ -24,16 +33,19 @@ exports.getStarted = async (req, res) => {
       role: 'admin'
     });
 
-    // 2) Create company
+    // 3) Create company with additional fields
     const newCompany = await Company.create({
       name: companyName,
-      domain: `${companyName.replace(/\s+/g, '').toLowerCase()}.com`
+      domain: `${companyName.replace(/\s+/g, '').toLowerCase()}.com`,
+      country,    // Include country
+      currency,   // Include currency
+      language    // Include language
     });
 
     // Link user to that company
     await newUser.update({ companyId: newCompany.id });
 
-    // 3) Generate token
+    // 4) Generate token
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({ message: 'JWT_SECRET is not set in env.' });
     }
@@ -43,7 +55,7 @@ exports.getStarted = async (req, res) => {
       { expiresIn: '10y' }
     );
 
-    // 4) Insert "Free" subscription for that new company
+    // 5) Insert "Free" subscription for that new company
     const freePlan = await SubscriptionPlan.findOne({
       where: { planName: 'Free', rangeOfUsers: '1' }
     });
@@ -65,7 +77,7 @@ exports.getStarted = async (req, res) => {
       status: 'active'
     });
 
-    // 5) Return success
+    // 6) Return success
     return res.status(201).json({
       message: 'Account + Company + Free subscription created successfully.',
       token,

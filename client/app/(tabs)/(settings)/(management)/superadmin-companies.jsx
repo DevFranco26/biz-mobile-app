@@ -191,14 +191,35 @@ const Companies = () => {
             {item.name}
           </Text>
           <Text
-            className={`mt-1 text-base ${
+            className={`text-base ${
               isLightTheme ? 'text-slate-600' : 'text-slate-300'
             }`}
           >
             Domain: {item.domain}
           </Text>
           <Text
-            className={`text-sm mt-1 ${
+            className={` text-base ${
+              isLightTheme ? 'text-slate-600' : 'text-slate-300'
+            }`}
+          >
+            Country: {item.country}
+          </Text>
+          <Text
+            className={` text-base ${
+              isLightTheme ? 'text-slate-600' : 'text-slate-300'
+            }`}
+          >
+            Currency: {item.currency}
+          </Text>
+          <Text
+            className={` text-base ${
+              isLightTheme ? 'text-slate-600' : 'text-slate-300'
+            }`}
+          >
+            Language: {item.language}
+          </Text>
+          <Text
+            className={`text-sm ${
               isLightTheme ? 'text-slate-600' : 'text-slate-300'
             }`}
           >
@@ -294,6 +315,7 @@ const Companies = () => {
                 <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
                   Domain <Text className="text-red-500">*</Text>
                 </Text>
+                
                 <TextInput
                   className={`w-full p-3 mb-6 rounded-lg border ${
                     isLightTheme

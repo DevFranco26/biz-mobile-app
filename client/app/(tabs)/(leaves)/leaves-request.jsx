@@ -445,12 +445,12 @@ const SubmitLeaves = () => {
                     backgroundColor: isLightTheme ? '#f1f5f9' : '#1E293B',
                   }}
                   arrowIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
                   }}
                   tickIconStyle={{
-                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', // slate-800 / slate-300
+                    tintColor: isLightTheme ? '#1e293b' : '#cbd5e1', 
                   }}
-                  zIndex={2000} // Ensure it appears above other elements
+                  zIndex={2000} 
                   zIndexInverse={2000}
                   placeholderStyle={{
                     color: isLightTheme ? '#6B7280' : '#9CA3AF',

@@ -5,12 +5,12 @@ const { Company, User } = require('../models/index.js');
 
 /**
  * Get All Companies
- * Retrieves a list of all companies.
+ * Retrieves a list of all companies, including country, currency, and language.
  */
 const getAllCompanies = async (req, res) => {
   try {
     const companies = await Company.findAll({
-      attributes: ['id', 'name', 'domain', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'domain', 'country', 'currency', 'language', 'createdAt', 'updatedAt'],
       order: [['id', 'ASC']],
     });
     res
@@ -24,7 +24,7 @@ const getAllCompanies = async (req, res) => {
 
 /**
  * Get Company by ID
- * Retrieves a single company based on its ID.
+ * Retrieves a single company based on its ID, including country, currency, and language.
  */
 const getCompanyById = async (req, res) => {
   try {
@@ -37,7 +37,7 @@ const getCompanyById = async (req, res) => {
 
     const company = await Company.findOne({
       where: { id },
-      attributes: ['id', 'name', 'domain', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'domain', 'country', 'currency', 'language', 'createdAt', 'updatedAt'],
     });
 
     if (!company) {
@@ -55,11 +55,22 @@ const getCompanyById = async (req, res) => {
 
 /**
  * Create a New Company
- * Adds a new company to the database.
+ * Adds a new company to the database with country, currency, and language.
  */
 const createCompany = async (req, res) => {
-  const { name, domain } = req.body;
+  const { name, domain, country, currency, language } = req.body;
+  console.log("name", name)
+  console.log("country", country)
+  console.log("currency", currency)
+  console.log("language", language)
+
+  // Basic Validation
+  if (!name || !domain || !country || !currency || !language) {
+    return res.status(400).json({ message: 'Name, domain, country, currency, and language are required.' });
+  }
+
   try {
+    // Check for existing company with the same domain
     const existingCompany = await Company.findOne({ where: { domain } });
     if (existingCompany) {
       return res
@@ -67,7 +78,8 @@ const createCompany = async (req, res) => {
         .json({ message: 'Company with this domain already exists.' });
     }
 
-    const newCompany = await Company.create({ name, domain });
+    // Create new company with the additional fields
+    const newCompany = await Company.create({ name, domain, country, currency, language });
     res
       .status(201)
       .json({ message: 'Company created successfully.', data: newCompany });
@@ -79,18 +91,24 @@ const createCompany = async (req, res) => {
 
 /**
  * Update an Existing Company
- * Modifies the details of an existing company.
+ * Modifies the details of an existing company, including country, currency, and language.
  */
 const updateCompany = async (req, res) => {
   const { id } = req.params;
-  const { name, domain } = req.body;
+  const { name, domain, country, currency, language } = req.body;
+
+  // Basic Validation: At least one field must be provided for update
+  if (!name && !domain && !country && !currency && !language) {
+    return res.status(400).json({ message: 'At least one field (name, domain, country, currency, language) must be provided for update.' });
+  }
+
   try {
     const company = await Company.findByPk(id);
     if (!company) {
       return res.status(404).json({ message: 'Company not found.' });
     }
 
-    // Check if the new domain is unique
+    // If domain is being updated, ensure it's unique
     if (domain && domain !== company.domain) {
       const existingCompany = await Company.findOne({ where: { domain } });
       if (existingCompany) {
@@ -100,10 +118,15 @@ const updateCompany = async (req, res) => {
       }
     }
 
+    // Update company fields if provided, else retain existing values
     await company.update({
       name: name || company.name,
       domain: domain || company.domain,
+      country: country || company.country,
+      currency: currency || company.currency,
+      language: language || company.language,
     });
+
     res
       .status(200)
       .json({ message: 'Company updated successfully.', data: company });
