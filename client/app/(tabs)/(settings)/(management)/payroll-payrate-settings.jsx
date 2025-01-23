@@ -1,3 +1,5 @@
+// File: app/(tabs)/(settings)/(management)/payroll-payrate-settings.jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   View,

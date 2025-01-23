@@ -1,3 +1,5 @@
+// File: app/(tabs)/(settings)/(management)/payroll-generate-payroll.jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   View,

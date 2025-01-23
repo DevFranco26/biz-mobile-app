@@ -383,6 +383,25 @@ const Settings = () => {
                     './payroll-generate-payroll'
                   )}
                 </View>
+                
+                 {/* Preference */}
+                 <View className="my-2">
+                  <Text
+                    className={`text-xl font-bold mb-1 ${
+                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                    }`}
+                  >
+                    Preference
+                  </Text>
+                  {renderFeature(
+                    Ionicons,
+                    'reader-outline',
+                    'Appearance',
+                    'Update appearance settings of the application',
+                    './preference',
+                    true 
+                  )}
+                </View>
 
                 {/* Subscription Section (always unlocked so user can view/update plan) */}
                 <View className="my-2">
