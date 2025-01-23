@@ -32,31 +32,30 @@ import useShiftSchedulesStore from '../../../../store/shiftSchedulesStore';
 import useUsersStore from '../../../../store/usersStore';
 import { convertUTCToLocal, convertLocalToUTC } from '../../../../utils/timeUtils';
 
-// Define color hex codes based on the theme
 const COLORS = {
   light: {
-    background: '#FFFFFF', 
-    backgroundSecondary: '#F1F5F9', 
-    text: '#374151', 
-    modalBackground: '#f8fafc', 
-    inputBackground: '#F1F5F9', 
-    borderColor: '#E5E7EB', 
-    placeholder: '#6B7280', 
-    iconColor: '#374151', 
-    activityIndicator: '#374151', 
-    deleteIconColor: '#EF4444', 
+    background: '#FFFFFF',
+    backgroundSecondary: '#F1F5F9',
+    text: '#374151',
+    modalBackground: '#f8fafc',
+    inputBackground: '#F1F5F9',
+    borderColor: '#E5E7EB',
+    placeholder: '#6B7280',
+    iconColor: '#374151',
+    activityIndicator: '#374151',
+    deleteIconColor: '#EF4444',
   },
   dark: {
-    background: '#0F172A', 
-    backgroundSecondary: '#374151', 
-    text: '#D1D5DB', 
-    modalBackground: '#1F2937', 
-    inputBackground: '#374151', 
-    borderColor: '#374151', 
-    placeholder: '#9CA3AF', 
-    iconColor: '#D1D5DB', 
-    activityIndicator: '#D1D5DB', 
-    deleteIconColor: '#EF4444', 
+    background: '#0F172A',
+    backgroundSecondary: '#374151',
+    text: '#D1D5DB',
+    modalBackground: '#1F2937',
+    inputBackground: '#374151',
+    borderColor: '#374151',
+    placeholder: '#9CA3AF',
+    iconColor: '#D1D5DB',
+    activityIndicator: '#D1D5DB',
+    deleteIconColor: '#EF4444',
   },
 };
 
@@ -65,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', 
+    backgroundColor: 'rgba(0,0,0,0.5)',
     zIndex: 9999,
     elevation: 9999,
   },
@@ -89,17 +88,13 @@ const styles = StyleSheet.create({
   },
 });
 
-// Compute total hours purely from UTC times.
 function computeTotalHours(startUTC, endUTC) {
   const start = new Date(startUTC);
   const end = new Date(endUTC);
   let diffMs = end - start;
-
-  // If diffMs is negative, assume endTime is on the next day
   if (diffMs < 0) {
-    diffMs += 24 * 60 * 60 * 1000; 
+    diffMs += 24 * 60 * 60 * 1000;
   }
-
   return diffMs / (1000 * 60 * 60);
 }
 
@@ -111,7 +106,6 @@ const Schedules = () => {
   const {
     shiftSchedules,
     loading,
-    error,
     fetchShiftSchedules,
     createShiftSchedule,
     updateShiftSchedule,
@@ -128,8 +122,6 @@ const Schedules = () => {
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date(Date.now() + 3600000));
   const [editShiftModalVisible, setEditShiftModalVisible] = useState(false);
-
-  // For assigning a shift
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
@@ -141,8 +133,6 @@ const Schedules = () => {
     { label: 'Weekends Only (Sat-Sun)', value: 'weekends' },
   ];
   const [selectedRecurrence, setSelectedRecurrence] = useState('all');
-
-  // For viewing assigned users
   const [assignedUsersModalVisible, setAssignedUsersModalVisible] = useState(false);
   const [selectedShiftForUsers, setSelectedShiftForUsers] = useState(null);
 
@@ -163,9 +153,7 @@ const Schedules = () => {
 
   useEffect(() => {
     if (assignedUsersModalVisible && selectedShiftForUsers) {
-      const updatedShift = shiftSchedules.find(
-        (shift) => shift.id === selectedShiftForUsers.id
-      );
+      const updatedShift = shiftSchedules.find((shift) => shift.id === selectedShiftForUsers.id);
       if (updatedShift) {
         setSelectedShiftForUsers(updatedShift);
       }
@@ -173,7 +161,6 @@ const Schedules = () => {
   }, [shiftSchedules, assignedUsersModalVisible, selectedShiftForUsers]);
 
   useEffect(() => {
-    // Build userPicker items from users
     const items = [
       { label: 'Select a user...', value: 'null' },
       { label: 'All Users', value: '0' },
@@ -193,7 +180,6 @@ const Schedules = () => {
     setRefreshing(false);
   };
 
-  // Add new shift
   const handleAddShift = () => {
     setSelectedShift(null);
     setEditTitle('');
@@ -204,7 +190,6 @@ const Schedules = () => {
     setEditShiftModalVisible(true);
   };
 
-  // Edit shift
   const handleEditShift = (shift) => {
     setSelectedShift(shift);
     setEditTitle(shift.title);
@@ -213,7 +198,6 @@ const Schedules = () => {
     setEditShiftModalVisible(true);
   };
 
-  // Save shift
   const handleSaveShift = async () => {
     if (!token) return;
     if (!editTitle) {
@@ -227,7 +211,6 @@ const Schedules = () => {
       startTime: startUTC,
       endTime: endUTC,
     };
-
     let result;
     if (selectedShift) {
       result = await updateShiftSchedule(token, selectedShift.id, payload);
@@ -242,7 +225,6 @@ const Schedules = () => {
     }
   };
 
-  // Delete shift
   const handleDeleteShift = async (shiftId) => {
     if (!token) return;
     Alert.alert('Confirm Deletion', 'Are you sure you want to delete this shift schedule?', [
@@ -262,7 +244,6 @@ const Schedules = () => {
     ]);
   };
 
-  // SHIFT ACTIONS => Edit, Delete, Cancel (no "Assign to User")
   const handleShiftAction = (shift) => {
     Alert.alert(
       'Shift Actions',
@@ -275,7 +256,6 @@ const Schedules = () => {
     );
   };
 
-  // Open "Assign Shift" modal
   const openAssignModal = (shift) => {
     setSelectedShift(shift);
     setSelectedUserId(null);
@@ -284,14 +264,12 @@ const Schedules = () => {
     setAssignModalVisible(true);
   };
 
-  // Assign shift
   const handleAssignShift = async () => {
     if (!token || !selectedShift) {
       Alert.alert('Validation Error', 'Missing shift information.');
       return;
     }
     if (selectedUserId === 0) {
-      // If "All Users" is selected
       const assignPromises = users.map((u) =>
         assignShiftToUser(token, selectedShift.id, u.id, selectedRecurrence)
       );
@@ -309,7 +287,6 @@ const Schedules = () => {
       Alert.alert('Validation Error', 'Please select a user.');
       return;
     }
-
     const result = await assignShiftToUser(token, selectedShift.id, selectedUserId, selectedRecurrence);
     if (result && result.success) {
       setAssignModalVisible(false);
@@ -319,13 +296,11 @@ const Schedules = () => {
     }
   };
 
-  // View assigned users
   const handleViewAssignedUsers = (shift) => {
     setSelectedShiftForUsers(shift);
     setAssignedUsersModalVisible(true);
   };
 
-  // Delete user from shift
   const handleDeleteUserFromShift = (shiftId, userId, userName) => {
     Alert.alert(
       'Confirm Removal',
@@ -338,7 +313,8 @@ const Schedules = () => {
           onPress: async () => {
             const result = await deleteUserFromShift(token, shiftId, userId);
             if (result && result.success) {
-              // store refresh
+              // Refresh the shifts
+              await fetchShiftSchedules(token);
             }
           },
         },
@@ -346,10 +322,8 @@ const Schedules = () => {
     );
   };
 
-  // SHIFT LIST ITEM
   const renderItem = ({ item }) => {
     const hours = computeTotalHours(item.startTime, item.endTime).toFixed(2);
-
     return (
       <View
         className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
@@ -357,7 +331,6 @@ const Schedules = () => {
         }`}
       >
         <View className="flex-1">
-          {/* Title + People icon (always show) */}
           <View className="flex-row items-center">
             <Text
               className={`text-lg font-semibold ${
@@ -366,8 +339,6 @@ const Schedules = () => {
             >
               {item.title}
             </Text>
-
-            {/* People outline icon */}
             <TouchableOpacity onPress={() => handleViewAssignedUsers(item)} className="ml-2">
               <Ionicons
                 name="people-outline"
@@ -375,8 +346,6 @@ const Schedules = () => {
                 color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
               />
             </TouchableOpacity>
-
-            {/* + icon to open assign modal */}
             <TouchableOpacity onPress={() => openAssignModal(item)} className="ml-2">
               <Ionicons
                 name="add-circle-outline"
@@ -385,7 +354,6 @@ const Schedules = () => {
               />
             </TouchableOpacity>
           </View>
-
           <Text
             className={`text-sm mt-1 ${
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -408,8 +376,6 @@ const Schedules = () => {
             Total Hours: {hours} hrs
           </Text>
         </View>
-
-        {/* Ellipsis for SHIFT ACTIONS */}
         <Pressable onPress={() => handleShiftAction(item)} className="p-2">
           <Ionicons
             name="ellipsis-vertical"
@@ -421,7 +387,6 @@ const Schedules = () => {
     );
   };
 
-  // ASSIGNED USERS ITEM
   const renderAssignedUserItem = ({ item }) => {
     return (
       <View className="flex-row items-center mb-3">
@@ -447,7 +412,6 @@ const Schedules = () => {
             ID: {item.id} | {item.UserShiftAssignment.recurrence}
           </Text>
         </View>
-        {/* Delete Icon */}
         <TouchableOpacity
           onPress={() =>
             handleDeleteUserFromShift(
@@ -470,7 +434,6 @@ const Schedules = () => {
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -484,11 +447,9 @@ const Schedules = () => {
             isLightTheme ? 'text-slate-700' : 'text-slate-300'
           }`}
         >
-          Manage Shifts
+          Shifts Schedules
         </Text>
       </View>
-
-      {/* Title and Add Button */}
       <View className="flex-row justify-between items-center px-4 mb-4">
         <Text
           className={`text-2xl font-bold ${
@@ -503,11 +464,9 @@ const Schedules = () => {
             isLightTheme ? 'bg-white' : 'bg-slate-900'
           }`}
         >
-          <Ionicons name="add" size={24} color={isLightTheme? `#1e293b` : `#cbd5e1`} />
+          <Ionicons name="add" size={24} color={isLightTheme ? `#1e293b` : `#cbd5e1`} />
         </Pressable>
       </View>
-
-      {/* Shift List */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -539,8 +498,6 @@ const Schedules = () => {
           }
         />
       )}
-
-      {/* Add/Edit Shift Modal */}
       <Modal
         visible={editShiftModalVisible}
         animationType="fade"
@@ -565,7 +522,6 @@ const Schedules = () => {
                     },
                   ]}
                 >
-                  {/* Modal Title */}
                   <Text
                     className={`font-bold mb-8 ${
                       isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -574,8 +530,6 @@ const Schedules = () => {
                   >
                     {selectedShift ? 'Edit Shift' : 'Create Shift'}
                   </Text>
-
-                  {/* Title Input */}
                   <Text
                     className={`${
                       isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -601,10 +555,7 @@ const Schedules = () => {
                       }
                     />
                   </View>
-
-                  {/* Start & End Time */}
                   <View className="flex-row justify-between mb-8">
-                    {/* Start Time */}
                     <View className="flex-1 mr-2">
                       <Text
                         className={`${
@@ -620,12 +571,8 @@ const Schedules = () => {
                         is24Hour={true}
                         display="default"
                         onChange={(event, selectedDate) => {
-                          if (Platform.OS === 'android') {
-                            // ...
-                          }
                           if (selectedDate) {
                             setStartTime(selectedDate);
-                            // Ensure endTime is after startTime
                             if (selectedDate >= endTime) {
                               Alert.alert(
                                 'Invalid Time',
@@ -635,14 +582,10 @@ const Schedules = () => {
                             }
                           }
                         }}
-                        style={{
-                          width: '100%',
-                        }}
+                        style={{ width: '100%' }}
                         textColor={isLightTheme ? COLORS.light.text : COLORS.dark.text}
                       />
                     </View>
-
-                    {/* End Time */}
                     <View className="flex-1 ml-2">
                       <Text
                         className={`${
@@ -658,9 +601,6 @@ const Schedules = () => {
                         is24Hour={true}
                         display="default"
                         onChange={(event, selectedDate) => {
-                          if (Platform.OS === 'android') {
-                            // ...
-                          }
                           if (selectedDate) {
                             if (selectedDate <= startTime) {
                               Alert.alert(
@@ -673,15 +613,11 @@ const Schedules = () => {
                             }
                           }
                         }}
-                        style={{
-                          width: '100%',
-                        }}
+                        style={{ width: '100%' }}
                         textColor={isLightTheme ? COLORS.light.text : COLORS.dark.text}
                       />
                     </View>
                   </View>
-
-                  {/* Save & Cancel Buttons */}
                   <View className="flex-row justify-end mt-3">
                     <TouchableOpacity
                       onPress={() => setEditShiftModalVisible(false)}
@@ -708,8 +644,6 @@ const Schedules = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Assign Shift Modal */}
       <Modal
         visible={assignModalVisible}
         animationType="fade"
@@ -729,7 +663,6 @@ const Schedules = () => {
                   },
                 ]}
               >
-                {/* Modal Title */}
                 <Text
                   className={`font-bold mb-8 ${
                     isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -738,8 +671,6 @@ const Schedules = () => {
                 >
                   Assign Shift: {selectedShift?.title}
                 </Text>
-
-                {/* Select User */}
                 <Text
                   className={`${
                     isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -810,8 +741,6 @@ const Schedules = () => {
                     }}
                   />
                 </View>
-
-                {/* Recurrence Pattern */}
                 <Text
                   className={`${
                     isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -843,8 +772,6 @@ const Schedules = () => {
                     }}
                   />
                 </View>
-
-                {/* Assign & Cancel Buttons */}
                 <View className="flex-row justify-end">
                   <TouchableOpacity
                     onPress={() => setAssignModalVisible(false)}
@@ -872,8 +799,6 @@ const Schedules = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Assigned Users Modal */}
       <Modal
         visible={assignedUsersModalVisible}
         animationType="fade"
@@ -893,9 +818,7 @@ const Schedules = () => {
                   },
                 ]}
               >
-                {/* Modal Header */}
                 <View className="flex-row justify-between items-center mb-4">
-                  {/* Title */}
                   <Text
                     className={`font-bold ${
                       isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -904,7 +827,6 @@ const Schedules = () => {
                   >
                     Assigned Users
                   </Text>
-
                   <TouchableOpacity onPress={() => setAssignedUsersModalVisible(false)}>
                     <Ionicons
                       name="close-circle-outline"
@@ -913,8 +835,6 @@ const Schedules = () => {
                     />
                   </TouchableOpacity>
                 </View>
-
-                {/* Shift Details */}
                 <Text
                   className={`font-semibold ${
                     isLightTheme ? 'text-slate-700' : 'text-slate-300'
@@ -923,9 +843,7 @@ const Schedules = () => {
                 >
                   Shift: {selectedShiftForUsers?.title}
                 </Text>
-
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-                  {/* Start Time */}
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons
                       name="time-outline"
@@ -944,8 +862,6 @@ const Schedules = () => {
                       })}
                     </Text>
                   </View>
-
-                  {/* End Time */}
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons
                       name="time-outline"
@@ -965,8 +881,6 @@ const Schedules = () => {
                     </Text>
                   </View>
                 </View>
-
-                {/* List of Assigned Users */}
                 {selectedShiftForUsers && selectedShiftForUsers.assignedUsers.length > 0 ? (
                   <FlatList
                     data={selectedShiftForUsers.assignedUsers}

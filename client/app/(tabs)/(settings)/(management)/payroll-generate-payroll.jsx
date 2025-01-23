@@ -154,7 +154,7 @@ const GeneratePayroll = () => {
             isLightTheme ? 'text-slate-800' : 'text-white'
           }`}
         >
-          Calculate Payroll Manually
+          Generate Payroll
         </Text>
       </View>
       <View className="flex-1 px-4 mt-4">
@@ -251,7 +251,7 @@ const GeneratePayroll = () => {
           onPress={handleCalculatePayrollManually}
         >
           <Text className="text-white text-center font-semibold">
-            Calculate Payroll
+            Generate Payroll
           </Text>
         </Pressable>
       </View>

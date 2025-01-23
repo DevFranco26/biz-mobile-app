@@ -209,8 +209,8 @@ const SubscriptionPlans = () => {
         <Pressable onPress={() => router.back()} className="mr-3">
           <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? '#333' : '#fff'} />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
-          Manage Subscription Plans
+        <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+          Subscription Plans
         </Text>
       </View>
       {loadingPlans ? (
@@ -219,7 +219,7 @@ const SubscriptionPlans = () => {
         <>
           <View className="flex-row items-center justify-between px-4 mt-3 mb-2">
             <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
-              Available Plans
+            Subscription Plans
             </Text>
             <Pressable onPress={handleOpenCreatePlan} className="p-2">
               <Ionicons

@@ -219,7 +219,7 @@ const Companies = () => {
           <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? '#333' : '#fff'} />
         </Pressable>
         <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-          Manage Companies
+          Companies
         </Text>
       </View>
       <View className="flex-row justify-between items-center px-4 mb-4 z-50">

@@ -221,7 +221,7 @@ const Settings = () => {
                 {renderFeature(
                   Ionicons,
                   'business-outline',
-                  'Manage Companies',
+                  'Companies',
                   'Create, update, remove companies.',
                   './superadmin-companies'
                 )}
@@ -229,7 +229,7 @@ const Settings = () => {
                 {renderFeature(
                   Ionicons,
                   'reader-outline',
-                  'Manage Subscriptions',
+                  'Subscribers',
                   'Track all companies’ subscriptions.',
                   './superadmin-subscriptions'
                 )}
@@ -237,7 +237,7 @@ const Settings = () => {
                 {renderFeature(
                   Ionicons,
                   'settings-outline',
-                  'Manage Plans',
+                  'Subscription Plans',
                   'Create or update subscription plans.',
                   './superadmin-subscription-plans'
                 )}
@@ -256,7 +256,7 @@ const Settings = () => {
               {renderFeature(
                 Ionicons,
                 'briefcase-outline',
-                'Manage Departments',
+                'Departments',
                 'Organize departments and teams.',
                 './manage-departments'
               )}
@@ -274,14 +274,14 @@ const Settings = () => {
               {renderFeature(
                 Ionicons,
                 'people-outline',
-                'Manage Employees',
+                'Employees',
                 'Monitor, create, update, remove employees.',
                 './manage-employees'
               )}
               {renderFeature(
                 Ionicons,
                 'calendar-outline',
-                'Employee Shifts',
+                'Shifts Schedule',
                 'Create, update, assign shift schedules.',
                 './manage-schedules'
               )}
@@ -336,7 +336,7 @@ const Settings = () => {
               {renderFeature(
                 Ionicons,
                 'calendar-outline',
-                'Leave Request',
+                'Leave Requests',
                 'Approve and reject employee leaves.',
                 './manage-leaves'
               )}
@@ -370,17 +370,17 @@ const Settings = () => {
                   )}
                   {renderFeature(
                     Ionicons,
-                    'calculator-outline',
-                    'Calculate Payroll Manually',
-                    'Manually calculate payroll for a user/period.',
-                    './payroll-generate-payroll'
-                  )}
-                  {renderFeature(
-                    Ionicons,
                     'document-text-outline',
                     'Payroll Records',
                     'View & manage all payroll records.',
                     './payroll-payroll-records'
+                  )}
+                   {renderFeature(
+                    Ionicons,
+                    'calculator-outline',
+                    'Generate Payroll',
+                    'Generate payroll for a user/period.',
+                    './payroll-generate-payroll'
                   )}
                 </View>
 
@@ -398,7 +398,7 @@ const Settings = () => {
                     'reader-outline',
                     loadingCurrent
                       ? 'Checking subscription...'
-                      : subscriptionName,
+                      : `${subscriptionName} Plan`,
                     'View or manage your company’s subscription plan.',
                     './manage-mysubscriptions',
                     true // Always unlocked so you can view/update your plan

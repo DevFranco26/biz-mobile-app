@@ -1,16 +1,14 @@
-// File: app/(tabs)/(settings)/(management)/manage-locations.jsx
-
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  ActivityIndicator, 
-  Alert, 
-  Pressable, 
-  RefreshControl, 
-  Modal, 
-  TextInput, 
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  Modal,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -24,27 +22,24 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps'; 
+import MapView, { Marker } from 'react-native-maps';
 
 const Locations = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
-
-  const { 
-    locations, 
-    loading, 
-    error, 
-    fetchLocations, 
-    createLocation, 
-    updateLocation, 
-    deleteLocation 
+  const {
+    locations,
+    loading,
+    error,
+    fetchLocations,
+    createLocation,
+    updateLocation,
+    deleteLocation,
   } = useLocationsStore();
-
-  // State variables
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState(null); 
+  const [currentLocation, setCurrentLocation] = useState(null);
   const [label, setLabel] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -74,15 +69,11 @@ const Locations = () => {
   };
 
   const handleLocationAction = (location) => {
-    Alert.alert(
-      'Location Actions',
-      `Choose an action for the location "${location.label}".`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Edit', onPress: () => openEditLocationModal(location) },
-        { text: 'Delete', onPress: () => handleDeleteLocation(location.id) },
-      ]
-    );
+    Alert.alert('Location Actions', `Choose an action for the location "${location.label}".`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Edit', onPress: () => openEditLocationModal(location) },
+      { text: 'Delete', onPress: () => handleDeleteLocation(location.id) },
+    ]);
   };
 
   const openAddLocationModal = () => {
@@ -115,44 +106,29 @@ const Locations = () => {
       router.replace('(auth)/login-user');
       return;
     }
-
     if (!label || !latitude || !longitude || !radius) {
       Alert.alert('Validation Error', 'All fields are required.');
       return;
     }
-
     const locationData = {
       label,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       radius: parseInt(radius, 10),
     };
-
     try {
       let result;
       if (currentLocation) {
-        // Edit existing location
         result = await updateLocation(currentLocation.id, locationData, token);
       } else {
-        // Add new location
         result = await createLocation(locationData, token);
       }
-
       if (result.success) {
-        Alert.alert(
-          'Success', 
-          currentLocation ? 'Location updated successfully.' : 'Location created successfully.'
-        );
+        Alert.alert('Success', currentLocation ? 'Location updated successfully.' : 'Location created successfully.');
         setModalVisible(false);
-
-        // Re-fetch locations to update UI
         await fetchLocations(token);
-
       } else {
-        Alert.alert(
-          'Error', 
-          result.message || (currentLocation ? 'Failed to update location.' : 'Failed to create location.')
-        );
+        Alert.alert('Error', result.message || (currentLocation ? 'Failed to update location.' : 'Failed to create location.'));
       }
     } catch (err) {
       console.error('Error saving location:', err);
@@ -167,7 +143,6 @@ const Locations = () => {
         const result = await deleteLocation(locationId, token);
         if (result.success) {
           Alert.alert('Success', 'Location deleted successfully.');
-          // Re-fetch
           await fetchLocations(token);
         } else {
           Alert.alert('Error', result.message || 'Failed to delete location.');
@@ -192,100 +167,108 @@ const Locations = () => {
   const renderItem = ({ item }) => {
     const creator = item.admin ? item.admin.email : 'Unknown';
     const editor = item.lastEditor ? item.lastEditor.email : 'Not edited';
-
     return (
-      <View 
+      <View
         className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
           isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
         }`}
       >
         <View className="flex-row items-center flex-1">
-          <Ionicons 
-            name="location-outline" 
-            size={40} 
-            color={isLightTheme ? '#4b5563' : '#d1d5db'} 
+          <Ionicons
+            name="location-outline"
+            size={40}
+            color={isLightTheme ? '#4b5563' : '#d1d5db'}
           />
           <View className="ml-3 flex-1">
-            <Text 
+            <Text
               className={`text-lg font-semibold ${
                 isLightTheme ? 'text-slate-800' : 'text-slate-300'
               }`}
             >
               {item.label}
             </Text>
-
-            {/* LATITUDE (with icon) */}
             <View className="flex-row items-center">
-              <Ionicons 
-                name="navigate-outline" 
-                size={16} 
-                color={isLightTheme ? '#4b5563' : '#d1d5db'}
-                className="mr-1"
-              />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
-                Latitude: {item.latitude}
-              </Text>
-            </View>
-
-            {/* LONGITUDE (with icon) */}
-            <View className="flex-row items-center mt-1">
-              <Ionicons 
+              <Ionicons
                 name="navigate-outline"
                 size={16}
                 color={isLightTheme ? '#4b5563' : '#d1d5db'}
                 className="mr-1"
               />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                }`}
+              >
+                Latitude: {item.latitude}
+              </Text>
+            </View>
+            <View className="flex-row items-center mt-1">
+              <Ionicons
+                name="navigate-outline"
+                size={16}
+                color={isLightTheme ? '#4b5563' : '#d1d5db'}
+                className="mr-1"
+              />
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                }`}
+              >
                 Longitude: {item.longitude}
               </Text>
             </View>
-
-            {/* RADIUS (with icon) */}
             <View className="flex-row items-center mt-1">
-              <Ionicons 
+              <Ionicons
                 name="radio-button-off-outline"
                 size={16}
                 color={isLightTheme ? '#4b5563' : '#d1d5db'}
                 className="mr-1"
               />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                }`}
+              >
                 Radius: {item.radius} meters
               </Text>
             </View>
-
-            {/* REPLACED "Created By:" with icon */}
             <View className="flex-row items-center mt-1">
-              <Ionicons 
+              <Ionicons
                 name="person-add-outline"
                 size={16}
                 color={isLightTheme ? '#4b5563' : '#d1d5db'}
                 className="mr-1"
               />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                }`}
+              >
                 {creator}
               </Text>
             </View>
-
-            {/* REPLACED "Last Edited By:" with icon */}
             <View className="flex-row items-center mt-1">
-              <Ionicons 
+              <Ionicons
                 name="create-outline"
                 size={16}
                 color={isLightTheme ? '#4b5563' : '#d1d5db'}
                 className="mr-1"
               />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text
+                className={`${
+                  isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                }`}
+              >
                 {editor}
               </Text>
             </View>
           </View>
         </View>
-
         <Pressable onPress={() => handleLocationAction(item)} className="p-2">
-          <Ionicons 
-            name="ellipsis-vertical" 
-            size={24} 
-            color={isLightTheme ? '#1f2937' : '#f9fafb'} 
+          <Ionicons
+            name="ellipsis-vertical"
+            size={24}
+            color={isLightTheme ? '#1f2937' : '#f9fafb'}
           />
         </Pressable>
       </View>
@@ -293,11 +276,10 @@ const Locations = () => {
   };
 
   return (
-    <SafeAreaView 
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} 
+    <SafeAreaView
+      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
-      {/* Custom Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -306,17 +288,16 @@ const Locations = () => {
             color={isLightTheme ? '#333' : '#fff'}
           />
         </Pressable>
-        <Text 
+        <Text
           className={`text-lg font-bold ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
-          Manage Locations
+          Locations
         </Text>
       </View>
-
       <View className="flex-row justify-between items-center px-4 mb-4">
-        <Text 
+        <Text
           className={`text-2xl font-bold ${
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
@@ -331,14 +312,13 @@ const Locations = () => {
           accessibilityLabel="Add Location"
           accessibilityHint="Opens a form to add a new location"
         >
-          <Ionicons 
-            name="add" 
-            size={24} 
-            color={isLightTheme? '#1e293b' : '#cbd5e1'} 
+          <Ionicons
+            name="add"
+            size={24}
+            color={isLightTheme ? '#1e293b' : '#cbd5e1'}
           />
         </Pressable>
       </View>
-
       {loading ? (
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
@@ -356,7 +336,7 @@ const Locations = () => {
             />
           }
           ListEmptyComponent={
-            <Text 
+            <Text
               className={`text-center mt-12 text-lg ${
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
@@ -366,8 +346,6 @@ const Locations = () => {
           }
         />
       )}
-
-      {/* Add/Edit Location Modal */}
       <Modal
         visible={modalVisible}
         animationType="fade"
@@ -375,7 +353,11 @@ const Locations = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
+          <View
+            className={`flex-1 justify-center items-center  ${
+              isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'
+            }`}
+          >
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               className="w-11/12"
@@ -390,17 +372,14 @@ const Locations = () => {
                     isLightTheme ? 'bg-white' : 'bg-slate-900'
                   }`}
                 >
-                  <Text 
+                  <Text
                     className={`text-xl font-bold mb-4 ${
                       isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
                   >
                     {currentLocation ? 'Edit Location' : 'Add Location'}
                   </Text>
-
-                  {/* Label */}
-                  <Text 
-                    // updated style to be more visible/bold
+                  <Text
                     className={`text-base  ${
                       isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     } mb-1`}
@@ -408,7 +387,7 @@ const Locations = () => {
                     Location Name
                   </Text>
                   <TextInput
-                     className={`w-full p-3 mb-2 rounded-lg border ${
+                    className={`w-full p-3 mb-2 rounded-lg border ${
                       isLightTheme
                         ? 'border-slate-100 bg-slate-100 text-slate-800'
                         : 'border-slate-800 bg-slate-800 text-slate-300'
@@ -418,24 +397,22 @@ const Locations = () => {
                     placeholder="e.g., Main Office"
                     placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                   />
-
-                  {/* Map Selection */}
-                  <Text 
+                  <Text
                     className={`text-base mb-1 ${
                       isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
                   >
                     Select Location on Map
                   </Text>
-                  <Text 
+                  <Text
                     className={`text-sm mb-2 ${
                       isLightTheme ? 'text-slate-600' : 'text-slate-400'
                     }`}
                   >
                     Tap on the map to drop a pin, or drag the pin to adjust the location.
                   </Text>
-                  <View 
-                    style={{ height: 300, width: '100%' }} 
+                  <View
+                    style={{ height: 300, width: '100%' }}
                     className="mb-3 rounded-lg overflow-hidden"
                   >
                     <MapView
@@ -464,10 +441,8 @@ const Locations = () => {
                       )}
                     </MapView>
                   </View>
-
                   <View className="flex-row gap-2 my-3 justify-center items-center">
-                    {/* Latitude */}
-                    <Text 
+                    <Text
                       className={`text-base mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
                       }`}
@@ -487,9 +462,7 @@ const Locations = () => {
                       placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                       editable={false}
                     />
-
-                    {/* Longitude */}
-                    <Text 
+                    <Text
                       className={`text-base mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
                       }`}
@@ -510,10 +483,7 @@ const Locations = () => {
                       editable={false}
                     />
                   </View>
-                  
-
-                  {/* Radius */}
-                  <Text 
+                  <Text
                     className={`text-base mb-1 ${
                       isLightTheme ? 'text-slate-800' : 'text-slate-300'
                     }`}
@@ -532,14 +502,12 @@ const Locations = () => {
                     keyboardType="numeric"
                     placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                   />
-
-                  {/* Action Buttons */}
                   <View className="flex-row justify-end items-center mt-6">
                     <TouchableOpacity
                       onPress={() => setModalVisible(false)}
                       className="mr-4"
                     >
-                      <Text 
+                      <Text
                         className={`text-base font-semibold ${
                           isLightTheme ? 'text-slate-700' : 'text-slate-400'
                         }`}

@@ -76,8 +76,8 @@ const Subscriptions = () => {
         <Pressable onPress={() => router.back()} className="mr-3">
           <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? '#333' : '#fff'} />
         </Pressable>
-        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
-          Manage Subscriptions
+        <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+           Subscribers
         </Text>
       </View>
       <ScrollView

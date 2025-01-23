@@ -1,5 +1,3 @@
-// File: app/(tabs)/(settings)/(management)/manage-departments.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -15,7 +13,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import useThemeStore from '../../../../store/themeStore';
 import useDepartmentStore from '../../../../store/departmentStore';
@@ -29,16 +27,10 @@ const Departments = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === 'light';
   const router = useRouter();
-
   const { departments, loading, error, fetchDepartments } = useDepartmentStore();
-
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-
-  // Fields for add/edit department modal
   const [deptName, setDeptName] = useState('');
-
   const [editDeptModalVisible, setEditDeptModalVisible] = useState(false);
-
   const [refreshing, setRefreshing] = useState(false);
   const [token, setToken] = useState(null);
 
@@ -81,51 +73,40 @@ const Departments = () => {
       router.replace('(auth)/signin');
       return;
     }
-    Alert.alert(
-      'Confirm Deletion',
-      'Are you sure you want to delete this department?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const url = `${API_BASE_URL}/departments/delete/${departmentId}`;
-              const res = await fetch(url, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const data = await res.json();
-              if (res.ok) {
-                Alert.alert('Success', data.message || 'Department deleted successfully.');
-                await fetchDepartments(token);
-              } else {
-                Alert.alert('Error', data.message || 'Failed to delete department.');
-              }
-            } catch (err) {
-              console.error('Error deleting department:', err);
-              Alert.alert('Error', 'An unexpected error occurred.');
+    Alert.alert('Confirm Deletion', 'Are you sure you want to delete this department?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const url = `${API_BASE_URL}/departments/delete/${departmentId}`;
+            const res = await fetch(url, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+              Alert.alert('Success', data.message || 'Department deleted successfully.');
+              await fetchDepartments(token);
+            } else {
+              Alert.alert('Error', data.message || 'Failed to delete department.');
             }
-          },
+          } catch (err) {
+            console.error('Error deleting department:', err);
+            Alert.alert('Error', 'An unexpected error occurred.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDepartmentAction = (dept) => {
-    Alert.alert(
-      'Department Actions',
-      `Choose an action for "${dept.name}".`,
-      [
-        { text: 'Edit', onPress: () => handleEditDepartment(dept) },
-        {
-          text: 'Delete',
-          onPress: () => handleDeleteDepartment(dept.id),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Department Actions', `Choose an action for "${dept.name}".`, [
+      { text: 'Edit', onPress: () => handleEditDepartment(dept) },
+      { text: 'Delete', onPress: () => handleDeleteDepartment(dept.id) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleSaveDepartmentEdits = async () => {
@@ -138,11 +119,9 @@ const Departments = () => {
       Alert.alert('Validation Error', 'Department name is required.');
       return;
     }
-
     try {
       let res, data;
       if (selectedDepartment) {
-        // Update existing department
         const url = `${API_BASE_URL}/departments/update/${selectedDepartment.id}`;
         res = await fetch(url, {
           method: 'PUT',
@@ -150,13 +129,10 @@ const Departments = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            name: deptName,
-          }),
+          body: JSON.stringify({ name: deptName }),
         });
         data = await res.json();
       } else {
-        // Create a new department
         const url = `${API_BASE_URL}/departments/create`;
         res = await fetch(url, {
           method: 'POST',
@@ -164,13 +140,10 @@ const Departments = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            name: deptName,
-          }),
+          body: JSON.stringify({ name: deptName }),
         });
         data = await res.json();
       }
-
       if (res.ok) {
         Alert.alert('Success', selectedDepartment ? 'Department updated successfully.' : 'Department created successfully.');
         setEditDeptModalVisible(false);
@@ -200,7 +173,6 @@ const Departments = () => {
             {item.name}
           </Text>
         </View>
-
         <Pressable onPress={() => handleDepartmentAction(item)} className="p-2">
           <Ionicons
             name="ellipsis-vertical"
@@ -217,7 +189,6 @@ const Departments = () => {
       className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
       edges={['top']}
     >
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
@@ -231,11 +202,9 @@ const Departments = () => {
             isLightTheme ? 'text-slate-800' : 'text-slate-300'
           }`}
         >
-          Manage Departments
+          Departments
         </Text>
       </View>
-
-      {/* Title + Add Button */}
       <View className="flex-row justify-between items-center px-4 mb-4 z-50">
         <Text
           className={`text-2xl font-bold ${
@@ -257,7 +226,6 @@ const Departments = () => {
           />
         </Pressable>
       </View>
-
       {loading ? (
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
@@ -285,8 +253,6 @@ const Departments = () => {
           }
         />
       )}
-
-      {/* Add/Edit Department Modal */}
       <Modal
         visible={editDeptModalVisible}
         animationType="fade"
@@ -312,8 +278,6 @@ const Departments = () => {
                 >
                   {selectedDepartment ? 'Edit Department' : 'Add Department'}
                 </Text>
-
-                {/* Department Name */}
                 <Text
                   className={`text-sm font-medium mb-1 ${
                     isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -332,8 +296,6 @@ const Departments = () => {
                   placeholder="e.g., Sales"
                   placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
                 />
-
-                {/* Action Buttons */}
                 <View className="flex-row justify-end">
                   <TouchableOpacity
                     onPress={() => setEditDeptModalVisible(false)}

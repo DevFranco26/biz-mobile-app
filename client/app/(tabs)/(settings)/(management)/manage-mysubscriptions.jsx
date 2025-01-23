@@ -1,6 +1,4 @@
-// File: app/(tabs)/(settings)/(management)/manage-mysubscriptions.jsx
-
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,100 +10,95 @@ import {
   TouchableOpacity,
   Linking,
   RefreshControl,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import * as SecureStore from 'expo-secure-store'
-import { Ionicons } from '@expo/vector-icons'
-import useThemeStore from '../../../../store/themeStore'
-import useUserStore from '../../../../store/userStore'
-import useSubscriptionStore from '../../../../store/subscriptionStore'
-import useSubscriptionPlansStore from '../../../../store/subscriptionPlansStore'
-import useCompanyStore from '../../../../store/companyStore'
-import { getMaxUsers } from '../../../../utils/maxUsers'
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { Ionicons } from '@expo/vector-icons';
+import useThemeStore from '../../../../store/themeStore';
+import useUserStore from '../../../../store/userStore';
+import useSubscriptionStore from '../../../../store/subscriptionStore';
+import useSubscriptionPlansStore from '../../../../store/subscriptionPlansStore';
+import useCompanyStore from '../../../../store/companyStore';
+import { getMaxUsers } from '../../../../utils/maxUsers';
 
 function formatDateTime(dt) {
-  if (!dt) return 'N/A'
-  return new Date(dt).toLocaleString()
+  if (!dt) return 'N/A';
+  return new Date(dt).toLocaleString();
 }
 
 const MySubscriptions = () => {
-  const router = useRouter()
-  const { theme } = useThemeStore()
-  const isLightTheme = theme === 'light'
-  const accentColor = isLightTheme ? '#c2410c' : '#6B7280'
-  const { user } = useUserStore()
-  const { currentSubscription, loadingCurrent, fetchCurrentSubscription, cancelSubscription } = useSubscriptionStore()
-  const { subscriptionPlans, loadingPlans, fetchSubscriptionPlans } = useSubscriptionPlansStore()
-  const { companyUserCounts, fetchCompanyUserCount } = useCompanyStore()
-  const [token, setToken] = useState(null)
-  const [planModalVisible, setPlanModalVisible] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(null)
-  const planName = currentSubscription?.plan?.planName || 'N/A'
-  const isFreePlan = planName.toLowerCase().includes('free')
-  const currentUserCount = companyUserCounts[user?.companyId] || 0
-
-  const [refreshing, setRefreshing] = useState(false)
+  const router = useRouter();
+  const { theme } = useThemeStore();
+  const isLightTheme = theme === 'light';
+  const accentColor = isLightTheme ? '#c2410c' : '#6B7280';
+  const { user } = useUserStore();
+  const { currentSubscription, loadingCurrent, fetchCurrentSubscription, cancelSubscription } = useSubscriptionStore();
+  const { subscriptionPlans, loadingPlans, fetchSubscriptionPlans } = useSubscriptionPlansStore();
+  const { companyUserCounts, fetchCompanyUserCount } = useCompanyStore();
+  const [token, setToken] = useState(null);
+  const [planModalVisible, setPlanModalVisible] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const planName = currentSubscription?.plan?.planName || 'N/A';
+  const isFreePlan = planName.toLowerCase().includes('free');
+  const currentUserCount = companyUserCounts[user?.companyId] || 0;
+  const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
-    if (!token) return
-    setRefreshing(true)
-    await fetchCurrentSubscription(token)
-    await fetchSubscriptionPlans(token)
+    if (!token) return;
+    setRefreshing(true);
+    await fetchCurrentSubscription(token);
+    await fetchSubscriptionPlans(token);
     if (user?.companyId) {
-      await fetchCompanyUserCount(token, user.companyId)
+      await fetchCompanyUserCount(token, user.companyId);
     }
-    setRefreshing(false)
-  }
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     const init = async () => {
-      const storedToken = await SecureStore.getItemAsync('token')
+      const storedToken = await SecureStore.getItemAsync('token');
       if (!storedToken) {
-        Alert.alert('Auth Error', 'Please sign in again.')
-        router.replace('(auth)/login-user')
-        return
+        Alert.alert('Auth Error', 'Please sign in again.');
+        router.replace('(auth)/login-user');
+        return;
       }
-      setToken(storedToken)
-      await fetchCurrentSubscription(storedToken)
-      await fetchSubscriptionPlans(storedToken)
+      setToken(storedToken);
+      await fetchCurrentSubscription(storedToken);
+      await fetchSubscriptionPlans(storedToken);
       if (user?.companyId) {
-        await fetchCompanyUserCount(storedToken, user.companyId)
+        await fetchCompanyUserCount(storedToken, user.companyId);
       }
-    }
-    init()
-  }, [user?.companyId, fetchCurrentSubscription, fetchSubscriptionPlans, fetchCompanyUserCount, router])
+    };
+    init();
+  }, [user?.companyId, fetchCurrentSubscription, fetchSubscriptionPlans, fetchCompanyUserCount, router]);
 
   const confirmCancelSubscription = () => {
-    Alert.alert(
-      'Confirm Cancellation',
-      'Are you sure you want to cancel your current subscription immediately?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          style: 'destructive',
-          onPress: async () => {
-            if (!token) return
-            await cancelSubscription(token)
-          },
+    Alert.alert('Confirm Cancellation', 'Are you sure you want to cancel your current subscription immediately?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        style: 'destructive',
+        onPress: async () => {
+          if (!token) return;
+          await cancelSubscription(token);
         },
-      ]
-    )
-  }
+      },
+    ]);
+  };
 
   const handleCancel = async () => {
-    if (!token) return
-    const planMax = getMaxUsers(currentSubscription?.plan?.rangeOfUsers)
+    if (!token) return;
+    const planMax = getMaxUsers(currentSubscription?.plan?.rangeOfUsers);
     if (currentUserCount > planMax) {
       Alert.alert(
         'Cannot Cancel',
         `You currently have ${currentUserCount} users, which exceeds the plan's maximum (${planMax}).\n\nPlease remove users or choose a different plan before canceling.`
-      )
-      return
+      );
+      return;
     }
-    confirmCancelSubscription()
-  }
+    confirmCancelSubscription();
+  };
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
@@ -121,7 +114,6 @@ const MySubscriptions = () => {
           My Subscription
         </Text>
       </View>
-
       {loadingCurrent ? (
         <ActivityIndicator size="large" color={accentColor} className="mt-8" />
       ) : (
@@ -215,7 +207,6 @@ const MySubscriptions = () => {
           )}
         </ScrollView>
       )}
-
       <Modal
         visible={planModalVisible}
         transparent={false}
@@ -243,30 +234,30 @@ const MySubscriptions = () => {
               {[...subscriptionPlans]
                 .sort((a, b) => a.id - b.id)
                 .map((plan) => {
-                  const isCurrentPlan = currentSubscription?.plan?.id === plan.id
-                  const planMaxUsers = getMaxUsers(plan.rangeOfUsers)
-                  const cannotDowngrade = currentUserCount > planMaxUsers
+                  const isCurrentPlan = currentSubscription?.plan?.id === plan.id;
+                  const planMaxUsers = getMaxUsers(plan.rangeOfUsers);
+                  const cannotDowngrade = currentUserCount > planMaxUsers;
                   const handlePlanPress = () => {
                     if (cannotDowngrade) {
                       Alert.alert(
                         'Plan Not Available',
                         `You have ${currentUserCount} users, which exceeds this plan’s maximum (${planMaxUsers}).\n\nPlease remove users or select a different plan.`
-                      )
-                      return
+                      );
+                      return;
                     }
-                    if (selectedPlan?.id === plan.id) setSelectedPlan(null)
-                    else setSelectedPlan(plan)
-                  }
+                    if (selectedPlan?.id === plan.id) setSelectedPlan(null);
+                    else setSelectedPlan(plan);
+                  };
                   const containerStyle = isCurrentPlan
                     ? 'border-2 border-orange-500'
                     : isLightTheme
                     ? 'bg-slate-100'
-                    : 'bg-slate-800'
+                    : 'bg-slate-800';
                   const textColorClass = cannotDowngrade
                     ? 'text-slate-500'
                     : isLightTheme
                     ? 'text-slate-800'
-                    : 'text-slate-200'
+                    : 'text-slate-200';
                   return (
                     <Pressable
                       key={plan.id}
@@ -326,15 +317,15 @@ const MySubscriptions = () => {
                                   '79.99': 'https://buy.stripe.com/bIYeWa1w7bFJ3PWeVH',
                                   '129.99': 'https://buy.stripe.com/7sI15k6QrcJN72828W',
                                   '179.99': 'https://buy.stripe.com/bIYbJY1w77ptdqwbJx',
-                                }
-                                const priceKey = plan.price?.toString()
-                                const url = stripeUrls[priceKey]
+                                };
+                                const priceKey = plan.price?.toString();
+                                const url = stripeUrls[priceKey];
                                 if (url) {
                                   Linking.openURL(url).catch(() =>
                                     Alert.alert('Error', 'Unable to open link.')
-                                  )
+                                  );
                                 } else {
-                                  Alert.alert('Error', 'No payment link available for this plan.')
+                                  Alert.alert('Error', 'No payment link available for this plan.');
                                 }
                               }}
                               className="bg-orange-500 px-4 py-4 rounded-lg"
@@ -345,14 +336,14 @@ const MySubscriptions = () => {
                         </View>
                       )}
                     </Pressable>
-                  )
+                  );
                 })}
             </ScrollView>
           )}
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default MySubscriptions
+export default MySubscriptions;
