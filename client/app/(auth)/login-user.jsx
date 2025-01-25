@@ -1,7 +1,17 @@
 // File: app/(auth)/login-user.jsx
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import * as SecureStore from 'expo-secure-store';
@@ -10,6 +20,9 @@ import useUserStore from '../../store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { API_BASE_URL } from '../../config/constant';
+
+// 1) IMPORT EXPO BIOMETRIC AUTH:
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const SigninSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
@@ -25,6 +38,46 @@ export default function Login() {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const handleSignin = async (values) => {
+    // 2) BIOMETRIC AUTH CHECK BEFORE PROCEEDING:
+    try {
+      const hasBiometricHardware = await LocalAuthentication.hasHardwareAsync();
+      if (!hasBiometricHardware) {
+        Alert.alert(
+          'Biometric Not Supported',
+          'Your device does not support biometric authentication.'
+        );
+        return;
+      }
+
+      const isBiometricEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!isBiometricEnrolled) {
+        Alert.alert(
+          'Biometric Not Set Up',
+          'No biometric credentials found. Please set up Fingerprint/Face ID on your device.'
+        );
+        return;
+      }
+
+      const biometricResult = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to proceed',
+        fallbackEnabled: true,
+        fallbackTitle: 'Use Passcode',
+        cancelLabel: 'Cancel',
+      });
+
+      if (!biometricResult.success) {
+        Alert.alert(
+          'Authentication Failed',
+          'You could not be authenticated. Please try again.'
+        );
+        return;
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred during biometric authentication.');
+      return;
+    }
+
+    // 3) IF BIOMETRICS SUCCESS, PROCEED WITH YOUR EXISTING LOGIN LOGIC:
     const { email, password } = values;
     try {
       const response = await fetch(`${API_BASE_URL}/auth/sign-in`, {
@@ -52,27 +105,53 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1"
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View className={`flex-1 justify-center items-center px-6 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+        <View
+          className={`flex-1 justify-center items-center px-6 ${
+            isLightTheme ? 'bg-white' : 'bg-slate-900'
+          }`}
+        >
           <Formik
             initialValues={{ email: '', password: '' }}
             validationSchema={SigninSchema}
             onSubmit={handleSignin}
           >
-            {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
+            {({
+              values,
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              errors,
+              touched,
+            }) => (
               <>
-                <Text className={`text-5xl font-extrabold text-center mb-12 ${isLightTheme ? 'text-slate-800' : 'text-slate-100'}`}>
+                <Text
+                  className={`text-5xl font-extrabold text-center mb-12 ${
+                    isLightTheme ? 'text-slate-800' : 'text-slate-100'
+                  }`}
+                >
                   Biz Buddy
                 </Text>
 
                 {/* Email Input */}
                 <View className="mb-4 w-full">
-                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'} text-left`}>
+                  <Text
+                    className={`text-lg ${
+                      isLightTheme ? 'text-slate-800' : 'text-slate-100'
+                    } text-left`}
+                  >
                     Email
                   </Text>
                   <TextInput
-                    className={`w-full p-4 my-2 rounded-lg ${isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-100'}`}
+                    className={`w-full p-4 my-2 rounded-lg ${
+                      isLightTheme
+                        ? 'bg-slate-100 text-slate-800'
+                        : 'bg-slate-800 text-slate-100'
+                    }`}
                     keyboardType="email-address"
                     value={values.email}
                     onChangeText={handleChange('email')}
@@ -80,23 +159,37 @@ export default function Login() {
                     placeholder="Enter your email"
                     placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
                   />
-                  {touched.email && errors.email && <Text className="text-red-500 text-sm">{errors.email}</Text>}
+                  {touched.email && errors.email && (
+                    <Text className="text-red-500 text-sm">
+                      {errors.email}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Password Input */}
                 <View className="mb-6 w-full">
-                  <Text className={`text-lg ${isLightTheme ? 'text-slate-800' : 'text-slate-100'} text-left`}>
+                  <Text
+                    className={`text-lg ${
+                      isLightTheme ? 'text-slate-800' : 'text-slate-100'
+                    } text-left`}
+                  >
                     Password
                   </Text>
                   <View className="relative">
                     <TextInput
-                      className={`w-full p-4 my-2 rounded-lg ${isLightTheme ? 'bg-slate-100 text-slate-800' : 'bg-slate-800 text-slate-100'}`}
+                      className={`w-full p-4 my-2 rounded-lg ${
+                        isLightTheme
+                          ? 'bg-slate-100 text-slate-800'
+                          : 'bg-slate-800 text-slate-100'
+                      }`}
                       secureTextEntry={!passwordVisible}
                       value={values.password}
                       onChangeText={handleChange('password')}
                       onBlur={handleBlur('password')}
                       placeholder="Enter your password"
-                      placeholderTextColor={isLightTheme ? '#6b7280' : '#9ca3af'}
+                      placeholderTextColor={
+                        isLightTheme ? '#6b7280' : '#9ca3af'
+                      }
                     />
                     <Pressable
                       onPress={() => setPasswordVisible(!passwordVisible)}
@@ -114,7 +207,11 @@ export default function Login() {
                       />
                     </Pressable>
                   </View>
-                  {touched.password && errors.password && <Text className="text-red-500 text-sm">{errors.password}</Text>}
+                  {touched.password && errors.password && (
+                    <Text className="text-red-500 text-sm">
+                      {errors.password}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Sign In Button */}
@@ -122,7 +219,9 @@ export default function Login() {
                   className="w-full py-4 rounded-lg mt-7 bg-orange-500/90"
                   onPress={handleSubmit}
                 >
-                  <Text className="text-white text-center text-lg font-medium">Sign In</Text>
+                  <Text className="text-white text-center text-lg font-medium">
+                    Sign In
+                  </Text>
                 </Pressable>
 
                 {/* Some "Get Started" button */}
@@ -130,12 +229,18 @@ export default function Login() {
                   className="w-full py-4 rounded-lg mt-4 border-2 border-orange-500/90"
                   onPress={() => router.push('(auth)/registration-user')}
                 >
-                  <Text className="text-orange-500/90 text-center text-lg font-medium">Get Started</Text>
+                  <Text className="text-orange-500/90 text-center text-lg font-medium">
+                    Get Started
+                  </Text>
                 </Pressable>
 
                 {/* Forgot Password? (optional) */}
                 <Pressable onPress={() => Alert.alert('Forgot Password?')}>
-                  <Text className={`text-blue-500 text-sm mt-4 text-center ${isLightTheme ? 'text-blue-700' : 'text-blue-400'}`}>
+                  <Text
+                    className={`text-blue-500 text-sm mt-4 text-center ${
+                      isLightTheme ? 'text-blue-700' : 'text-blue-400'
+                    }`}
+                  >
                     Forgot Password?
                   </Text>
                 </Pressable>

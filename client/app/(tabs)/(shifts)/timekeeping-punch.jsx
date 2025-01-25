@@ -22,6 +22,9 @@ import useUserStore from '../../../store/userStore'
 import useThemeStore from '../../../store/themeStore'
 import useSubscriptionStore from '../../../store/subscriptionStore'
 
+// ADD THIS IMPORT FOR BIOMETRIC AUTHENTICATION
+import * as LocalAuthentication from 'expo-local-authentication'
+
 const Punch = () => {
   const { user } = useUserStore()
   const { theme } = useThemeStore()
@@ -102,13 +105,16 @@ const Punch = () => {
     const newQueue = [...punchQueueRef.current]
     const successfullySynced = []
     const errorMessages = []
+
     for (const punchData of newQueue) {
       try {
         const apiEndpoint = punchData.isTimeIn
           ? `${API_BASE_URL}/timelogs/time-in`
           : `${API_BASE_URL}/timelogs/time-out`
+
         const token = await SecureStore.getItemAsync('token')
         if (!token) throw new Error('Authentication token not found.')
+
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: {
@@ -118,6 +124,7 @@ const Punch = () => {
           body: JSON.stringify(punchData),
         })
         const result = await response.json()
+
         if (response.ok) {
           successfullySynced.push(punchData)
         } else {
@@ -128,6 +135,7 @@ const Punch = () => {
         errorMessages.push(error.message)
       }
     }
+
     if (successfullySynced.length > 0) {
       const remainingQueue = newQueue.filter(item => !successfullySynced.includes(item))
       setPunchQueue(remainingQueue)
@@ -139,6 +147,7 @@ const Punch = () => {
       }
       notifyUser('Sync Success', 'Your offline data has been synced.')
     }
+
     if (errorMessages.length > 0) {
       notifyUser('Sync Errors', errorMessages.join('\n'))
     }
@@ -194,6 +203,46 @@ const Punch = () => {
   }
 
   const handlePunch = async () => {
+    // 1. Perform Biometric Authentication FIRST
+    try {
+      const hasBiometricHardware = await LocalAuthentication.hasHardwareAsync()
+      if (!hasBiometricHardware) {
+        Alert.alert(
+          'Biometric Not Supported',
+          'Your device does not support biometric authentication.'
+        )
+        return
+      }
+
+      const isBiometricEnrolled = await LocalAuthentication.isEnrolledAsync()
+      if (!isBiometricEnrolled) {
+        Alert.alert(
+          'Biometric Not Set Up',
+          'No biometric credentials found. Please set up Fingerprint/Face ID on your device.'
+        )
+        return
+      }
+
+      const biometricResult = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to proceed',
+        fallbackEnabled: true,
+        fallbackTitle: 'Use Passcode',
+        cancelLabel: 'Cancel',
+      })
+
+      if (!biometricResult.success) {
+        Alert.alert(
+          'Authentication Failed',
+          'You could not be authenticated. Please try again.'
+        )
+        return
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred during biometric authentication.')
+      return
+    }
+
+    // 2. Proceed With Your Original Punch Logic
     setIsLoading(true)
     try {
       if (!isConnected && !canOfflinePunch()) {
@@ -204,17 +253,20 @@ const Punch = () => {
         setIsLoading(false)
         return
       }
+
       const deviceInfo = {
         deviceName: Device.deviceName,
         systemName: Device.osName,
         systemVersion: Device.osVersion,
         model: Device.modelName,
       }
+
       const loc = await fetchLocation()
       if (!loc) {
         setIsLoading(false)
         return
       }
+
       const currentDateTime = new Date()
       const date = currentDateTime.toISOString().split('T')[0]
       const time = [
@@ -222,6 +274,7 @@ const Punch = () => {
         currentDateTime.getUTCMinutes().toString().padStart(2, '0'),
         currentDateTime.getUTCSeconds().toString().padStart(2, '0'),
       ].join(':')
+
       const punchData = {
         userId: user.id,
         deviceInfo,
@@ -231,13 +284,16 @@ const Punch = () => {
         timeZone,
         isTimeIn: !isTimeIn,
       }
+
       if (isConnected) {
         try {
           const apiEndpoint = !isTimeIn
             ? `${API_BASE_URL}/timelogs/time-in`
             : `${API_BASE_URL}/timelogs/time-out`
+
           const token = await SecureStore.getItemAsync('token')
           if (!token) throw new Error('Authentication token not found.')
+
           const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
@@ -247,8 +303,11 @@ const Punch = () => {
             body: JSON.stringify(punchData),
           })
           const result = await response.json()
+
           if (!response.ok) throw new Error(result.message || 'Failed to punch.')
+
           notifyUser('Success', result.message)
+
           if (isTimeIn) {
             clearInterval(timer)
             setTimer(null)
@@ -267,12 +326,14 @@ const Punch = () => {
                 0
               )
             )
+
             const localPunchedInTime = dateForPunchedInTime.toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
               hour12: true,
             })
+
             setPunchedInTime(localPunchedInTime)
             const intervalId = setInterval(() => setTimeElapsed(prev => prev + 1), 1000)
             setTimer(intervalId)
@@ -285,11 +346,15 @@ const Punch = () => {
       } else {
         try {
           let updatedQueue = [...punchQueueRef.current]
+          // Remove any pending punch of the same type (Time In or Time Out) 
+          // to avoid duplication in queue:
           updatedQueue = updatedQueue.filter(item => item.isTimeIn !== punchData.isTimeIn)
           updatedQueue.push(punchData)
           setPunchQueue(updatedQueue)
           await AsyncStorage.setItem('punchQueue', JSON.stringify(updatedQueue))
+
           notifyUser('Offline', 'Your punch has been saved and will sync when online.')
+
           if (!isTimeIn) {
             const [hour, minute, second] = time.split(':')
             const dateForPunchedInTime = new Date(
@@ -309,6 +374,7 @@ const Punch = () => {
               second: '2-digit',
               hour12: true,
             })
+
             setPunchedInTime(localPunchedInTime)
             const intervalId = setInterval(() => setTimeElapsed(prev => prev + 1), 1000)
             setTimer(intervalId)
@@ -341,30 +407,90 @@ const Punch = () => {
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
   return (
-    <View style={{ flex: 1, backgroundColor: isLightTheme ? 'white' : '#0f172a', paddingTop: insets.top }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: isLightTheme ? 'white' : '#0f172a',
+        paddingTop: insets.top,
+      }}
+    >
       <View className="mx-4 mt-20 space-y-4">
-        <View className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
+        <View
+          className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+          }`}
+        >
           <View className="flex-row items-center">
-            <MaterialIcons name="date-range" size={30} color="#3B82F6" className="mr-4" accessibilityLabel="Date Icon" />
+            <MaterialIcons
+              name="date-range"
+              size={30}
+              color="#3B82F6"
+              className="mr-4"
+              accessibilityLabel="Date Icon"
+            />
             <View>
-              <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Date</Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{dayName}</Text>
+              <Text
+                className={`text-base font-semibold ${
+                  isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                }`}
+              >
+                Date
+              </Text>
+              <Text
+                className={`text-sm ${
+                  isLightTheme ? 'text-gray-600' : 'text-gray-400'
+                }`}
+              >
+                {dayName}
+              </Text>
             </View>
           </View>
           <View className="flex-col items-end">
-            <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{getLocalDate()}</Text>
+            <Text
+              className={`text-sm ${
+                isLightTheme ? 'text-gray-600' : 'text-gray-400'
+              }`}
+            >
+              {getLocalDate()}
+            </Text>
           </View>
         </View>
 
-        <View className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
-          <Ionicons name="location" size={30} color="#10B981" className="mr-4" accessibilityLabel="Timezone Icon" />
+        <View
+          className={`flex-row items-center p-4 rounded-xl my-2 ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+          }`}
+        >
+          <Ionicons
+            name="location"
+            size={30}
+            color="#10B981"
+            className="mr-4"
+            accessibilityLabel="Timezone Icon"
+          />
           <View>
-            <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Timezone</Text>
-            <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{timeZone} ({getGMTOffset()})</Text>
+            <Text
+              className={`text-base font-semibold ${
+                isLightTheme ? 'text-gray-800' : 'text-gray-200'
+              }`}
+            >
+              Timezone
+            </Text>
+            <Text
+              className={`text-sm ${
+                isLightTheme ? 'text-gray-600' : 'text-gray-400'
+              }`}
+            >
+              {timeZone} ({getGMTOffset()})
+            </Text>
           </View>
         </View>
 
-        <View className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
+        <View
+          className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+          }`}
+        >
           <View className="flex-row items-center">
             <Entypo
               name={isTimeIn ? 'controller-record' : 'controller-play'}
@@ -374,30 +500,86 @@ const Punch = () => {
               accessibilityLabel="Status Icon"
             />
             <View>
-              <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Status</Text>
-              <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{isTimeIn ? 'On the Clock' : 'Off the Clock'}</Text>
+              <Text
+                className={`text-base font-semibold ${
+                  isLightTheme ? 'text-gray-800' : 'text-gray-200'
+                }`}
+              >
+                Status
+              </Text>
+              <Text
+                className={`text-sm ${
+                  isLightTheme ? 'text-gray-600' : 'text-gray-400'
+                }`}
+              >
+                {isTimeIn ? 'On the Clock' : 'Off the Clock'}
+              </Text>
             </View>
           </View>
           <View className="flex-col items-end">
-            <Text className={`text-md ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{isTimeIn ? punchedInTime : '00:00:00'}</Text>
+            <Text
+              className={`text-md ${
+                isLightTheme ? 'text-gray-600' : 'text-gray-400'
+              }`}
+            >
+              {isTimeIn ? punchedInTime : '00:00:00'}
+            </Text>
           </View>
         </View>
 
-        <View className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
+        <View
+          className={`flex-row items-center p-4 rounded-xl my-2 ${
+            isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
+          }`}
+        >
           {isConnected ? (
-            <MaterialIcons name="wifi" size={30} color="#8B5CF6" className="mr-4" accessibilityLabel="Network Icon Online" />
+            <MaterialIcons
+              name="wifi"
+              size={30}
+              color="#8B5CF6"
+              className="mr-4"
+              accessibilityLabel="Network Icon Online"
+            />
           ) : (
-            <MaterialIcons name="wifi-off" size={30} color="#6B7280" className="mr-4" accessibilityLabel="Network Icon Offline" />
+            <MaterialIcons
+              name="wifi-off"
+              size={30}
+              color="#6B7280"
+              className="mr-4"
+              accessibilityLabel="Network Icon Offline"
+            />
           )}
           <View>
-            <Text className={`text-base font-semibold ${isLightTheme ? 'text-gray-800' : 'text-gray-200'}`}>Network</Text>
-            <Text className={`text-sm ${isLightTheme ? 'text-gray-600' : 'text-gray-400'}`}>{isConnected ? 'Online' : 'Offline'}</Text>
+            <Text
+              className={`text-base font-semibold ${
+                isLightTheme ? 'text-gray-800' : 'text-gray-200'
+              }`}
+            >
+              Network
+            </Text>
+            <Text
+              className={`text-sm ${
+                isLightTheme ? 'text-gray-600' : 'text-gray-400'
+              }`}
+            >
+              {isConnected ? 'Online' : 'Offline'}
+            </Text>
           </View>
         </View>
 
         <View className="justify-center items-center mt-16">
-          <View className={`w-full p-6 rounded-xl ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
-            <Text className={`text-6xl font-bold text-center ${isLightTheme ? 'text-gray-700' : 'text-gray-300'}`}>{formatTime(timeElapsed)}</Text>
+          <View
+            className={`w-full p-6 rounded-xl ${
+              isLightTheme ? 'bg-white' : 'bg-slate-900'
+            }`}
+          >
+            <Text
+              className={`text-6xl font-bold text-center ${
+                isLightTheme ? 'text-gray-700' : 'text-gray-300'
+              }`}
+            >
+              {formatTime(timeElapsed)}
+            </Text>
           </View>
         </View>
       </View>
@@ -411,7 +593,9 @@ const Punch = () => {
           } ${isLoading ? 'opacity-50' : 'opacity-100'}`}
         >
           {isLoading && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
-          <Text className="text-center text-white text-xl font-semibold">{isTimeIn ? 'Time Out' : 'Time In'}</Text>
+          <Text className="text-center text-white text-xl font-semibold">
+            {isTimeIn ? 'Time Out' : 'Time In'}
+          </Text>
         </Pressable>
       </View>
     </View>
