@@ -35,7 +35,7 @@ import { convertUTCToLocal, convertLocalToUTC } from '../../../../utils/timeUtil
 const COLORS = {
   light: {
     background: '#FFFFFF',
-    backgroundSecondary: '#F1F5F9',
+    backgroundSecondary: '#f1f5f9',
     text: '#374151',
     modalBackground: '#f8fafc',
     inputBackground: '#F1F5F9',
@@ -47,7 +47,7 @@ const COLORS = {
   },
   dark: {
     background: '#0F172A',
-    backgroundSecondary: '#374151',
+    backgroundSecondary: '#1e293b',
     text: '#D1D5DB',
     modalBackground: '#1F2937',
     inputBackground: '#374151',
@@ -326,7 +326,7 @@ const Schedules = () => {
     const hours = computeTotalHours(item.startTime, item.endTime).toFixed(2);
     return (
       <View
-        className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${
+        className={`p-3 mb-3 rounded-lg flex-row justify-between items-center ${
           isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
         }`}
       >
@@ -339,44 +339,45 @@ const Schedules = () => {
             >
               {item.title}
             </Text>
-            <TouchableOpacity onPress={() => handleViewAssignedUsers(item)} className="ml-2">
-              <Ionicons
-                name="people-outline"
-                size={20}
-                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => openAssignModal(item)} className="ml-2">
-              <Ionicons
-                name="add-circle-outline"
-                size={20}
-                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-              />
-            </TouchableOpacity>
+            
           </View>
           <Text
-            className={`text-sm mt-1 ${
+            className={`text-sm  ${
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
             Start: {new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
           <Text
-            className={`text-sm mt-1 ${
+            className={`text-sm  ${
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
             End: {new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
           <Text
-            className={`text-sm mt-1 ${
+            className={`text-sm  ${
               isLightTheme ? 'text-slate-700' : 'text-slate-300'
             }`}
           >
             Total Hours: {hours} hrs
           </Text>
         </View>
-        <Pressable onPress={() => handleShiftAction(item)} className="p-2">
+        <TouchableOpacity onPress={() => handleViewAssignedUsers(item)} className="ml-2">
+              <Ionicons
+                name="people-outline"
+                size={24}
+                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => openAssignModal(item)} className="ml-2">
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
+              />
+            </TouchableOpacity>
+        <Pressable onPress={() => handleShiftAction(item)} className="ml-2">
           <Ionicons
             name="ellipsis-vertical"
             size={24}
@@ -658,8 +659,8 @@ const Schedules = () => {
                   styles.assignModalInner,
                   {
                     backgroundColor: isLightTheme
-                      ? COLORS.light.modalBackground
-                      : COLORS.dark.modalBackground,
+                      ? COLORS.light.background
+                      : COLORS.dark.background,
                   },
                 ]}
               >
@@ -682,8 +683,8 @@ const Schedules = () => {
                 <View
                   className={`${
                     isLightTheme
-                      ? 'border-slate-100 bg-slate-100'
-                      : 'border-slate-800 bg-slate-800'
+                      ? 'border-white bg-white'
+                      : 'border-slate-900 bg-slate-900'
                   } border rounded-lg mb-6`}
                   style={{ zIndex: 3000 }}
                 >
@@ -751,7 +752,7 @@ const Schedules = () => {
                 </Text>
                 <View
                   className={`${
-                    isLightTheme ? 'bg-slate-50' : 'bg-slate-800'
+                    isLightTheme ? 'bg-white' : 'bg-slate-900'
                   } rounded-lg p-4 mb-8`}
                 >
                   <RadioButtonRN
@@ -772,7 +773,7 @@ const Schedules = () => {
                     }}
                   />
                 </View>
-                <View className="flex-row justify-end">
+                <View className="flex-row justify-end mt-6">
                   <TouchableOpacity
                     onPress={() => setAssignModalVisible(false)}
                     className="mr-4"
@@ -787,10 +788,10 @@ const Schedules = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleAssignShift}
-                    className="bg-orange-500 py-2 px-4 rounded-full my-auto"
+                    className="bg-orange-500 py-3 px-6 rounded-lg my-auto"
                   >
                     <Text className="text-white font-semibold text-base my-auto text-center">
-                      Assign
+                      Save
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -1,6 +1,6 @@
 // File: client/store/usersStore.jsx
 
-import {create} from 'zustand';
+import { create } from 'zustand';
 import { Alert } from 'react-native';
 import { API_BASE_URL } from '../config/constant';
 
@@ -20,7 +20,12 @@ const useUsersStore = create((set) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        set({ users: data.data, loading: false });
+        // Normalize roles to lowercase
+        const formattedUsers = data.data.map(user => ({
+          ...user,
+          role: user.role.toLowerCase(),
+        }));
+        set({ users: formattedUsers, loading: false });
       } else {
         set({ error: data.message || 'Failed to fetch users.', loading: false });
         Alert.alert('Error', data.message || 'Failed to fetch users.');
@@ -33,14 +38,14 @@ const useUsersStore = create((set) => ({
 
   deleteUser: async (userId, token) => {
     try {
-      const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      const data = await response.json();
-      if (response.ok) {
+      const data = await res.json();
+      if (res.ok) {
         set((state) => ({
           users: state.users.filter((user) => user.id !== userId),
         }));
@@ -58,26 +63,27 @@ const useUsersStore = create((set) => ({
   },
 
   fetchUserById: async (userId, token) => {
-     try {
-        const response = await fetch(`http://192.168.100.8:5000/api/users/${userId}/detail`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        if (response.ok) {
-          return data.data;
-        } else {
-          Alert.alert('Error', data.message || 'Failed to fetch user details.');
-          return null;
-      }
-      } catch (error) {
-        console.error('fetchUserById Error:', error);
-        Alert.alert('Error', 'An error occurred while fetching user details.');
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/${userId}/detail`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Normalize role to lowercase
+        return { ...data.data, role: data.data.role.toLowerCase() };
+      } else {
+        Alert.alert('Error', data.message || 'Failed to fetch user details.');
         return null;
       }
-    },
+    } catch (error) {
+      console.error('fetchUserById Error:', error);
+      Alert.alert('Error', 'An error occurred while fetching user details.');
+      return null;
+    }
+  },
 
 }));
 

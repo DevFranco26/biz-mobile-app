@@ -15,12 +15,12 @@ import {
   Keyboard,
   RefreshControl,
   Switch,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import DropDownPicker from 'react-native-dropdown-picker';
 import useThemeStore from '../../../../store/themeStore';
 import useUserStore from '../../../../store/userStore';
 import useUsersStore from '../../../../store/usersStore';
@@ -29,6 +29,8 @@ import useSubscriptionStore from '../../../../store/subscriptionStore';
 import useCompanyStore from '../../../../store/companyStore';
 import { API_BASE_URL } from '../../../../config/constant';
 
+
+// Utility Functions
 const getMaxUsersFromRange = (rangeOfUsers) => {
   if (!rangeOfUsers || typeof rangeOfUsers !== 'string') {
     return 999999;
@@ -89,6 +91,33 @@ const getPresenceIconInfo = (presenceStatus) => {
   }
 };
 
+// Custom Radio Button Component with nativewind
+const RadioButton = ({ label, value, selected, onPress, isLightTheme }) => {
+  return (
+    <TouchableOpacity
+      className="flex-row items-center mb-3"
+      onPress={() => onPress(value)}
+    >
+      <View
+        className={`h-5 w-5 rounded-full border-2 mr-2 flex items-center justify-center ${
+          selected ? 'border-orange-500' : 'border-slate-400'
+        }`}
+      >
+        {selected && (
+          <View
+            className={`h-2.5 w-2.5 rounded-full ${
+              selected ? 'bg-orange-500' : ''
+            }`}
+          />
+        )}
+      </View>
+      <Text className={`${isLightTheme ? 'text-slate-800' : 'text-slate-300'} text-base`}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
 const Employees = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
@@ -108,16 +137,10 @@ const Employees = () => {
   const [editMiddleName, setEditMiddleName] = useState('');
   const [editLastName, setEditLastName] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editRole, setEditRole] = useState('user');
+  const [editRole, setEditRole] = useState('user'); // Default role
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editStatus, setEditStatus] = useState(false);
-  const [roleOpen, setRoleOpen] = useState(false);
-  const [roleItems, setRoleItems] = useState([
-    { label: 'User', value: 'user' },
-    { label: 'Admin', value: 'admin' },
-    { label: 'Supervisor', value: 'supervisor' },
-  ]);
   const [restrictionEnabled, setRestrictionEnabled] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [userSettingsLoading, setUserSettingsLoading] = useState(false);
@@ -211,7 +234,7 @@ const Employees = () => {
     setEditMiddleName(userObj.middleName || '');
     setEditLastName(userObj.lastName || '');
     setEditPhone(userObj.phone || '');
-    setEditRole(userObj.role);
+    setEditRole(userObj.role.toLowerCase()); // Ensure role is in lowercase
     setEditEmail(userObj.email || '');
     setEditPassword('');
     setEditStatus(userObj.status || false);
@@ -244,6 +267,7 @@ const Employees = () => {
   };
 
   const handleSaveUserEdits = async () => {
+    console.log('Current editRole:', editRole); // Debugging statement
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
       router.replace('(auth)/login-user');
@@ -257,9 +281,10 @@ const Employees = () => {
       Alert.alert('Validation Error', 'Password is required for new users.');
       return;
     }
+
     const payload = {
       email: editEmail,
-      role: editRole,
+      role: editRole, // Ensure role is sent
       firstName: editFirstName,
       middleName: editMiddleName,
       lastName: editLastName,
@@ -269,6 +294,7 @@ const Employees = () => {
     if (editPassword) {
       payload.password = editPassword;
     }
+
     try {
       let res, data;
       if (selectedUser) {
@@ -416,6 +442,7 @@ const Employees = () => {
     }
   };
 
+  // Updated handleUserAction to remove 'Location Restriction'
   const handleUserAction = (userObj) => {
     Alert.alert(
       'User Actions',
@@ -423,55 +450,52 @@ const Employees = () => {
       [
         { text: 'Edit', onPress: () => handleEditUser(userObj) },
         { text: 'Delete', onPress: () => handleDeleteUser(userObj.id) },
-        { text: 'Location Restriction', onPress: () => openUserSettingsModal(userObj) },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
 
+  // 
   const renderItem = ({ item }) => {
     const userSettings = userSettingsByUserId[item.id];
-    let restrictionText = 'Disabled';
-    if (userSettings?.restrictionEnabled) {
-      restrictionText = `${userSettings.locationLabel}`;
-    }
+    const restrictionText = userSettings?.restrictionEnabled ? userSettings.locationLabel : null;
     const { icon: presenceIcon, color: presenceColor } = getPresenceIconInfo(item.presenceStatus);
     const presenceTooltip = item.presenceTooltip;
     const isOnline = item.status;
     return (
-      <View className={`p-4 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-800'}`}>
+      <View
+        className={`p-3 mb-3 rounded-lg flex-row justify-between items-center ${
+          isLightTheme ? 'bg-slate-50' : 'bg-slate-800'
+        }`}
+      >
         <View className="flex-row items-center flex-1">
           <Ionicons name="person-circle" size={50} color={isLightTheme ? '#4b5563' : '#d1d5db'} />
           <View className="ml-3 flex-1">
-            <View className="flex-row items-center gap-1">
-              <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+            {/* Removed Location Name and Icon below the role */}
+            <View className="flex-row items-center">
+              <Text className={`text-lg font-semibold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'} capitalize`}>
                 {item.firstName} {item.middleName ? `${item.middleName} ` : ''}{item.lastName}
               </Text>
-              <Ionicons name={presenceIcon} size={12} color={presenceColor} className="ml-1.5" />
+              <Ionicons name={presenceIcon} size={12} color={presenceColor} className="ml-1" />
             </View>
             {presenceTooltip && (
-              <Text className={`my-auto text-sm mt-1 ${isLightTheme ? 'text-slate-600' : 'text-slate-300'}`}>
+              <Text className={`text-xs mt-1 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
                 {presenceTooltip}
               </Text>
             )}
             <View className="flex-row items-center mt-1">
               <Ionicons name="mail-outline" size={16} color={isLightTheme ? '#4b5563' : '#d1d5db'} className="mr-1" />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text className={` ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} text-sm`}>
                 {capitalizeFirstLetter(item.email)}
               </Text>
             </View>
             <View className="flex-row items-center mt-1">
               <Ionicons name={getRoleIcon(item.role)} size={16} color={getRoleColor(item.role)} className="mr-1" />
-              <Text style={{ color: getRoleColor(item.role) }} className="font-semibold">
+              <Text className={` ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} text-sm`}>
                 {capitalizeFirstLetter(item.role)}
               </Text>
             </View>
-            <View className="flex-row items-center mt-1">
-              <Ionicons name="location-outline" size={16} color={userSettings?.restrictionEnabled ? '#f97316' : '#6b7280'} className="mr-1" />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
-                {restrictionText}
-              </Text>
-            </View>
+            {/* Removed the previous location restriction below the role */}
             <View className="flex-row items-center mt-1">
               <Ionicons
                 name={isOnline ? 'checkmark-circle' : 'close-circle'}
@@ -479,15 +503,32 @@ const Employees = () => {
                 color={isOnline ? '#10b981' : '#d1d5db'}
                 className="mr-1"
               />
-              <Text className={`${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+              <Text className={` ${isLightTheme ? 'text-slate-700' : 'text-slate-300'} text-sm`}>
                 {isOnline ? 'Punched In' : 'Punched Out'}
               </Text>
             </View>
           </View>
         </View>
-        <Pressable onPress={() => handleUserAction(item)} className="p-2">
-          <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
-        </Pressable>
+        {/* Updated Location Icon Pressable with Location Name Above */}
+        <View className="flex-row items-center">
+          <View className="flex-col items-center ">
+            {restrictionEnabled && restrictionText && (
+              <Text className="text-xs text-orange-500 mb-1">
+                {restrictionText}
+              </Text>
+            )}
+            <Pressable onPress={() => openUserSettingsModal(item)} className="p-1">
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color={userSettings?.restrictionEnabled ? '#f97316' : (isLightTheme ? '#1f2937' : '#f9fafb')}
+              />
+            </Pressable>
+          </View>
+          <Pressable onPress={() => handleUserAction(item)} className="p-1">
+            <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? '#1f2937' : '#f9fafb'} />
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -498,31 +539,34 @@ const Employees = () => {
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} edges={['top']}>
+      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons
             name="chevron-back-outline"
             size={24}
-            color={isLightTheme ? '#333' : '#fff'}
+            color={isLightTheme ? '#333333' : '#ffffff'}
           />
         </Pressable>
         <Text className={`text-lg font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           Employees
         </Text>
       </View>
-      <View className="flex-row justify-between items-center px-4 mb-4 z-50">
-        <Text className={`text-2xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+
+      {/* Users Count and Add Button */}
+      <View className="flex-row justify-between items-center px-4 mb-4">
+        <Text className={`text-xl font-bold ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
           {`Users (${userCount} of ${planMaxUsers === 999999 ? '∞' : planMaxUsers})`}
         </Text>
         <Pressable
           onPress={handleAddUser}
-          className={`p-2 rounded-full ${
-            isLightTheme ? 'bg-white' : 'bg-slate-900'
-          }`}
+          className={`p-2 rounded-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
         >
           <Ionicons name="add" size={24} color={isLightTheme ? '#1e293b' : '#cbd5e1'} />
         </Pressable>
       </View>
+
+      {/* Users List */}
       {loading ? (
         <ActivityIndicator size="large" color="#475569" className="mt-12" />
       ) : (
@@ -540,12 +584,14 @@ const Employees = () => {
             />
           }
           ListEmptyComponent={
-            <Text className={`text-center mt-12 text-lg ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
+            <Text className={`text-center mt-12 text-lg ${isLightTheme ? 'text-slate-600' : 'text-slate-300'}`}>
               No users found in your company.
             </Text>
           }
         />
       )}
+
+      {/* Edit/Add User Modal */}
       <Modal
         visible={editUserModalVisible}
         animationType="fade"
@@ -553,340 +599,266 @@ const Employees = () => {
         onRequestClose={() => setEditUserModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
+          <View className="flex-1 justify-center items-center bg-slate-950/70">
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'position'}
               className="w-11/12"
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 40}
             >
-              <View className={`p-6 rounded-2xl w-full ${isLightTheme ? 'bg-white' : 'bg-slate-900'} `}>
-                <Text
-                  className={`text-xl font-bold mb-4 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  {selectedUser ? 'Edit User' : 'Add User'}
-                </Text>
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  Role <Text className="text-red-500">*</Text>
-                </Text>
-                <View
-                  className={`border rounded-lg mb-4 ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100'
-                      : 'border-slate-800 bg-slate-800'
-                  }`}
-                >
-                  <DropDownPicker
-                    open={roleOpen}
-                    value={editRole}
-                    items={roleItems}
-                    setOpen={setRoleOpen}
-                    setValue={setEditRole}
-                    setItems={setRoleItems}
-                    placeholder="Select Role"
-                    textStyle={{
-                      color: isLightTheme ? '#374151' : '#E5E7EB',
-                    }}
-                    style={{
-                      borderWidth: 0,
-                      backgroundColor: isLightTheme ? '#F1F5F9' : '#1E293B',
-                      paddingVertical: 12,
-                      paddingHorizontal: 10,
-                    }}
-                    dropDownContainerStyle={{
-                      borderColor: isLightTheme ? '#F1F5F9' : '#1E293B',
-                      backgroundColor: isLightTheme ? '#F1F5F9' : '#1E293B',
-                    }}
-                    placeholderStyle={{
-                      color: isLightTheme ? '#6B7280' : '#9CA3AF',
-                    }}
-                    arrowIconStyle={{
-                      tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-                    }}
-                    tickIconStyle={{
-                      tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-                    }}
-                    zIndex={9999}
-                    zIndexInverse={1000}
-                    dropDownDirection="BOTTOM"
-                    ListItemComponent={({ item }) => (
-                      <Text
-                        className={`text-base ${
-                          isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                        }`}
-                      >
-                        {item.label}
-                      </Text>
-                    )}
-                    Icon={() => (
-                      <Ionicons
-                        name="chevron-down"
-                        size={20}
-                        color={isLightTheme ? '#374151' : '#E5E7EB'}
-                      />
-                    )}
+              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <View className={`p-6 rounded-3xl ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+                  {/* Modal Title */}
+                  <Text className={`text-xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    {selectedUser ? 'Edit User' : 'Add User'}
+                  </Text>
+
+                  {/* Role Selection */}
+                  <Text className={`text-sm font-medium mb-2 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    Role <Text className="text-red-500">*</Text>
+                  </Text>
+                  <RadioButton
+                    label="Admin"
+                    value="admin"
+                    selected={editRole === 'admin'}
+                    onPress={setEditRole}
+                    isLightTheme={isLightTheme}
                   />
-                </View>
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  Email <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-4 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editEmail}
-                  onChangeText={setEditEmail}
-                  placeholder="e.g., user@example.com"
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  {selectedUser ? 'New Password (leave blank to keep current)' : 'Password'}
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-4 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editPassword}
-                  onChangeText={setEditPassword}
-                  placeholder={selectedUser ? 'Enter new password' : 'Enter password'}
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                  secureTextEntry
-                />
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  First Name <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-4 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editFirstName}
-                  onChangeText={setEditFirstName}
-                  placeholder="e.g., John"
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                />
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  Middle Name
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-4 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editMiddleName}
-                  onChangeText={setEditMiddleName}
-                  placeholder="e.g., A."
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                />
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  Last Name <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-4 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editLastName}
-                  onChangeText={setEditLastName}
-                  placeholder="e.g., Doe"
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                />
-                <Text
-                  className={`text-sm font-medium mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                  }`}
-                >
-                  Phone <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  className={`w-full p-3 mb-6 rounded-lg border ${
-                    isLightTheme
-                      ? 'border-slate-100 bg-slate-100 text-slate-800'
-                      : 'border-slate-800 bg-slate-800 text-slate-300'
-                  }`}
-                  value={editPhone}
-                  onChangeText={setEditPhone}
-                  placeholder="e.g., +1 234 567 890"
-                  placeholderTextColor={isLightTheme ? '#9CA3AF' : '#6B7280'}
-                  keyboardType="phone-pad"
-                />
-                <View className="flex-row justify-end">
-                  <TouchableOpacity
-                    onPress={() => setEditUserModalVisible(false)}
-                    className="mr-4"
-                  >
-                    <Text
-                      className={`text-base font-semibold my-auto ${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      }`}
+                  <RadioButton
+                    label="Supervisor"
+                    value="supervisor"
+                    selected={editRole === 'supervisor'}
+                    onPress={setEditRole}
+                    isLightTheme={isLightTheme}
+                  />
+                  <RadioButton
+                    label="User"
+                    value="user"
+                    selected={editRole === 'user'}
+                    onPress={setEditRole}
+                    isLightTheme={isLightTheme}
+                  />
+
+                  {/* Email Input */}
+                  <Text className={`text-sm font-medium mt-4 mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    Email <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-4 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editEmail}
+                    onChangeText={setEditEmail}
+                    placeholder="e.g., user@example.com"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+
+                  {/* Password Input */}
+                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    {selectedUser ? 'New Password (leave blank to keep current)' : 'Password'}
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-4 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editPassword}
+                    onChangeText={setEditPassword}
+                    placeholder={selectedUser ? 'Enter new password' : 'Enter password'}
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                    secureTextEntry
+                  />
+
+                  {/* First Name Input */}
+                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    First Name <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-4 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editFirstName}
+                    onChangeText={setEditFirstName}
+                    placeholder="e.g., John"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Middle Name Input */}
+                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    Middle Name
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-4 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editMiddleName}
+                    onChangeText={setEditMiddleName}
+                    placeholder="e.g., A."
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Last Name Input */}
+                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    Last Name <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-4 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editLastName}
+                    onChangeText={setEditLastName}
+                    placeholder="e.g., Doe"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                  />
+
+                  {/* Phone Input */}
+                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    Phone <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TextInput
+                    className={`w-full p-3 mb-6 rounded-lg border ${isLightTheme ? 'border-slate-100 bg-slate-100 text-slate-800' : 'border-slate-700 bg-slate-700 text-slate-300'}`}
+                    value={editPhone}
+                    onChangeText={setEditPhone}
+                    placeholder="e.g., +1 234 567 890"
+                    placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
+                    keyboardType="phone-pad"
+                  />
+
+                  {/* Modal Actions */}
+                  <View className="flex-row justify-end">
+                    <TouchableOpacity
+                      onPress={() => setEditUserModalVisible(false)}
+                      className="mr-4"
                     >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSaveUserEdits}
-                    className="bg-orange-500 py-3 px-6 rounded-lg"
-                  >
-                    <Text className="text-white text-base font-semibold">Save</Text>
-                  </TouchableOpacity>
+                      <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-600' : 'text-slate-300'} my-auto`}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSaveUserEdits}
+                      className="bg-orange-500 py-3 px-6 rounded-lg"
+                    >
+                      <Text className="text-white text-base font-semibold">
+                        Save
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              </ScrollView>
             </KeyboardAvoidingView>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* User Settings Modal */}
       <Modal
         visible={userSettingsModalVisible}
         animationType="fade"
         transparent={true}
         onRequestClose={() => setUserSettingsModalVisible(false)}
       >
-        <View className={`flex-1 justify-center items-center  ${isLightTheme ? 'bg-slate-950/70' : 'bg-slate-950/70'}`}>
-          <View className={`w-11/12 p-6 rounded-lg ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
-            <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-              User Location Restriction
-            </Text>
-            {userSettingsLoading ? (
-              <ActivityIndicator size="large" color="#10b981" className="mt-6" />
-            ) : (
-              <>
-                <View className="flex-row items-center mb-4">
-                  <Text className={`flex-1 text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-                    Restrict user {selectedUser?.firstName} {selectedUser?.lastName} to a location?
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View className="flex-1 justify-center items-center bg-slate-950/70">
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'position'}
+              className="w-11/12"
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 40}
+            >
+              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <View className={`p-6 rounded-3xl ${isLightTheme ? 'bg-white' : 'bg-slate-800'}`}>
+                  {/* Modal Title */}
+                  <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                    User Location Restriction
                   </Text>
-                  <Switch
-                    value={restrictionEnabled}
-                    onValueChange={setRestrictionEnabled}
-                    trackColor={{ true: '#f97316', false: '#9ca3af' }}
-                    thumbColor={
-                      restrictionEnabled
-                        ? isLightTheme
-                          ? '#1e293b'
-                          : '#f4f4f5'
-                        : isLightTheme
-                        ? '#f4f4f5'
-                        : '#1e293b'
-                    }
-                  />
-                </View>
-                {restrictionEnabled && (
-                  <>
-                    <Text className={`text-base mb-1 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
-                      Select a Location <Text className="text-red-500">*</Text>
-                    </Text>
-                    <View className={`border rounded-lg mb-4 z-40 ${isLightTheme ? 'border-slate-100 bg-slate-100' : 'border-slate-800 bg-slate-800'}`}>
-                      <DropDownPicker
-                        open={locationOpen}
-                        value={selectedLocationId}
-                        items={locationItems}
-                        setOpen={setLocationOpen}
-                        setValue={setSelectedLocationId}
-                        setItems={setLocationItems}
-                        placeholder="Select Location"
-                        arrowIconStyle={{
-                          tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-                        }}
-                        tickIconStyle={{
-                          tintColor: isLightTheme ? '#1e293b' : '#cbd5e1',
-                        }}
-                        textStyle={{
-                          color: isLightTheme ? '#374151' : '#F1F5F9',
-                          fontSize: 16,
-                        }}
-                        style={{
-                          borderWidth: 1,
-                          borderColor: isLightTheme ? '#F1F5F9' : '#1e293b',
-                          backgroundColor: isLightTheme ? '#F1F5F9' : '#1e293b',
-                          paddingVertical: 12,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                        }}
-                        dropDownContainerStyle={{
-                          borderWidth: 1,
-                          borderColor: isLightTheme ? '#F1F5F9' : '#1e293b',
-                          backgroundColor: isLightTheme ? '#F1F5F9' : '#1e293b',
-                          borderRadius: 8,
-                        }}
-                        placeholderStyle={{
-                          color: isLightTheme ? '#9CA3AF' : '#6B7280',
-                        }}
-                        ListItemComponent={({ item }) => (
-                          <Text
-                            style={{
-                              color: isLightTheme ? '#374151' : '#F1F5F9',
-                              fontSize: 16,
-                            }}
-                          >
-                            {item.label}
+
+                  {/* Loading Indicator */}
+                  {userSettingsLoading ? (
+                    <ActivityIndicator size="large" color="#10b981" className="mt-6" />
+                  ) : (
+                    <>
+                      {/* Restriction Toggle */}
+                      <View className="flex-row items-center justify-between mb-4">
+                        <Text className={`text-base ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                          Restrict user {selectedUser?.firstName} {selectedUser?.lastName} to a location?
+                        </Text>
+                        <Switch
+                          value={restrictionEnabled}
+                          onValueChange={setRestrictionEnabled}
+                          trackColor={{ true: '#f1f5f9', false: '#f1f5f9' }}
+                          thumbColor={
+                            restrictionEnabled
+                              ? isLightTheme
+                                ? '#f97316'
+                                : '#f97316'
+                              : isLightTheme
+                              ? '#f97316'
+                              : '#f97316'
+                          }
+                        />
+                      </View>
+
+                      {/* Location Selection (Conditional) */}
+                      {restrictionEnabled && (
+                        <>
+                          <Text className={`text-base mb-2 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+                            Select a Location <Text className="text-red-500">*</Text>
                           </Text>
-                        )}
-                        Icon={() => (
-                          <Ionicons
-                            name="chevron-down"
-                            size={20}
-                            color={isLightTheme ? '#6B7280' : '#D1D5DB'}
-                          />
-                        )}
-                      />
-                    </View>
-                  </>
-                )}
-                <View className="flex-row justify-end mt-6">
-                  <TouchableOpacity
-                    onPress={() => setUserSettingsModalVisible(false)}
-                    className="mr-4"
-                  >
-                    <Text className={`text-base font-semibold my-auto ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSaveUserSettings}
-                    className="bg-orange-500 py-3 px-6 rounded-lg"
-                  >
-                    <Text className="text-white text-base font-semibold">
-                      Save
-                    </Text>
-                  </TouchableOpacity>
+                          <View className={` rounded-lg mb-4 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'} z-40`}>
+                            {/* Custom Picker */}
+                            <TouchableOpacity
+                              onPress={() => setLocationOpen(!locationOpen)}
+                              className={`p-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700'}`}
+                            >
+                              <Text className={`text-base ${selectedLocationId ? 'text-slate-800' : 'text-slate-500'}`}>
+                                {selectedLocationId
+                                  ? locations.find(loc => loc.id === selectedLocationId)?.label
+                                  : 'Select Location'}
+                              </Text>
+                              <Ionicons
+                                name="chevron-down"
+                                size={20}
+                                color="#6b7280"
+                              />
+                            </TouchableOpacity>
+                            {/* Dropdown Options */}
+                            {locationOpen && (
+                              <View className={`rounded-lg mt-1 ${isLightTheme ? 'bg-slate-100' : 'bg-slate-700' }`}>
+                                {locations.map(loc => (
+                                  <TouchableOpacity
+                                    key={loc.id}
+                                    onPress={() => {
+                                      setSelectedLocationId(loc.id);
+                                      setLocationOpen(false);
+                                    }}
+                                    className="p-3 rounded-lg"
+                                  >
+                                    <Text className="text-base text-slate-800">
+                                      {loc.label}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            )}
+                          </View>
+                        </>
+                      )}
+
+                      {/* Modal Actions */}
+                      <View className="flex-row justify-end">
+                        <TouchableOpacity
+                          onPress={() => setUserSettingsModalVisible(false)}
+                          className="mr-4"
+                        >
+                          <Text className={`text-base font-semibold ${isLightTheme ? 'text-slate-600' : 'text-slate-300'} my-auto`}>
+                            Cancel
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleSaveUserSettings}
+                          className="bg-orange-500 py-3 px-6 rounded-lg"
+                        >
+                          <Text className="text-white text-base font-semibold">
+                            Save
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
                 </View>
-              </>
-            )}
+              </ScrollView>
+            </KeyboardAvoidingView>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );

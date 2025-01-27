@@ -226,6 +226,11 @@ const updateUser = async (req, res) => {
       }
     }
 
+    // Update the user's role if it's passed in the request
+    if (role) {
+      fieldsToUpdate.role = role;
+    }
+
     await user.update(fieldsToUpdate, { fields: Object.keys(fieldsToUpdate) });
 
     const { password: pwd, ...userWithoutPassword } = user.toJSON();
@@ -235,6 +240,7 @@ const updateUser = async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 };
+
 
 /**
  * Delete a User

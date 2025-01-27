@@ -482,7 +482,7 @@ const Departments = () => {
                 className={`p-6 rounded-2xl w-full ${
                   isLightTheme ? 'bg-white' : 'bg-slate-900'
                 }`}
-                style={{ maxHeight: '80%' }} // Limit modal height
+                style={{ maxHeight: '100%' }}
               >
                 <Text
                   className={`text-xl font-bold mb-4 ${
@@ -540,7 +540,7 @@ const Departments = () => {
       {/* Assign User Modal */}
       <Modal
         visible={assignUserModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setAssignUserModalVisible(false)}
       >
