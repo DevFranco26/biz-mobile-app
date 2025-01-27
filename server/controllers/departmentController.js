@@ -241,186 +241,186 @@ const deleteDepartment = async (req, res) => {
  * @access  Admin, SuperAdmin, Supervisor
  */
 const assignUsersToDepartment = async (req, res) => {
-    const { id } = req.params; // Department ID
-    const { userIds } = req.body;
-    const companyId = req.user.companyId;
-    const userRole = req.user.role;
-    const userId = req.user.id;
-  
-    try {
-      const department = await Department.findOne({ where: { id, companyId } });
-      if (!department) {
-        return res.status(404).json({ message: 'Department not found.' });
+  const { id } = req.params; // Department ID
+  const { userIds } = req.body;
+  const companyId = req.user.companyId;
+  const userRole = req.user.role;
+  const userId = req.user.id;
+
+  try {
+    const department = await Department.findOne({ where: { id, companyId } });
+    if (!department) {
+      return res.status(404).json({ message: 'Department not found.' });
+    }
+
+    // If the user is a supervisor, ensure they are managing this department
+    if (userRole === 'supervisor') {
+      if (department.supervisorId !== userId) {
+        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
       }
-  
-      // If the user is a supervisor, ensure they are managing this department
-      if (userRole === 'supervisor') {
-        if (department.supervisorId !== userId) {
-          return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-        }
-      }
-  
-      if (!Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ message: 'Provide a non-empty array of userIds to assign.' });
-      }
-  
-      // Fetch users to assign
-      const usersToAssign = await User.findAll({
+    }
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'Provide a non-empty array of userIds to assign.' });
+    }
+
+    // Fetch users to assign
+    const usersToAssign = await User.findAll({
+      where: {
+        id: {
+          [Op.in]: userIds,
+        },
+        companyId,
+        role: {
+          [Op.ne]: 'superAdmin', // Prevent assigning superAdmins
+        },
+      },
+      attributes: ['id'],
+    });
+
+    // Check if all provided userIds exist within the company
+    const foundUserIds = usersToAssign.map(user => user.id);
+    const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
+
+    if (notFoundUserIds.length > 0) {
+      return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} not found in your company or have restricted roles.` });
+    }
+
+    // Update Users' departmentId
+    await User.update(
+      { departmentId: id },
+      {
         where: {
           id: {
-            [Op.in]: userIds,
+            [Op.in]: foundUserIds,
           },
           companyId,
-          role: {
-            [Op.ne]: 'superAdmin', // Prevent assigning superAdmins
-          },
         },
-        attributes: ['id'],
-      });
-  
-      // Check if all provided userIds exist within the company
-      const foundUserIds = usersToAssign.map(user => user.id);
-      const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
-  
-      if (notFoundUserIds.length > 0) {
-        return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} not found in your company or have restricted roles.` });
       }
-  
-      // Update Users' departmentId
-      await User.update(
-        { departmentId: id },
-        {
-          where: {
-            id: {
-              [Op.in]: foundUserIds,
-            },
-            companyId,
-          },
-        }
-      );
-  
-      res.status(200).json({ message: 'Users assigned to department successfully.', assignedUserIds: foundUserIds });
-    } catch (error) {
-      console.error('Error in assignUsersToDepartment:', error);
-      res.status(500).json({ message: 'Internal server error.' });
+    );
+
+    res.status(200).json({ message: 'Users assigned to department successfully.', assignedUserIds: foundUserIds });
+  } catch (error) {
+    console.error('Error in assignUsersToDepartment:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+/**
+ * Remove Users from Department
+ * @route   PUT /api/departments/:id/remove-users
+ * @access  Admin, SuperAdmin, Supervisor
+ */
+const removeUsersFromDepartment = async (req, res) => {
+  const { id } = req.params; // Department ID
+  const { userIds } = req.body;
+  const companyId = req.user.companyId;
+  const userRole = req.user.role;
+  const userId = req.user.id;
+
+  try {
+    const department = await Department.findOne({ where: { id, companyId } });
+    if (!department) {
+      return res.status(404).json({ message: 'Department not found.' });
     }
-  };
-  
-  /**
-   * Remove Users from Department
-   * @route   PUT /api/departments/:id/remove-users
-   * @access  Admin, SuperAdmin, Supervisor
-   */
-  const removeUsersFromDepartment = async (req, res) => {
-    const { id } = req.params; // Department ID
-    const { userIds } = req.body;
-    const companyId = req.user.companyId;
-    const userRole = req.user.role;
-    const userId = req.user.id;
-  
-    try {
-      const department = await Department.findOne({ where: { id, companyId } });
-      if (!department) {
-        return res.status(404).json({ message: 'Department not found.' });
+
+    // If the user is a supervisor, ensure they are managing this department
+    if (userRole === 'supervisor') {
+      if (department.supervisorId !== userId) {
+        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
       }
-  
-      // If the user is a supervisor, ensure they are managing this department
-      if (userRole === 'supervisor') {
-        if (department.supervisorId !== userId) {
-          return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-        }
-      }
-  
-      if (!Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ message: 'Provide a non-empty array of userIds to remove.' });
-      }
-  
-      // Fetch users to remove
-      const usersToRemove = await User.findAll({
+    }
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'Provide a non-empty array of userIds to remove.' });
+    }
+
+    // Fetch users to remove
+    const usersToRemove = await User.findAll({
+      where: {
+        id: {
+          [Op.in]: userIds,
+        },
+        departmentId: id,
+        companyId,
+      },
+      attributes: ['id'],
+    });
+
+    const foundUserIds = usersToRemove.map(user => user.id);
+    const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
+
+    if (notFoundUserIds.length > 0) {
+      return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} are not assigned to this department.` });
+    }
+
+    // Update Users' departmentId to null
+    await User.update(
+      { departmentId: null },
+      {
         where: {
           id: {
-            [Op.in]: userIds,
+            [Op.in]: foundUserIds,
           },
-          departmentId: id,
           companyId,
         },
-        attributes: ['id'],
-      });
-  
-      const foundUserIds = usersToRemove.map(user => user.id);
-      const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
-  
-      if (notFoundUserIds.length > 0) {
-        return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} are not assigned to this department.` });
       }
-  
-      // Update Users' departmentId to null
-      await User.update(
-        { departmentId: null },
-        {
-          where: {
-            id: {
-              [Op.in]: foundUserIds,
-            },
-            companyId,
-          },
-        }
-      );
-  
-      res.status(200).json({ message: 'Users removed from department successfully.', removedUserIds: foundUserIds });
-    } catch (error) {
-      console.error('Error in removeUsersFromDepartment:', error);
-      res.status(500).json({ message: 'Internal server error.' });
+    );
+
+    res.status(200).json({ message: 'Users removed from department successfully.', removedUserIds: foundUserIds });
+  } catch (error) {
+    console.error('Error in removeUsersFromDepartment:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+/**
+ * Get Users in Department
+ * @route   GET /api/departments/:id/users
+ * @access  Admin, SuperAdmin, Supervisor
+ */
+const getUsersInDepartment = async (req, res) => {
+  const { id } = req.params; // Department ID
+  const companyId = req.user.companyId;
+  const userRole = req.user.role;
+  const userId = req.user.id;
+
+  try {
+    const department = await Department.findOne({ where: { id, companyId } });
+    if (!department) {
+      return res.status(404).json({ message: 'Department not found.' });
     }
-  };
-  
-  /**
-   * Get Users in Department
-   * @route   GET /api/departments/:id/users
-   * @access  Admin, SuperAdmin, Supervisor
-   */
-  const getUsersInDepartment = async (req, res) => {
-    const { id } = req.params; // Department ID
-    const companyId = req.user.companyId;
-    const userRole = req.user.role;
-    const userId = req.user.id;
-  
-    try {
-      const department = await Department.findOne({ where: { id, companyId } });
-      if (!department) {
-        return res.status(404).json({ message: 'Department not found.' });
+
+    // If the user is a supervisor, ensure they are managing this department
+    if (userRole === 'supervisor') {
+      if (department.supervisorId !== userId) {
+        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
       }
-  
-      // If the user is a supervisor, ensure they are managing this department
-      if (userRole === 'supervisor') {
-        if (department.supervisorId !== userId) {
-          return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-        }
-      }
-  
-      const users = await User.findAll({
-        where: {
-          departmentId: id,
-          companyId,
-        },
-        attributes: { exclude: ['password'] },
-        order: [['id', 'ASC']],
-      });
-  
-      res.status(200).json({ message: 'Users retrieved successfully.', users });
-    } catch (error) {
-      console.error('Error in getUsersInDepartment:', error);
-      res.status(500).json({ message: 'Internal server error.' });
     }
-  };
-  
-  module.exports = {
-    createDepartment,
-    getAllDepartments,
-    getDepartmentById,
-    updateDepartment,
-    deleteDepartment,
-    assignUsersToDepartment,
-    removeUsersFromDepartment,
-    getUsersInDepartment,
-  };
+
+    const users = await User.findAll({
+      where: {
+        departmentId: id,
+        companyId,
+      },
+      attributes: { exclude: ['password'] },
+      order: [['id', 'ASC']],
+    });
+
+    res.status(200).json({ message: 'Users retrieved successfully.', users });
+  } catch (error) {
+    console.error('Error in getUsersInDepartment:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+module.exports = {
+  createDepartment,
+  getAllDepartments,
+  getDepartmentById,
+  updateDepartment,
+  deleteDepartment,
+  assignUsersToDepartment,
+  removeUsersFromDepartment,
+  getUsersInDepartment,
+};

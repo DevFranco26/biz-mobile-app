@@ -682,7 +682,7 @@ const Schedules = () => {
                 <View
                   className={`${
                     isLightTheme
-                      ? 'border-slate-300 bg-slate-100'
+                      ? 'border-slate-100 bg-slate-100'
                       : 'border-slate-800 bg-slate-800'
                   } border rounded-lg mb-6`}
                   style={{ zIndex: 3000 }}
@@ -706,16 +706,16 @@ const Schedules = () => {
                     }}
                     style={{
                       borderColor: isLightTheme
-                        ? COLORS.light.borderColor
-                        : COLORS.dark.borderColor,
+                        ? COLORS.light.background
+                        : COLORS.dark.backgroundSecondary,
                       backgroundColor: isLightTheme
                         ? COLORS.light.background
                         : COLORS.dark.backgroundSecondary,
                     }}
                     dropDownContainerStyle={{
                       borderColor: isLightTheme
-                        ? COLORS.light.borderColor
-                        : COLORS.dark.borderColor,
+                        ? COLORS.light.background
+                        : COLORS.dark.backgroundSecondary,
                       backgroundColor: isLightTheme
                         ? COLORS.light.background
                         : COLORS.dark.backgroundSecondary,
@@ -751,7 +751,7 @@ const Schedules = () => {
                 </Text>
                 <View
                   className={`${
-                    isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
+                    isLightTheme ? 'bg-slate-50' : 'bg-slate-800'
                   } rounded-lg p-4 mb-8`}
                 >
                   <RadioButtonRN

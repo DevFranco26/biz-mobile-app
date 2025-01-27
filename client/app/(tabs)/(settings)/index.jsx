@@ -29,7 +29,7 @@ const SettingsIndex = () => {
         <Text className="text-red-500 text-lg text-center">{error}</Text>
         <Pressable
           onPress={() => {
-            loadUser(); // Retry loading user data
+            loadUser();
           }}
           className="mt-4 bg-blue-500 px-4 py-2 rounded-lg"
         >
