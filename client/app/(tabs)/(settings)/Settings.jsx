@@ -52,7 +52,7 @@ const Settings = () => {
         // superadmin always unlocked
         setIsLocked(false);
       } else {
-        // Lock if plan not in allowed list (e.g. free plan, or any other plan not in ALLOWED_PLANS)
+        // Lock if plan not in allowed list (e.g. free plan, or any plan not in ALLOWED_PLANS)
         const lowerPlanName = planName.toLowerCase();
         if (!ALLOWED_PLANS.includes(lowerPlanName)) {
           setIsLocked(true);
@@ -189,23 +189,24 @@ const Settings = () => {
         </View>
       </View>
 
-      {userRole === 'user' ? (
-        // Regular user has no admin features
-        <View className="flex-1 px-4">
-          <Text
-            className={`text-base font-semibold ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            You currently have no administrative features available.
-          </Text>
-        </View>
-      ) : (
-        // Render admin/supervisor features
-        <ScrollView
-          className="flex-1 px-4 pb-6"
-          contentContainerStyle={{ paddingBottom: 20 }}
-        >
+      {/* Use one ScrollView that covers everything, so we can always show Preference. */}
+      <ScrollView
+        className="flex-1 px-4 pb-6"
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {userRole === 'user' ? (
+          // Regular user sees no admin features
+          <View className="flex-1 mb-4">
+            <Text
+              className={`text-base font-semibold ${
+                isLightTheme ? 'text-slate-700' : 'text-slate-300'
+              }`}
+            >
+              You currently have no administrative features available.
+            </Text>
+          </View>
+        ) : (
+          // Render admin/supervisor features
           <View className="space-y-5">
             {/* Superadmin-Only Section */}
             {userRole === 'superadmin' && (
@@ -324,7 +325,7 @@ const Settings = () => {
                       fontSize: 11,
                       color: isLightTheme ? '#4b5563' : '#a0aec0',
                     }}
-                    className = "mt-1"
+                    className="mt-1"
                   >
                     Create, update, assign or delete punch locations.
                   </Text>
@@ -375,31 +376,12 @@ const Settings = () => {
                     'View & manage all payroll records.',
                     './payroll-payroll-records'
                   )}
-                   {renderFeature(
+                  {renderFeature(
                     Ionicons,
                     'calculator-outline',
                     'Generate Payroll',
                     'Generate payroll for a user/period.',
                     './payroll-generate-payroll'
-                  )}
-                </View>
-                
-                 {/* Preference */}
-                 <View className="my-2">
-                  <Text
-                    className={`text-xl font-bold mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
-                    }`}
-                  >
-                    Preference
-                  </Text>
-                  {renderFeature(
-                    Ionicons,
-                    'reader-outline',
-                    'Appearance',
-                    'Update appearance settings of the application',
-                    './preference',
-                    true 
                   )}
                 </View>
 
@@ -426,8 +408,30 @@ const Settings = () => {
               </>
             )}
           </View>
-        </ScrollView>
-      )}
+        )}
+
+        {/* 
+          Regardless of role/subscription, show the Appearance/Preference feature.
+          We simply place it here after the above blocks so it's always visible.
+        */}
+        <View className="my-2">
+          <Text
+            className={`text-xl font-bold mb-1 ${
+              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+            }`}
+          >
+            Preference
+          </Text>
+          {renderFeature(
+            Ionicons,
+            'reader-outline',
+            'Appearance',
+            'Update appearance settings of the application.',
+            './preference',
+            true // Force always unlocked
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

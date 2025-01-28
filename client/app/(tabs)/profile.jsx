@@ -15,6 +15,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useThemeStore from '../../store/themeStore';
@@ -33,52 +35,40 @@ const Profile = () => {
   const { user, clearUser, setUser } = useUserStore();
   const router = useRouter();
   const isLightTheme = theme === 'light';
-
-  // We'll define an orange accent color
   const accentColor = isLightTheme ? '#f97316' : '#f97316';
 
   const [presenceStatus, setPresenceStatus] = useState(user.presenceStatus || 'offline');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-
-  // Edit Profile Modal
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [editFirstName, setEditFirstName] = useState(user.firstName || '');
   const [editMiddleName, setEditMiddleName] = useState(user.middleName || '');
   const [editLastName, setEditLastName] = useState(user.lastName || '');
   const [editPhone, setEditPhone] = useState(user.phone || '');
-
-  // Change Password Modal
   const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Show/hide password toggles
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // For the presence icon dropdown
   const iconRef = useRef(null);
   const [iconLayout, setIconLayout] = useState({ x: 0, y: 0 });
-
   const presenceColors = {
     active: '#10b981',
     away: '#f97316',
     offline: '#64748b',
   };
-
   const presenceIcon = {
     active: 'checkmark-circle',
     away: 'time',
     offline: 'close-circle',
   }[presenceStatus];
-
-  // Bring in company & department store logic
   const { fetchCompanyById, getCompanyName } = useCompanyStore();
   const { fetchDepartmentById, getDepartmentName } = useDepartmentStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  // Called once to fetch single company and dept if present
   useEffect(() => {
     const initFetch = async () => {
       const token = await SecureStore.getItemAsync('token');
@@ -102,7 +92,6 @@ const Profile = () => {
     return (nameArray[0][0] + nameArray[nameArray.length - 1][0]).toUpperCase();
   };
 
-  // Confirmation before logout
   const confirmLogout = () => {
     Alert.alert(
       'Confirm Logout',
@@ -116,6 +105,7 @@ const Profile = () => {
   };
 
   const logout = async () => {
+    setIsLoggingOut(true);
     try {
       const token = await SecureStore.getItemAsync('token');
       const response = await fetch(`${API_BASE_URL}/auth/sign-out`, {
@@ -138,6 +128,8 @@ const Profile = () => {
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Error', 'An error occurred while logging out.');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -145,7 +137,6 @@ const Profile = () => {
     const [first, ...rest] = email.split('');
     return `${first.toUpperCase()}${rest.join('')}`;
   };
-  
 
   const updatePresenceStatus = async (newStatus) => {
     const token = await SecureStore.getItemAsync('token');
@@ -199,7 +190,6 @@ const Profile = () => {
     }, 300);
   }, [isDropdownVisible, presenceStatus]);
 
-  // Periodically re-fetch user data
   useEffect(() => {
     let intervalId;
     const startInterval = async () => {
@@ -233,7 +223,6 @@ const Profile = () => {
     };
   }, [setUser]);
 
-  // === Edit Profile ===
   const handleOpenEditProfile = () => {
     setEditFirstName(user.firstName || '');
     setEditMiddleName(user.middleName || '');
@@ -243,10 +232,12 @@ const Profile = () => {
   };
 
   const handleSaveProfileEdits = async () => {
+    setIsSavingProfile(true);
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
       Alert.alert('Authentication Error', 'Please sign in again.');
       router.replace('(auth)/login-user');
+      setIsSavingProfile(false);
       return;
     }
 
@@ -279,12 +270,12 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
-  // === Change Password ===
   const handleOpenChangePassword = () => {
-    // Reset fields each time we open the modal
     setOldPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -328,10 +319,43 @@ const Profile = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const token = await SecureStore.getItemAsync('token');
+    if (!token) {
+      setRefreshing(false);
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.user) {
+          setUser(data.user);
+          setPresenceStatus(data.user.presenceStatus || 'offline');
+          setEditFirstName(data.user.firstName || '');
+          setEditMiddleName(data.user.middleName || '');
+          setEditLastName(data.user.lastName || '');
+          setEditPhone(data.user.phone || '');
+        }
+      }
+    } catch (err) {
+      console.error('Error refreshing profile:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* Profile Header */}
+      <ScrollView
+        contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         <View
           className={`rounded-xl p-6 mb-6 flex-row items-center relative ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
@@ -354,7 +378,6 @@ const Profile = () => {
             </View>
           )}
 
-          {/* Presence Icon + Text (top-right) */}
           <View className="absolute top-2.5 right-2.5 flex-row items-center space-x-1">
             <Pressable
               ref={iconRef}
@@ -370,7 +393,6 @@ const Profile = () => {
                 size={24}
                 color={presenceColors[presenceStatus]}
               />
-              {/* Presence status text, e.g. "active", "away", etc. */}
               <Text
                 className={`px-1 text-base capitalize ${
                   isLightTheme ? 'text-slate-800' : 'text-slate-200'
@@ -399,7 +421,6 @@ const Profile = () => {
           </View>
         </View>
 
-        {/* Contact Information Card */}
         <View
           className={`rounded-lg p-6 mb-6 ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
@@ -412,7 +433,6 @@ const Profile = () => {
           >
             Contact Information
           </Text>
-          {/* Email */}
           <View className="flex-row items-center mb-4">
             <Ionicons
               name="mail-outline"
@@ -425,11 +445,10 @@ const Profile = () => {
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
-               <Text className="font-semibold">Email:</Text>{' '}
-               {user.email && capitalizeFirst(user.email)}
+              <Text className="font-semibold">Email:</Text>{' '}
+              {user.email && capitalizeFirst(user.email)}
             </Text>
           </View>
-          {/* Company */}
           <View className="flex-row items-center mb-4">
             <Ionicons
               name="id-card-outline"
@@ -445,7 +464,6 @@ const Profile = () => {
               <Text className="font-semibold">Company:</Text> {getCompanyName(user.companyId) || 'Bench'}
             </Text>
           </View>
-          {/* Department */}
           <View className="flex-row items-center mb-4">
             <AntDesign
               name="team"
@@ -462,7 +480,6 @@ const Profile = () => {
               {getDepartmentName(user.departmentId) || 'Bench'}
             </Text>
           </View>
-          {/* Role */}
           <View className="flex-row items-center mb-4">
             <Ionicons
               name="briefcase-outline"
@@ -478,7 +495,6 @@ const Profile = () => {
               <Text className="font-semibold">Role:</Text> {user.role}
             </Text>
           </View>
-          {/* Phone */}
           <View className="flex-row items-center">
             <Ionicons
               name="call-outline"
@@ -496,7 +512,6 @@ const Profile = () => {
           </View>
         </View>
 
-        {/* Account Settings Card */}
         <View
           className={`rounded-lg p-6 ${
             isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
@@ -510,7 +525,6 @@ const Profile = () => {
             Account Settings
           </Text>
 
-          {/* Change Password */}
           <Pressable
             className={`p-4 rounded-lg mb-4 ${
               isLightTheme ? 'bg-white' : 'bg-slate-700'
@@ -526,7 +540,6 @@ const Profile = () => {
             </Text>
           </Pressable>
 
-          {/* Edit Profile */}
           <Pressable
             className={`p-4 rounded-lg mb-4 ${
               isLightTheme ? 'bg-white' : 'bg-slate-700'
@@ -542,12 +555,12 @@ const Profile = () => {
             </Text>
           </Pressable>
 
-          {/* Logout */}
           <Pressable
             className={`p-4 rounded-lg ${
               isLightTheme ? 'bg-white' : 'bg-slate-700'
             }`}
             onPress={confirmLogout}
+            disabled={isLoggingOut}
           >
             <Text
               className={`${
@@ -560,7 +573,6 @@ const Profile = () => {
         </View>
       </ScrollView>
 
-      {/* Presence Dropdown Modal - background forced to bg-slate-900 */}
       <Modal
         visible={isDropdownVisible}
         transparent={true}
@@ -573,7 +585,9 @@ const Profile = () => {
           onPressOut={() => setIsDropdownVisible(false)}
         >
           <View
-            className={`absolute rounded-2xl shadow-md p-2 ${isLightTheme ? `bg-slate-200` : `bg-slate-800`} `}
+            className={`absolute rounded-2xl shadow-md p-2 ${
+              isLightTheme ? `bg-slate-200` : `bg-slate-800`
+            }`}
             style={{
               width: 85,
               top: iconLayout.y,
@@ -620,7 +634,6 @@ const Profile = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Edit Profile Modal (unchanged) */}
       <Modal
         visible={editProfileModalVisible}
         transparent={true}
@@ -645,7 +658,6 @@ const Profile = () => {
                     contentContainerStyle={{ flexGrow: 1 }}
                     keyboardShouldPersistTaps="handled"
                   >
-                    {/* First Name */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -665,7 +677,6 @@ const Profile = () => {
                       placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                     />
 
-                    {/* Middle Name */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -685,7 +696,6 @@ const Profile = () => {
                       placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                     />
 
-                    {/* Last Name */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -705,7 +715,6 @@ const Profile = () => {
                       placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                     />
 
-                    {/* Phone */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -726,7 +735,6 @@ const Profile = () => {
                       placeholderTextColor={isLightTheme ? '#9ca3af' : '#6b7280'}
                     />
 
-                    {/* Buttons row: Cancel (left) and Save (right) */}
                     <View className="flex-row justify-end mt-4">
                       <Pressable
                         onPress={() => setEditProfileModalVisible(false)}
@@ -737,8 +745,10 @@ const Profile = () => {
 
                       <Pressable
                         onPress={handleSaveProfileEdits}
-                        className="bg-orange-500 py-3 px-6 rounded-lg"
+                        className="bg-orange-500 py-3 px-6 rounded-lg flex-row items-center"
+                        disabled={isSavingProfile}
                       >
+                        {isSavingProfile && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
                         <Text className="text-white text-base font-semibold">Save</Text>
                       </Pressable>
                     </View>
@@ -750,7 +760,6 @@ const Profile = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Change Password Modal (unchanged aside from the relevant fixes) */}
       <Modal
         visible={changePasswordModalVisible}
         transparent={true}
@@ -775,7 +784,6 @@ const Profile = () => {
                     contentContainerStyle={{ flexGrow: 1 }}
                     keyboardShouldPersistTaps="handled"
                   >
-                    {/* Old Password */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -812,7 +820,6 @@ const Profile = () => {
                       </Pressable>
                     </View>
 
-                    {/* New Password */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -849,7 +856,6 @@ const Profile = () => {
                       </Pressable>
                     </View>
 
-                    {/* Confirm Password */}
                     <Text
                       className={`text-sm mb-1 ${
                         isLightTheme ? 'text-slate-800' : 'text-slate-300'
@@ -886,13 +892,18 @@ const Profile = () => {
                       </Pressable>
                     </View>
 
-                    {/* Buttons row: Cancel & Confirm */}
                     <View className="flex-row justify-end mt-4">
                       <Pressable
                         onPress={() => setChangePasswordModalVisible(false)}
-                        className="p-4 rounded-lg mr-2 "
+                        className="mr-4"
                       >
-                        <Text className={`text-center font-semibold ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Cancel</Text>
+                        <Text
+                          className={`text-base font-semibold my-auto ${
+                            isLightTheme ? `text-slate-700` : `text-slate-300`
+                          }`}
+                        >
+                          Cancel
+                        </Text>
                       </Pressable>
 
                       <Pressable
@@ -909,6 +920,22 @@ const Profile = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {isLoggingOut && (
+        <Modal
+          visible={isLoggingOut}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {}}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <View className="bg-white p-6 rounded-lg flex-row items-center">
+              <ActivityIndicator size="large" color="#f97316" className="mr-4" />
+              <Text className="text-lg font-semibold text-slate-800">Logging Out...</Text>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };

@@ -1,6 +1,6 @@
 // File: client/store/timeLogsStore.jsx
 
-import {create} from 'zustand';
+import { create } from 'zustand';
 import { Alert } from 'react-native';
 import { API_BASE_URL } from '../config/constant';
 
@@ -9,7 +9,7 @@ const useTimeLogsStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  fetchTimeLogs: async (token, { userId = null, startDate = null, endDate = null } = {}) => {
+  fetchTimeLogs: async ({ token, userId = null, startDate = null, endDate = null } = {}) => {
     set({ loading: true, error: null });
 
     let url = `${API_BASE_URL}/timelogs/range`;
@@ -25,6 +25,7 @@ const useTimeLogsStore = create((set, get) => ({
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
       const data = await response.json();

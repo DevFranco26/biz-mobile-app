@@ -18,31 +18,31 @@ const { Op } = require('sequelize');
  */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const toRad = (value) => (value * Math.PI) / 180;
-  
+
   const R = 6371e3; // Earth radius in meters
   const φ1 = toRad(lat1);
   const φ2 = toRad(lat2);
   const Δφ = toRad(lat2 - lat1);
   const Δλ = toRad(lon2 - lon1);
-  
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  
+
   const distance = R * c;
-  
   return distance; // in meters
 };
 
 /**
  * Time-In Handler with Location Validation
- * Records a user's time-in after validating location restrictions.
+ * Uses a single timeInAt (timestamp), stored as new Date().
  */
 const timeIn = async (req, res) => {
   console.log('Time-In request body:', req.body);
-  const { userId, deviceInfo, location, date, time, timeZone } = req.body;
+  const { userId, deviceInfo, location, timeZone } = req.body;
+  const timeInAt = new Date();
 
   try {
     const transaction = await sequelize.transaction();
@@ -65,7 +65,7 @@ const timeIn = async (req, res) => {
       transaction,
     });
 
-    let isWithinAllowedLocation = true; // Default to true if no restrictions
+    let isWithinAllowedLocation = true; // Default = true if no restrictions
 
     if (userSettings.length > 0) {
       isWithinAllowedLocation = userSettings.some((setting) => {
@@ -82,15 +82,16 @@ const timeIn = async (req, res) => {
 
     if (!isWithinAllowedLocation) {
       await transaction.rollback();
-      return res.status(400).json({ message: 'Punch location is outside the allowed areas.' });
+      return res
+        .status(400)
+        .json({ message: 'Punch location is outside the allowed areas.' });
     }
 
-    // Create a new time-in log
+    // Create a new time-in log with timeInAt
     const newLog = await TimeLogs.create(
       {
         userId,
-        timeInDate: date,
-        timeInTime: time,
+        timeInAt, // single timestamp
         timeInTimeZone: timeZone,
         status: true,
         timeInDevice: deviceInfo,
@@ -104,27 +105,30 @@ const timeIn = async (req, res) => {
     await User.update({ status: true }, { where: { id: userId }, transaction });
 
     await transaction.commit();
-    res.status(201).json({ message: 'Time-in recorded successfully.', data: newLog });
+    return res
+      .status(201)
+      .json({ message: 'Time-in recorded successfully.', data: newLog });
   } catch (error) {
     console.error('Error in timeIn:', error);
 
-    // Check if the error is a Sequelize error
     if (error.name === 'SequelizeDatabaseError') {
-      return res.status(500).json({ message: 'Database error during time-in operation.' });
+      console.log(error.message);
+      return res
+        .status(500)
+        .json({ message: 'Database error during time-in operation.' });
     }
 
-    // Generic error response
     res.status(500).json({ message: 'Internal server error during time-in.' });
   }
 };
 
 /**
- * Time-Out Handler with Location Validation
- * Records a user's time-out after validating location restrictions.
+ * Time-Out Handler with Location Validation and totalHours Calculation
  */
 const timeOut = async (req, res) => {
   console.log('Time-Out request body:', req.body);
-  const { userId, deviceInfo, location, date, time, timeZone } = req.body;
+  const { userId, deviceInfo, location, timeZone } = req.body;
+  const timeOutAt = new Date();
 
   try {
     const transaction = await sequelize.transaction();
@@ -141,15 +145,14 @@ const timeOut = async (req, res) => {
       return res.status(400).json({ message: 'No active time-in found.' });
     }
 
-    // Fetch user's active location restrictions
+    // Validate location restrictions if any
     const userSettings = await UserSettings.findAll({
       where: { userId, restrictionEnabled: true },
       include: [{ model: Location, as: 'location' }],
       transaction,
     });
 
-    let isWithinAllowedLocation = true; // Default to true if no restrictions
-
+    let isWithinAllowedLocation = true;
     if (userSettings.length > 0) {
       isWithinAllowedLocation = userSettings.some((setting) => {
         const loc = setting.location;
@@ -165,14 +168,15 @@ const timeOut = async (req, res) => {
 
     if (!isWithinAllowedLocation) {
       await transaction.rollback();
-      return res.status(400).json({ message: 'Punch location is outside the allowed areas.' });
+      return res
+        .status(400)
+        .json({ message: 'Punch location is outside the allowed areas.' });
     }
 
-    // Update the time-out details and mark the log as inactive
+    // Update the time-out details
     await activeLog.update(
       {
-        timeOutDate: date,
-        timeOutTime: time,
+        timeOutAt, // single timestamp
         timeOutTimeZone: timeZone,
         status: false,
         timeOutDevice: deviceInfo,
@@ -182,103 +186,147 @@ const timeOut = async (req, res) => {
       { transaction }
     );
 
+    // Calculate totalHours
+    let totalHours = 0;
+
+    if (activeLog.lunchBreakStart && activeLog.lunchBreakEnd) {
+      const totalTime = timeOutAt - activeLog.timeInAt; // in milliseconds
+      const breakTime = activeLog.lunchBreakEnd - activeLog.lunchBreakStart; // in milliseconds
+
+      // Ensure that breakTime is not negative
+      if (breakTime < 0) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Invalid lunch break times.' });
+      }
+
+      totalHours = (totalTime - breakTime) / (1000 * 60 * 60); // Convert to hours
+    } else {
+      // If no lunch break taken, calculate total hours normally
+      totalHours = (timeOutAt - activeLog.timeInAt) / (1000 * 60 * 60); // Convert to hours
+    }
+
+    // Round to two decimal places
+    totalHours = Math.round(totalHours * 100) / 100;
+
+    // Update the totalHours in the activeLog
+    await activeLog.update(
+      {
+        totalHours,
+      },
+      { transaction }
+    );
+
     // Update user's current status
     await User.update({ status: false }, { where: { id: userId }, transaction });
 
     await transaction.commit();
-    res.status(200).json({ message: 'Time-out recorded successfully.', data: activeLog });
+    return res
+      .status(200)
+      .json({ message: 'Time-out recorded successfully.', data: activeLog });
   } catch (error) {
     console.error('Error in timeOut:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
 /**
  * Get Monthly Logs
- * Retrieves time logs for a user within a specified month.
+ * Filters by timeInAt within the specified month.
  */
 const getMonthlyLogs = async (req, res) => {
   const { userId, year, month } = req.query;
 
   try {
     const firstDate = new Date(Date.UTC(year, month - 1, 1));
-    const lastDate = new Date(Date.UTC(year, month, 0));
+    const lastDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
+    // Logs where timeInAt is within the specified month
     const logs = await TimeLogs.findAll({
       where: {
         userId,
-        timeInDate: { [Op.gte]: firstDate, [Op.lte]: lastDate },
+        timeInAt: {
+          [Op.gte]: firstDate,
+          [Op.lte]: lastDate,
+        },
       },
       order: [['createdAt', 'ASC']],
     });
 
-    res.status(200).json({ message: 'Logs retrieved successfully.', data: logs });
+    return res
+      .status(200)
+      .json({ message: 'Logs retrieved successfully.', data: logs });
   } catch (error) {
     console.error('Error in getMonthlyLogs:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
 /**
  * Get Range Logs with Enhanced Security
- * Retrieves time logs for a user within a specified date range.
+ * Filters by timeInAt between startDate and endDate.
  */
 const getRangeLogs = async (req, res) => {
   let { userId, startDate, endDate } = req.query;
 
   try {
-    // Determine if the requesting user is an admin
     const requestingUser = await User.findOne({ where: { id: req.user.id } });
-
     if (!requestingUser) {
       return res.status(404).json({ message: 'Requesting user not found.' });
     }
 
     if (requestingUser.role !== 'admin' && requestingUser.role !== 'superAdmin') {
-      // For regular users, ignore any userId passed and use their own id
+      // Regular users => only see their own logs
       userId = req.user.id;
     } else {
-      // For admins, allow specifying userId or default to their own id
+      // Admins => can specify userId, or default to themselves
       if (!userId) {
         userId = req.user.id;
       } else {
-        // Verify that the specified user exists and belongs to the same company
+        // Verify target user
         const targetUser = await User.findOne({ where: { id: userId } });
         if (!targetUser) {
           return res.status(404).json({ message: 'Target user not found.' });
         }
-
         if (targetUser.companyId !== requestingUser.companyId) {
-          return res.status(403).json({ message: 'Access denied: User belongs to a different company.' });
+          return res
+            .status(403)
+            .json({
+              message: 'Access denied: User belongs to a different company.',
+            });
         }
       }
     }
 
-    // Validate date parameters
+    // Validate
     if (!startDate || !endDate) {
-      return res.status(400).json({ message: 'startDate and endDate are required.' });
+      return res
+        .status(400)
+        .json({ message: 'startDate and endDate are required.' });
     }
 
+    // Filter by timeInAt
     const logs = await TimeLogs.findAll({
       where: {
         userId,
-        timeInDate: {
+        timeInAt: {
           [Op.between]: [startDate, endDate],
         },
       },
       order: [['createdAt', 'ASC']],
     });
 
-    res.status(200).json({ message: 'Logs retrieved successfully.', data: logs });
+    return res
+      .status(200)
+      .json({ message: 'Logs retrieved successfully.', data: logs });
   } catch (error) {
     console.error('Error in getRangeLogs:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
 /**
  * Get User's Latest Time Log
- * Retrieves the most recent time log for a specified user.
+ * Returns the most recent timeInAt record
  */
 const getUserTimeLog = async (req, res) => {
   const { userId } = req.params;
@@ -290,13 +338,143 @@ const getUserTimeLog = async (req, res) => {
     });
 
     if (!timeLog) {
-      return res.status(404).json({ message: 'No time log found for this user.' });
+      return res
+        .status(404)
+        .json({ message: 'No time log found for this user.' });
     }
 
-    res.status(200).json({ message: 'Time log fetched successfully.', data: timeLog });
+    return res
+      .status(200)
+      .json({ message: 'Time log fetched successfully.', data: timeLog });
   } catch (error) {
     console.error('Error in getUserTimeLog:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+/**
+ * Coffee Break Toggle with 2 breaks max
+ * Ensures consistent field naming with the TimeLogs model
+ */
+const coffeeBreakToggle = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Find active time-in record
+    const activeLog = await TimeLogs.findOne({
+      where: { userId, status: true },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!activeLog) {
+      return res
+        .status(400)
+        .json({ message: 'No active time-in found. Cannot toggle coffee break.' });
+    }
+
+    // If the user is on lunch break now, end it automatically
+    if (activeLog.lunchBreakStart && !activeLog.lunchBreakEnd) {
+      await activeLog.update({ lunchBreakEnd: new Date() });
+    }
+
+    // Step-by-step check for coffee breaks
+    if (!activeLog.coffeeBreakStart) {
+      // Start coffee break #1
+      await activeLog.update({ coffeeBreakStart: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Coffee break #1 started.', data: activeLog });
+    }
+
+    if (activeLog.coffeeBreakStart && !activeLog.coffeeBreakEnd) {
+      // End coffee break #1
+      await activeLog.update({ coffeeBreakEnd: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Coffee break #1 ended.', data: activeLog });
+    }
+
+    // Check coffeeBreak2
+    if (!activeLog.coffeeBreak2Start) {
+      // Start coffee break #2
+      await activeLog.update({ coffeeBreak2Start: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Coffee break #2 started.', data: activeLog });
+    }
+
+    if (activeLog.coffeeBreak2Start && !activeLog.coffeeBreak2End) {
+      // End coffee break #2
+      await activeLog.update({ coffeeBreak2End: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Coffee break #2 ended.', data: activeLog });
+    }
+
+    // If we get here => 2 coffee breaks used fully
+    return res
+      .status(400)
+      .json({ message: 'Max coffee breaks used for this shift.' });
+  } catch (error) {
+    console.error('Error in coffeeBreakToggle:', error);
+    return res
+      .status(500)
+      .json({ message: 'Internal server error toggling coffee break.' });
+  }
+};
+
+/**
+ * Lunch Break Toggle with single usage
+ * Ensures consistent field naming with the TimeLogs model
+ */
+const lunchBreakToggle = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Find active time-in record
+    const activeLog = await TimeLogs.findOne({
+      where: { userId, status: true },
+      order: [['createdAt', 'DESC']],
+    });
+    if (!activeLog) {
+      return res
+        .status(400)
+        .json({ message: 'No active time-in found. Cannot toggle lunch break.' });
+    }
+
+    // If coffee break is ongoing => end it
+    if (activeLog.coffeeBreakStart && !activeLog.coffeeBreakEnd) {
+      await activeLog.update({ coffeeBreakEnd: new Date() });
+    } else if (activeLog.coffeeBreak2Start && !activeLog.coffeeBreak2End) {
+      await activeLog.update({ coffeeBreak2End: new Date() });
+    }
+
+    // Check lunch break usage
+    if (!activeLog.lunchBreakStart) {
+      // Start lunch break
+      await activeLog.update({ lunchBreakStart: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Lunch break started.', data: activeLog });
+    }
+
+    if (activeLog.lunchBreakStart && !activeLog.lunchBreakEnd) {
+      // End lunch break
+      await activeLog.update({ lunchBreakEnd: new Date() });
+      return res
+        .status(200)
+        .json({ message: 'Lunch break ended.', data: activeLog });
+    }
+
+    // If lunchBreakStart & lunchBreakEnd => lunch used up
+    return res
+      .status(400)
+      .json({ message: 'Lunch break already used for this shift.' });
+  } catch (error) {
+    console.error('Error in lunchBreakToggle:', error);
+    return res
+      .status(500)
+      .json({ message: 'Internal server error toggling lunch break.' });
   }
 };
 
@@ -306,4 +484,6 @@ module.exports = {
   getMonthlyLogs,
   getRangeLogs,
   getUserTimeLog,
+  coffeeBreakToggle,
+  lunchBreakToggle,
 };
