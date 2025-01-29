@@ -15,3 +15,6 @@ Thumbs.db
 
 # Environment files
 .env
+
+credentials.json
+client/credentials.json
