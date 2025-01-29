@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  RefreshControl,
 } from 'react-native'
 import { MaterialIcons, Ionicons, Entypo } from '@expo/vector-icons'
 import { API_BASE_URL } from '../../../config/constant'
@@ -30,25 +31,34 @@ const Punch = () => {
   const isLightTheme = theme === 'light'
   const insets = useSafeAreaInsets()
   const { currentSubscription, fetchCurrentSubscription } = useSubscriptionStore()
+
   const [isTimeIn, setIsTimeIn] = useState(false)
   const [punchedInTime, setPunchedInTime] = useState('Not Time In')
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [timer, setTimer] = useState(null)
+
   const [isCoffeeBreakActive, setIsCoffeeBreakActive] = useState(false)
   const [coffeeTimeElapsed, setCoffeeTimeElapsed] = useState(0)
   const [coffeeTimer, setCoffeeTimer] = useState(null)
   const [coffeeUsedCount, setCoffeeUsedCount] = useState(0)
+
   const [isLunchBreakActive, setIsLunchBreakActive] = useState(false)
   const [lunchTimeElapsed, setLunchTimeElapsed] = useState(0)
   const [lunchTimer, setLunchTimer] = useState(null)
   const [lunchUsedCount, setLunchUsedCount] = useState(0)
+
   const [isConnected, setIsConnected] = useState(true)
   const [punchQueue, setPunchQueue] = useState([])
+
   const punchQueueRef = useRef([])
   const isSyncingRef = useRef(false)
   const prevIsConnected = useRef(true)
+
   const [isLoading, setIsLoading] = useState(false)
   const [timeZone, setTimeZone] = useState('')
+
+  // Refreshing state for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false)
 
   // Helper Function: Format Time in HH:MM:SS
   const formatTime = (seconds = 0) => {
@@ -74,25 +84,17 @@ const Punch = () => {
       <Pressable
         onPress={onPress}
         disabled={disabled}
-        className="flex-row items-center p-2 rounded-lg"
+        className={`flex-row items-center px-12 w-1/2 py-2 justify-center rounded-lg mx-2 mb-3 ${
+          isActive ? `bg-red-500` : `bg-orange-500`
+        }`}
         accessibilityLabel={`${label} Break Button`}
         accessibilityRole="button"
       >
-        <Ionicons
-          name={iconName}
-          size={36}
-          color={
-            isActive
-              ? '#ef4444' // Red when active
-              : isLightTheme
-              ? '#f97316' // Orange for light theme
-              : '#f97316' // Same orange for dark theme
-          }
-        />
-        <View className="w-20 items-center">
+        <Ionicons name={iconName} size={32} color="#f8fafc" />
+        <View className="ml-2">
           <Text
             className={`${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
+              isLightTheme ? 'text-white' : 'text-white'
             } text-xs`}
             numberOfLines={1}
             ellipsizeMode="tail"
@@ -225,7 +227,9 @@ const Punch = () => {
         }
         setLunchUsedCount(localLunchUsed)
       } else {
+        // User is not timed in
         setIsTimeIn(false)
+        handleTimeoutCleanup()
       }
     } catch (err) {
       console.error('restoreSession error =>', err)
@@ -262,7 +266,11 @@ const Punch = () => {
 
   // Check if Offline Punching is Allowed
   const canOfflinePunch = useCallback(() => {
-    if (!currentSubscription || !currentSubscription.plan || !currentSubscription.plan.features) {
+    if (
+      !currentSubscription ||
+      !currentSubscription.plan ||
+      !currentSubscription.plan.features
+    ) {
       return false
     }
     return currentSubscription.plan.features['timekeeping-punch-offline'] === true
@@ -275,6 +283,7 @@ const Punch = () => {
     const newQueue = [...punchQueueRef.current]
     const successfullySynced = []
     const errorMessages = []
+
     for (const punchData of newQueue) {
       try {
         let apiEndpoint
@@ -314,8 +323,11 @@ const Punch = () => {
         errorMessages.push(error.message)
       }
     }
+
     if (successfullySynced.length > 0) {
-      const remainingQueue = newQueue.filter(item => !successfullySynced.includes(item))
+      const remainingQueue = newQueue.filter(
+        (item) => !successfullySynced.includes(item)
+      )
       setPunchQueue(remainingQueue)
       try {
         await AsyncStorage.setItem('punchQueue', JSON.stringify(remainingQueue))
@@ -333,7 +345,7 @@ const Punch = () => {
 
   // Listen to Network Changes
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       if (state.isConnected !== prevIsConnected.current) {
         setIsConnected(state.isConnected)
         if (state.isConnected && !prevIsConnected.current) {
@@ -350,7 +362,7 @@ const Punch = () => {
     if (Platform.OS === 'android') {
       ToastAndroid.show(`${title}: ${message}`, ToastAndroid.LONG)
     } else {
-      console.log(`TOAST [${title}] => ${message}`)
+      Alert.alert(title, message)
     }
   }
 
@@ -417,8 +429,10 @@ const Punch = () => {
 
   // Cleanup on Timeout
   const handleTimeoutCleanup = () => {
-    clearInterval(timer)
-    setTimer(null)
+    if (timer) {
+      clearInterval(timer)
+      setTimer(null)
+    }
     setTimeElapsed(0)
     setPunchedInTime('Not Time In')
     resetCoffeeBreakLocal()
@@ -481,9 +495,9 @@ const Punch = () => {
       const currentDateTime = new Date()
       const date = currentDateTime.toISOString().split('T')[0]
       const time = [
-        currentDateTime.getUTCHours().toString().padStart(2, '0'),
-        currentDateTime.getUTCMinutes().toString().padStart(2, '0'),
-        currentDateTime.getUTCSeconds().toString().padStart(2, '0'),
+        currentDateTime.getHours().toString().padStart(2, '0'),
+        currentDateTime.getMinutes().toString().padStart(2, '0'),
+        currentDateTime.getSeconds().toString().padStart(2, '0'),
       ].join(':')
 
       const punchData = {
@@ -519,17 +533,7 @@ const Punch = () => {
         } else {
           const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000)
           setTimer(intervalId)
-          const localPunchedInTime = new Date(
-            Date.UTC(
-              currentDateTime.getUTCFullYear(),
-              currentDateTime.getUTCMonth(),
-              currentDateTime.getUTCDate(),
-              parseInt(time.split(':')[0]),
-              parseInt(time.split(':')[1]),
-              parseInt(time.split(':')[2]),
-              0
-            )
-          ).toLocaleTimeString([], {
+          const localPunchedInTime = currentDateTime.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
@@ -539,6 +543,7 @@ const Punch = () => {
         }
         setIsTimeIn(!isTimeIn)
       } else {
+        // Offline Punching
         let updatedQueue = [...punchQueueRef.current]
         updatedQueue = updatedQueue.filter(
           (item) => !(item.punchType === 'timeInOut' && item.isTimeIn === punchData.isTimeIn)
@@ -550,17 +555,7 @@ const Punch = () => {
         if (!isTimeIn) {
           const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000)
           setTimer(intervalId)
-          const localPunchedInTime = new Date(
-            Date.UTC(
-              currentDateTime.getUTCFullYear(),
-              currentDateTime.getUTCMonth(),
-              currentDateTime.getUTCDate(),
-              parseInt(time.split(':')[0]),
-              parseInt(time.split(':')[1]),
-              parseInt(time.split(':')[2]),
-              0
-            )
-          ).toLocaleTimeString([], {
+          const localPunchedInTime = currentDateTime.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
@@ -671,6 +666,7 @@ const Punch = () => {
           alertWith3s('Notice', 'Max coffee breaks used for this shift.')
         }
       } else {
+        // Offline Coffee Break
         let updatedQueue = [...punchQueueRef.current]
         updatedQueue.push(punchData)
         setPunchQueue(updatedQueue)
@@ -794,6 +790,7 @@ const Punch = () => {
           })
         }
       } else {
+        // Offline Lunch Break
         let updatedQueue = [...punchQueueRef.current]
         updatedQueue.push(punchData)
         setPunchQueue(updatedQueue)
@@ -846,6 +843,24 @@ const Punch = () => {
     }
   }, [timer, coffeeTimer, lunchTimer])
 
+  const coffeeBreakDisabled = false
+  const lunchBreakDisabled = false
+
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await syncPunchQueue() // Sync any offline punches
+      const token = await SecureStore.getItemAsync('token')
+      await restoreSession(token) // Fetch latest state
+    } catch (error) {
+      console.error('Refresh Error:', error)
+      alertWith3s('Error', 'Failed to refresh data.')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   return (
     <View
       style={{
@@ -855,8 +870,18 @@ const Punch = () => {
         paddingBottom: insets.bottom || 16,
       }}
     >
-      {/* Scrollable Content */}
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#475569']} // Android spinner color
+            tintColor={isLightTheme ? '#475569' : '#f9fafb'} // iOS spinner color
+            progressBackgroundColor={isLightTheme ? '#f1f5f9' : '#1e293b'} // Background color of the spinner
+          />
+        }
+      >
         <View className="mx-4 mt-20 space-y-4">
           {/* Date Section */}
           <View
@@ -1014,14 +1039,14 @@ const Punch = () => {
             </View>
           </View>
 
-          {/* Main Timer */}
+          {/* Timer Section */}
           <View
-            className={`w-full p-5 rounded-xl ${
+            className={`w-full p-5 rounded-xl h-40 justify-center items-center ${
               isLightTheme ? 'bg-white' : 'bg-slate-900'
             }`}
           >
             <Text
-              className={`text-6xl font-bold text-center ${
+              className={`text-6xl font-medium text-center  ${
                 isLightTheme ? 'text-slate-700' : 'text-slate-300'
               }`}
             >
@@ -1031,54 +1056,53 @@ const Punch = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Section: Time Out and Break Buttons */}
+      {/* Action Buttons */}
       {isTimeIn && (
-        <View className="flex-row justify-around items-center mb-4 ">
-          {/* Coffee Break Button */}
-          <BreakButton
-            onPress={handleCoffeeBreak}
-            disabled={coffeeBreakDisabled || isLoading}
-            isActive={isCoffeeBreakActive}
-            usedCount={coffeeUsedCount}
-            maxCount={2}
-            iconName="cafe"
-            label="Coffee"
-            isLightTheme={isLightTheme}
-            timeElapsed={coffeeTimeElapsed}
-          />
-
-          {/* Time Out Button */}
+        <View className="flex-col justify-around items-center mb-4 mx-4">
+          <View className="flex-row justify-around items-center mx-2">
+            <BreakButton
+              onPress={handleCoffeeBreak}
+              disabled={coffeeBreakDisabled || isLoading}
+              isActive={isCoffeeBreakActive}
+              usedCount={coffeeUsedCount}
+              maxCount={2}
+              iconName="cafe"
+              label="Coffee"
+              isLightTheme={isLightTheme}
+              timeElapsed={coffeeTimeElapsed}
+            />
+            <BreakButton
+              onPress={handleLunchBreak}
+              disabled={lunchBreakDisabled || isLoading}
+              isActive={isLunchBreakActive}
+              usedCount={lunchUsedCount}
+              maxCount={1}
+              iconName="fast-food"
+              label="Lunch"
+              isLightTheme={isLightTheme}
+              timeElapsed={lunchTimeElapsed}
+              className="mb-3"
+            />
+          </View>
           <Pressable
             onPress={handlePunch}
             disabled={isLoading}
-            className={`py-4 px-5 rounded-lg flex-row items-center justify-center ${
+            className={`py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
               isTimeIn ? 'bg-red-500' : 'bg-orange-500'
             } ${isLoading ? 'opacity-50' : 'opacity-100'}`}
             accessibilityLabel="Time Out Button"
             accessibilityRole="button"
           >
-            {isLoading && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
+            {isLoading && (
+              <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
+            )}
             <Text className="text-center text-white text-xl font-semibold">
               {isTimeIn ? 'Time Out' : 'Time In'}
             </Text>
           </Pressable>
-
-          {/* Lunch Break Button */}
-          <BreakButton
-            onPress={handleLunchBreak}
-            disabled={lunchBreakDisabled || isLoading}
-            isActive={isLunchBreakActive}
-            usedCount={lunchUsedCount}
-            maxCount={1}
-            iconName="fast-food"
-            label="Lunch"
-            isLightTheme={isLightTheme}
-            timeElapsed={lunchTimeElapsed}
-          />
         </View>
       )}
 
-      {/* When Not Time In: Show Only Time In Button */}
       {!isTimeIn && (
         <View className="mb-4 mx-4">
           <Pressable
@@ -1090,7 +1114,9 @@ const Punch = () => {
             accessibilityLabel="Time In Button"
             accessibilityRole="button"
           >
-            {isLoading && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
+            {isLoading && (
+              <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
+            )}
             <Text className="text-center text-white text-xl font-semibold">
               {isTimeIn ? 'Time Out' : 'Time In'}
             </Text>
