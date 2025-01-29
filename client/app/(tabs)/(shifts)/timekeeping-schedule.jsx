@@ -1,6 +1,6 @@
 // File: app/(tabs)/(shifts)/timekeeping-schedule.jsx
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -17,8 +17,6 @@ import { Calendar } from 'react-native-calendars'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { API_BASE_URL } from '../../../config/constant'
 import { getDaysInCurrentMonth, isWeekday, isWeekend } from '../../../utils/timeUtils'
-
-
 
 const Schedule = () => {
   const { theme } = useThemeStore()
@@ -105,35 +103,41 @@ const Schedule = () => {
     setRefreshing(false)
   }
 
-  const daysInMonth = getDaysInCurrentMonth()
-  const markedDates = {}
-  daysInMonth.forEach(day => {
-    const localDate = new Date(day.getFullYear(), day.getMonth(), day.getDate())
-    const yyyy = localDate.getFullYear()
-    const mm = String(localDate.getMonth() + 1).padStart(2, '0')
-    const dd = String(localDate.getDate()).padStart(2, '0')
-    const localDayStr = `${yyyy}-${mm}-${dd}`
-    let mark = false
-    for (const a of assignments) {
-      const { recurrence } = a
-      if (recurrence === 'all') {
-        mark = true
-        break
-      } else if (recurrence === 'weekdays' && isWeekday(localDate)) {
-        mark = true
-        break
-      } else if (recurrence === 'weekends' && isWeekend(localDate)) {
-        mark = true
-        break
+  // Memoize daysInMonth to prevent unnecessary recalculations
+  const daysInMonth = useMemo(() => getDaysInCurrentMonth(), [])
+
+  // Memoize markedDates based on assignments and theme
+  const markedDates = useMemo(() => {
+    const marks = {}
+    daysInMonth.forEach(day => {
+      const localDate = new Date(day.getFullYear(), day.getMonth(), day.getDate())
+      const yyyy = localDate.getFullYear()
+      const mm = String(localDate.getMonth() + 1).padStart(2, '0')
+      const dd = String(localDate.getDate()).padStart(2, '0')
+      const localDayStr = `${yyyy}-${mm}-${dd}`
+      let mark = false
+      for (const a of assignments) {
+        const { recurrence } = a
+        if (recurrence === 'all') {
+          mark = true
+          break
+        } else if (recurrence === 'weekdays' && isWeekday(localDate)) {
+          mark = true
+          break
+        } else if (recurrence === 'weekends' && isWeekend(localDate)) {
+          mark = true
+          break
+        }
       }
-    }
-    if (mark) {
-      markedDates[localDayStr] = {
-        marked: true,
-        dotColor: 'green',
+      if (mark) {
+        marks[localDayStr] = {
+          marked: true,
+          dotColor: isLightTheme ? 'green' : 'lightgreen', // Adjust dot color based on theme
+        }
       }
-    }
-  })
+    })
+    return marks
+  }, [assignments, daysInMonth, isLightTheme])
 
   const onDayPress = day => {
     const dayDate = new Date(day.dateString)
@@ -161,7 +165,7 @@ const Schedule = () => {
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`} style={{ paddingTop: insets.top }}>
-      <Text className={`font-bold text-xl mt-5 ml-4 ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
+      <Text className={`font-bold text-xl mt-5 ml-4 ${isLightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
         My Shift Schedule
       </Text>
       {loading ? (
@@ -173,17 +177,28 @@ const Schedule = () => {
         >
           <View className="mx-4 mt-4 rounded-2xl overflow-hidden">
             <Calendar
+              key={isLightTheme ? 'light' : 'dark'} // Force re-render when theme changes
               onDayPress={onDayPress}
               markedDates={markedDates}
               markingType="custom"
               theme={{
                 backgroundColor: isLightTheme ? '#FFFFFF' : '#1f2937',
                 calendarBackground: isLightTheme ? '#f1f5f9' : '#1f2937',
-                dayTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-                monthTextColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-                arrowColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-                textSectionTitleColor: isLightTheme ? '#1f2937' : '#FFFFFF',
-                todayTextColor: '#f97316',
+                textSectionTitleColor: isLightTheme ? '#1f2937' : '#cbd5e1',
+                selectedDayBackgroundColor: isLightTheme ? '#3B82F6' : '#2563EB',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: isLightTheme ? '#f97316' : '#f97316',
+                dayTextColor: isLightTheme ? '#1f2937' : '#cbd5e1',
+                textDisabledColor: isLightTheme ? '#d1d5db' : '#6b7280',
+                arrowColor: isLightTheme ? '#1f2937' : '#cbd5e1',
+                monthTextColor: isLightTheme ? '#1f2937' : '#cbd5e1',
+                indicatorColor: isLightTheme ? '#3B82F6' : '#2563EB',
+                textDayFontWeight: '400',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '400',
+                textDayFontSize: 16,
+                textMonthFontSize: 20,
+                textDayHeaderFontSize: 14,
               }}
               style={{ borderRadius: 12, overflow: 'hidden' }}
             />

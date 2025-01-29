@@ -337,8 +337,8 @@ const SubscriptionPlans = () => {
                     <Switch
                       value={timekeeping}
                       onValueChange={setTimekeeping}
-                      trackColor={{ true: 'gray', false: 'gray' }}
-                      thumbColor={timekeeping ? 'orange' : 'gray'}
+                      trackColor={{ true: 'slate', false: 'slate' }}
+                      thumbColor={timekeeping ? 'orange' : 'slate'}
                     />
                   </View>
                   <View className="flex-row items-center mb-2">
@@ -352,8 +352,8 @@ const SubscriptionPlans = () => {
                     <Switch
                       value={payroll}
                       onValueChange={setPayroll}
-                      trackColor={{ true: 'gray', false: 'gray' }}
-                      thumbColor={payroll ? 'orange' : 'gray'}
+                      trackColor={{ true: 'slate', false: 'slate' }}
+                      thumbColor={payroll ? 'orange' : 'slate'}
                     />
                   </View>
                   <View className="flex-row items-center mb-2">
@@ -367,8 +367,8 @@ const SubscriptionPlans = () => {
                     <Switch
                       value={leaves}
                       onValueChange={setLeaves}
-                      trackColor={{ true: 'gray', false: 'gray' }}
-                      thumbColor={leaves ? 'orange' : 'gray'}
+                      trackColor={{ true: 'slate', false: 'slate' }}
+                      thumbColor={leaves ? 'orange' : 'slate'}
                     />
                   </View>
                   <View className="flex-row items-center mb-2">
@@ -382,8 +382,8 @@ const SubscriptionPlans = () => {
                     <Switch
                       value={timekeepingPunchOffline}
                       onValueChange={setTimekeepingPunchOffline}
-                      trackColor={{ true: 'gray', false: 'gray' }}
-                      thumbColor={timekeepingPunchOffline ? 'orange' : 'gray'}
+                      trackColor={{ true: 'slate', false: 'slate' }}
+                      thumbColor={timekeepingPunchOffline ? 'orange' : 'slate'}
                     />
                   </View>
                 </View>
@@ -485,7 +485,7 @@ const SubscriptionPlans = () => {
                     </Pressable>
                     <Pressable
                       onPress={() => setViewPlanModalVisible(false)}
-                      className="flex-1 p-4 rounded-lg items-center bg-gray-500"
+                      className="flex-1 p-4 rounded-lg items-center bg-slate-500"
                     >
                       <Ionicons name="close-circle-outline" size={24} color="#fff" />
                     </Pressable>

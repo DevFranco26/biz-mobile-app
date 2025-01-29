@@ -382,7 +382,7 @@ const SubmitLeaves = () => {
             <View className="space-y-4">
               {/* Leave Type Dropdown */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
+                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800`: `text-slate-300`}`}>
                   Leave Type <Text className="text-red-500">*</Text>
                 </Text>
                 <DropDownPicker
@@ -421,7 +421,7 @@ const SubmitLeaves = () => {
 
               {/* Approver Dropdown */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
+                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800`: `text-slate-300`}`}>
                   Approver <Text className="text-red-500">*</Text>
                 </Text>
                 <DropDownPicker
@@ -466,7 +466,7 @@ const SubmitLeaves = () => {
 
               {/* Leave Reason */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
+                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800`: `text-slate-300`}`}>
                   Reason (Optional)
                 </Text>
                 <TextInput
@@ -487,7 +487,7 @@ const SubmitLeaves = () => {
 
               {/* Leave From Date & Time */}
               <View className="">
-                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
+                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800`: `text-slate-300`}`}>
                   Leave From <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="flex-row space-x-4 mb-4 gap-3">
@@ -533,7 +533,7 @@ const SubmitLeaves = () => {
 
               {/* Leave To Date & Time */}
               <View className="my-2">
-                <Text className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100">
+                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800`: `text-slate-300`}`}>
                   Leave To <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="flex-row space-x-4 mb-4 gap-3">

@@ -73,7 +73,7 @@ export default function Index() {
         style={{ paddingTop: 60 }}
       >
         <ActivityIndicator size="large" color="#0f766e" />
-        <Text className={`mt-4 ${isLightTheme ? 'text-slate-700' : 'text-gray-300'}`}>
+        <Text className={`mt-4 ${isLightTheme ? 'text-slate-700' : 'text-slate-300'}`}>
           Checking authentication...
         </Text>
       </SafeAreaView>
