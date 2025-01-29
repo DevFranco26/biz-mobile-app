@@ -32,21 +32,22 @@ const Punch = () => {
   const insets = useSafeAreaInsets()
   const { currentSubscription, fetchCurrentSubscription } = useSubscriptionStore()
 
+  // Main Timekeeping States
   const [isTimeIn, setIsTimeIn] = useState(false)
   const [punchedInTime, setPunchedInTime] = useState('Not Time In')
   const [timeElapsed, setTimeElapsed] = useState(0)
-  const [timer, setTimer] = useState(null)
 
+  // Coffee Break States
   const [isCoffeeBreakActive, setIsCoffeeBreakActive] = useState(false)
   const [coffeeTimeElapsed, setCoffeeTimeElapsed] = useState(0)
-  const [coffeeTimer, setCoffeeTimer] = useState(null)
   const [coffeeUsedCount, setCoffeeUsedCount] = useState(0)
 
+  // Lunch Break States
   const [isLunchBreakActive, setIsLunchBreakActive] = useState(false)
   const [lunchTimeElapsed, setLunchTimeElapsed] = useState(0)
-  const [lunchTimer, setLunchTimer] = useState(null)
   const [lunchUsedCount, setLunchUsedCount] = useState(0)
 
+  // Network and Synchronization States
   const [isConnected, setIsConnected] = useState(true)
   const [punchQueue, setPunchQueue] = useState([])
 
@@ -54,6 +55,7 @@ const Punch = () => {
   const isSyncingRef = useRef(false)
   const prevIsConnected = useRef(true)
 
+  // Loading and Timezone States
   const [isLoading, setIsLoading] = useState(false)
   const [timeZone, setTimeZone] = useState('')
 
@@ -135,12 +137,6 @@ const Punch = () => {
           setIsTimeIn(true)
           setPunchedInTime(parsed.punchedInTime)
           setTimeElapsed(parsed.timeElapsed || 0)
-          if (!timer) {
-            const mainInterval = setInterval(() => {
-              setTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setTimer(mainInterval)
-          }
         }
       }
       return
@@ -164,20 +160,15 @@ const Punch = () => {
           const now = new Date()
           const diffSec = Math.floor((now - timeInDateObj) / 1000)
           setTimeElapsed(diffSec)
-          if (!timer) {
-            const mainInterval = setInterval(() => {
-              setTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setTimer(mainInterval)
-          }
-          const localPunchedInTime = timeInDateObj.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          })
-          setPunchedInTime(localPunchedInTime)
         }
+        const localPunchedInTime = timeInDateObj.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        })
+        setPunchedInTime(localPunchedInTime)
+
         // Handle Coffee Breaks
         let localCoffeeUsed = 0
         let coffeeActiveStart = null
@@ -200,13 +191,8 @@ const Punch = () => {
           setIsCoffeeBreakActive(true)
           const coffeeDiff = Math.floor((new Date() - coffeeActiveStart) / 1000)
           setCoffeeTimeElapsed(coffeeDiff)
-          if (!coffeeTimer) {
-            const cTimer = setInterval(() => {
-              setCoffeeTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setCoffeeTimer(cTimer)
-          }
         }
+
         // Handle Lunch Breaks
         let localLunchUsed = 0
         if (log.lunchBreakStart) {
@@ -217,12 +203,6 @@ const Punch = () => {
             const lunchActiveStart = new Date(log.lunchBreakStart)
             const lunchDiff = Math.floor((new Date() - lunchActiveStart) / 1000)
             setLunchTimeElapsed(lunchDiff)
-            if (!lunchTimer) {
-              const lTimer = setInterval(() => {
-                setLunchTimeElapsed((prev) => prev + 1)
-              }, 1000)
-              setLunchTimer(lTimer)
-            }
           }
         }
         setLunchUsedCount(localLunchUsed)
@@ -408,10 +388,6 @@ const Punch = () => {
   // Reset Coffee Break State
   const resetCoffeeBreakLocal = () => {
     setIsCoffeeBreakActive(false)
-    if (coffeeTimer) {
-      clearInterval(coffeeTimer)
-      setCoffeeTimer(null)
-    }
     setCoffeeTimeElapsed(0)
     setCoffeeUsedCount(0)
   }
@@ -419,25 +395,63 @@ const Punch = () => {
   // Reset Lunch Break State
   const resetLunchBreakLocal = () => {
     setIsLunchBreakActive(false)
-    if (lunchTimer) {
-      clearInterval(lunchTimer)
-      setLunchTimer(null)
-    }
     setLunchTimeElapsed(0)
     setLunchUsedCount(0)
   }
 
   // Cleanup on Timeout
   const handleTimeoutCleanup = () => {
-    if (timer) {
-      clearInterval(timer)
-      setTimer(null)
-    }
+    setIsTimeIn(false)
     setTimeElapsed(0)
     setPunchedInTime('Not Time In')
     resetCoffeeBreakLocal()
     resetLunchBreakLocal()
   }
+
+  // Manage Main Timer with useEffect
+  useEffect(() => {
+    let mainTimer = null
+    if (isTimeIn) {
+      mainTimer = setInterval(() => {
+        setTimeElapsed((prev) => prev + 1)
+      }, 1000)
+    } else {
+      setTimeElapsed(0)
+    }
+    return () => {
+      if (mainTimer) clearInterval(mainTimer)
+    }
+  }, [isTimeIn])
+
+  // Manage Coffee Break Timer with useEffect
+  useEffect(() => {
+    let cTimer = null
+    if (isCoffeeBreakActive) {
+      cTimer = setInterval(() => {
+        setCoffeeTimeElapsed((prev) => prev + 1)
+      }, 1000)
+    } else {
+      setCoffeeTimeElapsed(0)
+    }
+    return () => {
+      if (cTimer) clearInterval(cTimer)
+    }
+  }, [isCoffeeBreakActive])
+
+  // Manage Lunch Break Timer with useEffect
+  useEffect(() => {
+    let lTimer = null
+    if (isLunchBreakActive) {
+      lTimer = setInterval(() => {
+        setLunchTimeElapsed((prev) => prev + 1)
+      }, 1000)
+    } else {
+      setLunchTimeElapsed(0)
+    }
+    return () => {
+      if (lTimer) clearInterval(lTimer)
+    }
+  }, [isLunchBreakActive])
 
   // Handle Time In/Out Punch
   const handlePunch = async () => {
@@ -530,16 +544,6 @@ const Punch = () => {
         alertWith3s('Success', result.message)
         if (isTimeIn) {
           handleTimeoutCleanup()
-        } else {
-          const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000)
-          setTimer(intervalId)
-          const localPunchedInTime = currentDateTime.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          })
-          setPunchedInTime(localPunchedInTime)
         }
         setIsTimeIn(!isTimeIn)
       } else {
@@ -553,19 +557,10 @@ const Punch = () => {
         await AsyncStorage.setItem('punchQueue', JSON.stringify(updatedQueue))
         alertWith3s('Offline', 'Your punch has been saved and will sync when online.')
         if (!isTimeIn) {
-          const intervalId = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000)
-          setTimer(intervalId)
-          const localPunchedInTime = currentDateTime.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          })
-          setPunchedInTime(localPunchedInTime)
+          setIsTimeIn(!isTimeIn)
         } else {
           handleTimeoutCleanup()
         }
-        setIsTimeIn(!isTimeIn)
       }
       await AsyncStorage.setItem(
         'localPunchState',
@@ -637,23 +632,10 @@ const Punch = () => {
           setIsCoffeeBreakActive(true)
           if (isLunchBreakActive) {
             setIsLunchBreakActive(false)
-            if (lunchTimer) {
-              clearInterval(lunchTimer)
-              setLunchTimer(null)
-            }
           }
-          if (!coffeeTimer) {
-            const intervalId = setInterval(() => {
-              setCoffeeTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setCoffeeTimer(intervalId)
-          }
+          setCoffeeUsedCount((prev) => prev) // No change on start
         } else if (result.message.includes('ended')) {
           setIsCoffeeBreakActive(false)
-          if (coffeeTimer) {
-            clearInterval(coffeeTimer)
-            setCoffeeTimer(null)
-          }
           setCoffeeUsedCount((prev) => {
             const newVal = prev + 1
             if (newVal >= 2) {
@@ -675,24 +657,10 @@ const Punch = () => {
         if (!isCoffeeBreakActive) {
           if (isLunchBreakActive) {
             setIsLunchBreakActive(false)
-            if (lunchTimer) {
-              clearInterval(lunchTimer)
-              setLunchTimer(null)
-            }
           }
           setIsCoffeeBreakActive(true)
-          if (!coffeeTimer) {
-            const intervalId = setInterval(() => {
-              setCoffeeTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setCoffeeTimer(intervalId)
-          }
         } else {
           setIsCoffeeBreakActive(false)
-          if (coffeeTimer) {
-            clearInterval(coffeeTimer)
-            setCoffeeTimer(null)
-          }
           setCoffeeUsedCount((prev) => {
             const newVal = prev + 1
             if (newVal >= 2) {
@@ -764,23 +732,10 @@ const Punch = () => {
           setIsLunchBreakActive(true)
           if (isCoffeeBreakActive) {
             setIsCoffeeBreakActive(false)
-            if (coffeeTimer) {
-              clearInterval(coffeeTimer)
-              setCoffeeTimer(null)
-            }
           }
-          if (!lunchTimer) {
-            const intervalId = setInterval(() => {
-              setLunchTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setLunchTimer(intervalId)
-          }
+          setLunchUsedCount((prev) => prev) // No change on start
         } else if (result.message.includes('ended')) {
           setIsLunchBreakActive(false)
-          if (lunchTimer) {
-            clearInterval(lunchTimer)
-            setLunchTimer(null)
-          }
           setLunchUsedCount((prev) => {
             const newVal = prev + 1
             if (newVal >= 1) {
@@ -799,24 +754,10 @@ const Punch = () => {
         if (!isLunchBreakActive) {
           if (isCoffeeBreakActive) {
             setIsCoffeeBreakActive(false)
-            if (coffeeTimer) {
-              clearInterval(coffeeTimer)
-              setCoffeeTimer(null)
-            }
           }
           setIsLunchBreakActive(true)
-          if (!lunchTimer) {
-            const intervalId = setInterval(() => {
-              setLunchTimeElapsed((prev) => prev + 1)
-            }, 1000)
-            setLunchTimer(intervalId)
-          }
         } else {
           setIsLunchBreakActive(false)
-          if (lunchTimer) {
-            clearInterval(lunchTimer)
-            setLunchTimer(null)
-          }
           setLunchUsedCount((prev) => {
             const newVal = prev + 1
             if (newVal >= 1) {
@@ -837,11 +778,9 @@ const Punch = () => {
   // Cleanup Timers on Unmount
   useEffect(() => {
     return () => {
-      if (timer) clearInterval(timer)
-      if (coffeeTimer) clearInterval(coffeeTimer)
-      if (lunchTimer) clearInterval(lunchTimer)
+      // All timers are managed by their respective useEffect hooks
     }
-  }, [timer, coffeeTimer, lunchTimer])
+  }, [])
 
   const coffeeBreakDisabled = false
   const lunchBreakDisabled = false
