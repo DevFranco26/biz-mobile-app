@@ -11,6 +11,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator, // <-- Import ActivityIndicator
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -36,8 +37,12 @@ export default function Login() {
   const router = useRouter();
 
   const [passwordVisible, setPasswordVisible] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(false); // <-- Add loading state
 
   const handleSignin = async (values) => {
+    setIsLoading(true); // <-- Start loading
+
     // 2) BIOMETRIC AUTH CHECK BEFORE PROCEEDING:
     try {
       const hasBiometricHardware = await LocalAuthentication.hasHardwareAsync();
@@ -46,6 +51,7 @@ export default function Login() {
           'Biometric Not Supported',
           'Your device does not support biometric authentication.'
         );
+        setIsLoading(false); // <-- Stop loading
         return;
       }
 
@@ -55,6 +61,7 @@ export default function Login() {
           'Biometric Not Set Up',
           'No biometric credentials found. Please set up Fingerprint/Face ID on your device.'
         );
+        setIsLoading(false); // <-- Stop loading
         return;
       }
 
@@ -70,10 +77,12 @@ export default function Login() {
           'Authentication Failed',
           'You could not be authenticated. Please try again.'
         );
+        setIsLoading(false); // <-- Stop loading
         return;
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred during biometric authentication.');
+      setIsLoading(false); // <-- Stop loading
       return;
     }
 
@@ -101,6 +110,8 @@ export default function Login() {
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred. Try again later.');
+    } finally {
+      setIsLoading(false); // <-- Stop loading after request completes
     }
   };
 
@@ -216,9 +227,19 @@ export default function Login() {
 
                 {/* Sign In Button */}
                 <Pressable
-                  className="w-full py-4 rounded-lg mt-7 bg-orange-500/90"
+                  className={`w-full py-4 rounded-lg mt-7 flex-row justify-center items-center ${
+                    isLoading ? 'bg-orange-300' : 'bg-orange-500/90'
+                  }`}
                   onPress={handleSubmit}
+                  disabled={isLoading} // <-- Disable button while loading
                 >
+                  {isLoading && (
+                    <ActivityIndicator 
+                      size="small" 
+                      color="#ffffff" 
+                      style={{ marginRight: 10 }} // <-- Add some spacing
+                    />
+                  )}
                   <Text className="text-white text-center text-lg font-medium">
                     Sign In
                   </Text>

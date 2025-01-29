@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bizsolutions.bizbuddy"
     },
     "android": {
       "adaptiveIcon": {
@@ -46,6 +47,12 @@
       "eas": {
         "projectId": "45eef022-cbe4-482f-9b4b-8ab4d83697f3"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/45eef022-cbe4-482f-9b4b-8ab4d83697f3"
     }
   }
 }
