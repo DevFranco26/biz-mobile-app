@@ -1,54 +1,55 @@
 // File: client/app/(tabs)/(settings)/settings.jsx
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons'; 
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useState } from "react";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as SecureStore from "expo-secure-store";
 
-import useThemeStore from '../../../store/themeStore';
-import useUserStore from '../../../store/userStore';
-import useCompanyStore from '../../../store/companyStore';
-import useSubscriptionStore from '../../../store/subscriptionStore';
+import useThemeStore from "../../../store/themeStore";
+import useUserStore from "../../../store/userStore";
+import useCompanyStore from "../../../store/companyStore";
+import useSubscriptionStore from "../../../store/subscriptionStore";
 
 const Settings = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
-  const isLightTheme = theme === 'light';
+  const isLightTheme = theme === "light";
 
   const { user } = useUserStore();
   const { getCompanyName, fetchCompanyById } = useCompanyStore();
-  const { currentSubscription, loadingCurrent, fetchCurrentSubscription } = useSubscriptionStore();
+  const { currentSubscription, loadingCurrent, fetchCurrentSubscription } =
+    useSubscriptionStore();
 
   // Theming constants
-  const headerTextColor = isLightTheme ? 'text-slate-800' : 'text-slate-300';
-  const accentColor = '#f97316';
+  const headerTextColor = isLightTheme ? "text-slate-800" : "text-slate-300";
+  const accentColor = "#f97316";
 
-  const userRole = (user?.role || '').toLowerCase();
-  const userName = user ? `${user.firstName}`.trim() : '...';
+  const userRole = (user?.role || "").toLowerCase();
+  const userName = user ? `${user.firstName}`.trim() : "...";
   const userCompanyName = user?.companyId
-    ? getCompanyName(user.companyId) || '...'
-    : 'Unknown';
+    ? getCompanyName(user.companyId) || "..."
+    : "Unknown";
 
   // Keep track of subscription name and lock status
-  const [subscriptionName, setSubscriptionName] = useState('Loading...');
+  const [subscriptionName, setSubscriptionName] = useState("Loading...");
   const [isLocked, setIsLocked] = useState(false);
 
   // Array of allowed plans — everything else is locked unless superadmin
-  const ALLOWED_PLANS = ['basic', 'pro'];
+  const ALLOWED_PLANS = ["basic", "pro"];
 
   // Whenever subscription or role changes, update lock logic
   useEffect(() => {
     if (!currentSubscription || !currentSubscription.plan) {
       // No active subscription => lock for non-superadmin
-      setSubscriptionName('No active subscription');
-      setIsLocked(userRole !== 'superadmin');
+      setSubscriptionName("No active subscription");
+      setIsLocked(userRole !== "superadmin");
     } else {
-      const planName = currentSubscription.plan?.planName || 'Unknown Plan';
+      const planName = currentSubscription.plan?.planName || "Unknown Plan";
       setSubscriptionName(planName);
 
-      if (userRole === 'superadmin') {
+      if (userRole === "superadmin") {
         // superadmin always unlocked
         setIsLocked(false);
       } else {
@@ -66,8 +67,8 @@ const Settings = () => {
   // Fetch subscription if user is admin or superadmin
   useEffect(() => {
     const fetchSub = async () => {
-      if (!user || !['admin', 'superadmin'].includes(userRole)) return;
-      const token = await SecureStore.getItemAsync('token');
+      if (!user || !["admin", "superadmin"].includes(userRole)) return;
+      const token = await SecureStore.getItemAsync("token");
       if (token) {
         await fetchCurrentSubscription(token);
       }
@@ -79,7 +80,7 @@ const Settings = () => {
   useEffect(() => {
     const init = async () => {
       if (user?.companyId) {
-        const token = await SecureStore.getItemAsync('token');
+        const token = await SecureStore.getItemAsync("token");
         if (token) {
           await fetchCompanyById(token, user.companyId);
         }
@@ -90,18 +91,16 @@ const Settings = () => {
 
   // Icon by role
   const roleIconByRole = {
-    superadmin: 'ribbon-outline',
-    admin: 'shield-checkmark-outline',
-    supervisor: 'briefcase-outline',
-    user: 'person-outline',
+    superadmin: "ribbon-outline",
+    admin: "shield-checkmark-outline",
+    supervisor: "briefcase-outline",
+    user: "person-outline",
   };
-  const roleIconName = roleIconByRole[userRole] || 'person-outline';
+  const roleIconName = roleIconByRole[userRole] || "person-outline";
 
   // Determine if Punch Locations should be locked specifically
-  const punchLocationsLocked = (
-    userRole !== 'superadmin' &&
-    subscriptionName.toLowerCase() !== 'pro'
-  );
+  const punchLocationsLocked =
+    userRole !== "superadmin" && subscriptionName.toLowerCase() !== "pro";
 
   // Reusable pressable card for other features
   const renderFeature = (
@@ -122,10 +121,10 @@ const Settings = () => {
       style={{
         padding: 12,
         borderRadius: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         marginVertical: 4,
-        backgroundColor: isLightTheme ? '#f1f5f9' : '#1e293b',
+        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
         opacity: isLocked && !overrideLock ? 0.5 : 1,
       }}
       disabled={isLocked && !overrideLock}
@@ -140,8 +139,8 @@ const Settings = () => {
         <Text
           style={{
             fontSize: 18,
-            fontWeight: '600',
-            color: isLightTheme ? '#1f2937' : '#f1f5f9',
+            fontWeight: "600",
+            color: isLightTheme ? "#1f2937" : "#f1f5f9",
           }}
         >
           {title}
@@ -149,7 +148,7 @@ const Settings = () => {
         <Text
           style={{
             fontSize: 11,
-            color: isLightTheme ? '#4b5563' : '#a0aec0',
+            color: isLightTheme ? "#4b5563" : "#a0aec0",
           }}
           className="mt-1"
         >
@@ -165,8 +164,8 @@ const Settings = () => {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}
-      edges={['top']}
+      className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}
+      edges={["top"]}
     >
       {/* Header Section */}
       <View className="rounded-xl my-4 mx-4">
@@ -180,7 +179,7 @@ const Settings = () => {
             <Ionicons name={roleIconName} size={25} color={accentColor} />
             <Text
               className={`text-xs font-semibold capitalize my-auto ml-1 ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                isLightTheme ? "text-slate-700" : "text-slate-300"
               }`}
             >
               {userRole}
@@ -194,12 +193,12 @@ const Settings = () => {
         className="flex-1 px-4 pb-6"
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        {userRole === 'user' ? (
+        {userRole === "user" ? (
           // Regular user sees no admin features
           <View className="flex-1 mb-4">
             <Text
               className={`text-base font-semibold ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
+                isLightTheme ? "text-slate-700" : "text-slate-300"
               }`}
             >
               You currently have no administrative features available.
@@ -209,11 +208,11 @@ const Settings = () => {
           // Render admin/supervisor features
           <View className="space-y-5">
             {/* Superadmin-Only Section */}
-            {userRole === 'superadmin' && (
+            {userRole === "superadmin" && (
               <View className="my-2">
                 <Text
                   className={`text-xl font-bold mb-1 ${
-                    isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                    isLightTheme ? "text-slate-800" : "text-slate-300"
                   }`}
                 >
                   Company
@@ -221,26 +220,26 @@ const Settings = () => {
 
                 {renderFeature(
                   Ionicons,
-                  'business-outline',
-                  'Companies',
-                  'Create, update, remove companies.',
-                  './superadmin-companies'
+                  "business-outline",
+                  "Companies",
+                  "Create, update, remove companies.",
+                  "./superadmin-companies"
                 )}
 
                 {renderFeature(
                   Ionicons,
-                  'reader-outline',
-                  'Subscribers',
-                  'Track all companies’ subscriptions.',
-                  './superadmin-subscriptions'
+                  "reader-outline",
+                  "Subscribers",
+                  "Track all companies’ subscriptions.",
+                  "./superadmin-subscriptions"
                 )}
 
                 {renderFeature(
                   Ionicons,
-                  'settings-outline',
-                  'Subscription Plans',
-                  'Create or update subscription plans.',
-                  './superadmin-subscription-plans'
+                  "settings-outline",
+                  "Subscription Plans",
+                  "Create or update subscription plans.",
+                  "./superadmin-subscription-plans"
                 )}
               </View>
             )}
@@ -249,17 +248,17 @@ const Settings = () => {
             <View className="my-2">
               <Text
                 className={`text-xl font-bold mb-1 ${
-                  isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                  isLightTheme ? "text-slate-800" : "text-slate-300"
                 }`}
               >
                 Department
               </Text>
               {renderFeature(
                 Ionicons,
-                'briefcase-outline',
-                'Departments',
-                'Organize departments and teams.',
-                './manage-departments'
+                "briefcase-outline",
+                "Departments",
+                "Organize departments and teams.",
+                "./manage-departments"
               )}
             </View>
 
@@ -267,39 +266,39 @@ const Settings = () => {
             <View className="my-2">
               <Text
                 className={`text-xl font-bold mb-1 ${
-                  isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                  isLightTheme ? "text-slate-800" : "text-slate-300"
                 }`}
               >
                 Employee
               </Text>
               {renderFeature(
                 Ionicons,
-                'people-outline',
-                'Employees',
-                'Monitor, create, update, remove employees.',
-                './manage-employees'
+                "people-outline",
+                "Employees",
+                "Monitor, create, update, remove employees.",
+                "./manage-employees"
               )}
               {renderFeature(
                 Ionicons,
-                'calendar-outline',
-                'Shifts Schedule',
-                'Create, update, assign shift schedules.',
-                './manage-schedules'
+                "calendar-outline",
+                "Shifts Schedule",
+                "Create, update, assign shift schedules.",
+                "./manage-schedules"
               )}
               {/* Custom Punch Locations feature */}
               <Pressable
                 onPress={() => {
                   if (!punchLocationsLocked) {
-                    router.push('./manage-locations');
+                    router.push("./manage-locations");
                   }
                 }}
                 style={{
                   padding: 12,
                   borderRadius: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                   marginVertical: 4,
-                  backgroundColor: isLightTheme ? '#f1f5f9' : '#1e293b',
+                  backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
                   opacity: punchLocationsLocked ? 0.5 : 1,
                 }}
                 disabled={punchLocationsLocked}
@@ -314,8 +313,8 @@ const Settings = () => {
                   <Text
                     style={{
                       fontSize: 18,
-                      fontWeight: '600',
-                      color: isLightTheme ? '#1f2937' : '#f1f5f9',
+                      fontWeight: "600",
+                      color: isLightTheme ? "#1f2937" : "#f1f5f9",
                     }}
                   >
                     Punch Locations
@@ -323,7 +322,7 @@ const Settings = () => {
                   <Text
                     style={{
                       fontSize: 11,
-                      color: isLightTheme ? '#4b5563' : '#a0aec0',
+                      color: isLightTheme ? "#4b5563" : "#a0aec0",
                     }}
                     className="mt-1"
                   >
@@ -336,52 +335,52 @@ const Settings = () => {
               </Pressable>
               {renderFeature(
                 Ionicons,
-                'calendar-outline',
-                'Leave Requests',
-                'Approve and reject employee leaves.',
-                './manage-leaves'
+                "calendar-outline",
+                "Leave Requests",
+                "Approve and reject employee leaves.",
+                "./manage-leaves"
               )}
             </View>
 
             {/* Admin or superadmin (not supervisor) */}
-            {userRole !== 'supervisor' && (
+            {userRole !== "supervisor" && (
               <>
                 {/* Payroll Section */}
                 <View className="my-2">
                   <Text
                     className={`text-xl font-bold mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                      isLightTheme ? "text-slate-800" : "text-slate-300"
                     }`}
                   >
                     Company: {userCompanyName} Payroll
                   </Text>
                   {renderFeature(
                     MaterialIcons,
-                    'attach-money',
-                    'Company Payroll Settings',
-                    'Configure cutoff cycles, currency, and overtime rates.',
-                    './payroll-payroll-settings'
+                    "attach-money",
+                    "Company Payroll Settings",
+                    "Configure cutoff cycles, currency, and overtime rates.",
+                    "./payroll-payroll-settings"
                   )}
                   {renderFeature(
                     Ionicons,
-                    'cash-outline',
-                    'Employee Payrate Settings',
-                    'Set or update pay rates for users.',
-                    './payroll-payrate-settings'
+                    "cash-outline",
+                    "Employee Payrate Settings",
+                    "Set or update pay rates for users.",
+                    "./payroll-payrate-settings"
                   )}
                   {renderFeature(
                     Ionicons,
-                    'document-text-outline',
-                    'Payroll Records',
-                    'View & manage all payroll records.',
-                    './payroll-payroll-records'
+                    "document-text-outline",
+                    "Payroll Records",
+                    "View & manage all payroll records.",
+                    "./payroll-payroll-records"
                   )}
                   {renderFeature(
                     Ionicons,
-                    'calculator-outline',
-                    'Generate Payroll',
-                    'Generate payroll for a user/period.',
-                    './payroll-generate-payroll'
+                    "calculator-outline",
+                    "Generate Payroll",
+                    "Generate payroll for a user/period.",
+                    "./payroll-generate-payroll"
                   )}
                 </View>
 
@@ -389,20 +388,20 @@ const Settings = () => {
                 <View className="my-2">
                   <Text
                     className={`text-xl font-bold mb-1 ${
-                      isLightTheme ? 'text-slate-800' : 'text-slate-300'
+                      isLightTheme ? "text-slate-800" : "text-slate-300"
                     }`}
                   >
                     Subscription
                   </Text>
                   {renderFeature(
                     Ionicons,
-                    'reader-outline',
+                    "reader-outline",
                     loadingCurrent
-                      ? 'Checking subscription...'
+                      ? "Checking subscription..."
                       : `${subscriptionName} Plan`,
-                    'View or manage your company’s subscription plan.',
-                    './manage-mysubscriptions',
-                    true // Always unlocked so you can view/update your plan
+                    "View or manage your company’s subscription plan.",
+                    "./manage-mysubscriptions",
+                    true
                   )}
                 </View>
               </>
@@ -410,25 +409,21 @@ const Settings = () => {
           </View>
         )}
 
-        {/* 
-          Regardless of role/subscription, show the Appearance/Preference feature.
-          We simply place it here after the above blocks so it's always visible.
-        */}
         <View className="my-2">
           <Text
             className={`text-xl font-bold mb-1 ${
-              isLightTheme ? 'text-slate-800' : 'text-slate-300'
+              isLightTheme ? "text-slate-800" : "text-slate-300"
             }`}
           >
             Preference
           </Text>
           {renderFeature(
             Ionicons,
-            'reader-outline',
-            'Appearance',
-            'Update appearance settings of the application.',
-            './preference',
-            true // Force always unlocked
+            "reader-outline",
+            "Appearance",
+            "Update appearance settings of the application.",
+            "./preference",
+            true
           )}
         </View>
       </ScrollView>

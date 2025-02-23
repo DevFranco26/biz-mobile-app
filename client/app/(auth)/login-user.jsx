@@ -51,7 +51,7 @@ export default function Login() {
           "Biometric Not Supported",
           "Your device does not support biometric authentication."
         );
-        setIsLoading(false); // <-- Stop loading
+        setIsLoading(false);
         return;
       }
 
@@ -61,7 +61,7 @@ export default function Login() {
           "Biometric Not Set Up",
           "No biometric credentials found. Please set up Fingerprint/Face ID on your device."
         );
-        setIsLoading(false); // <-- Stop loading
+        setIsLoading(false);
         return;
       }
 
@@ -77,7 +77,7 @@ export default function Login() {
           "Authentication Failed",
           "You could not be authenticated. Please try again."
         );
-        setIsLoading(false); // <-- Stop loading
+        setIsLoading(false);
         return;
       }
     } catch (error) {
@@ -85,7 +85,7 @@ export default function Login() {
         "Error",
         "An error occurred during biometric authentication."
       );
-      setIsLoading(false); // <-- Stop loading
+      setIsLoading(false);
       return;
     }
 
@@ -114,7 +114,7 @@ export default function Login() {
     } catch (error) {
       Alert.alert("Error", "An error occurred. Try again later.");
     } finally {
-      setIsLoading(false); // <-- Stop loading after request completes
+      setIsLoading(false);
     }
   };
 
@@ -238,7 +238,7 @@ export default function Login() {
                     <ActivityIndicator
                       size="small"
                       color="#ffffff"
-                      style={{ marginRight: 10 }} // <-- Add some spacing
+                      style={{ marginRight: 10 }}
                     />
                   )}
                   <Text className="text-white text-center text-lg font-medium">

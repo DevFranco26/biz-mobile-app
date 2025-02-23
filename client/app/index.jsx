@@ -26,18 +26,14 @@ export default function Index() {
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Check app version first
         const storedVersion = await SecureStore.getItemAsync("appVersion");
         if (!storedVersion) {
-          // First launch: store the current version
           await SecureStore.setItemAsync("appVersion", VERSION);
         } else if (storedVersion !== VERSION) {
-          // Version mismatch: prompt update and block further navigation
           setShowUpdateModal(true);
-          return; // Exit initialization until user updates
+          return;
         }
 
-        // Proceed with authentication check if version is valid
         const token = await SecureStore.getItemAsync("token");
         const user = await SecureStore.getItemAsync("user");
 
@@ -80,9 +76,7 @@ export default function Index() {
     initApp();
   }, [setUser, router]);
 
-  // Handler for the update button (modify the URL to your app's update page or app store)
   const handleUpdate = () => {
-    // For example, open a URL to the app store or update instructions
     Linking.openURL("https://your-app-update-url.com");
   };
 
