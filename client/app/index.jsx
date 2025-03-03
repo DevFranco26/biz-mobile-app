@@ -73,17 +73,8 @@ export default function Index() {
 
   return (
     <>
-      <StatusBar
-        barStyle={isLightTheme ? "dark-content" : "light-content"}
-        backgroundColor={statusBarBackground}
-        translucent={false}
-        animated={true}
-      />
-
-      <SafeAreaView
-        className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"} justify-center items-center`}
-        style={{ paddingTop: 60 }}
-      >
+      <StatusBar barStyle={isLightTheme ? "dark-content" : "light-content"} backgroundColor={statusBarBackground} translucent={false} animated={true} />
+      <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"} justify-center items-center`} style={{ paddingTop: 60 }}>
         <ActivityIndicator size="large" color="#0f766e" />
         <Text className={`mt-4 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Checking authentication...</Text>
       </SafeAreaView>

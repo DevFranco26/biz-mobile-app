@@ -100,8 +100,7 @@ const updateUser = async (req, res) => {
     if (lastName !== undefined) data.lastName = lastName;
     if (email !== undefined && email !== user.email) {
       const emailExists = await prisma.users.findFirst({ where: { email } });
-      if (emailExists && emailExists.id !== user.id)
-        return res.status(409).json({ message: "Another user already has this email." });
+      if (emailExists && emailExists.id !== user.id) return res.status(409).json({ message: "Another user already has this email." });
       data.email = email;
     }
     if (phone !== undefined) data.phone = phone;
@@ -177,10 +176,8 @@ const updateUserPresence = async (req, res) => {
 const changeUserPassword = async (req, res) => {
   try {
     const { oldPassword, newPassword, confirmPassword } = req.body;
-    if (!oldPassword || !newPassword || !confirmPassword)
-      return res.status(400).json({ message: "All password fields are required." });
-    if (newPassword !== confirmPassword)
-      return res.status(400).json({ message: "New password and confirm password do not match." });
+    if (!oldPassword || !newPassword || !confirmPassword) return res.status(400).json({ message: "All password fields are required." });
+    if (newPassword !== confirmPassword) return res.status(400).json({ message: "New password and confirm password do not match." });
     const user = await prisma.users.findUnique({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ message: "User not found." });
     const isMatch = bcrypt.compareSync(oldPassword, user.password);
@@ -212,8 +209,7 @@ const getUserById = async (req, res) => {
       },
     });
     if (!user) return res.status(404).json({ message: "User not found." });
-    if (req.user.role !== "superadmin" && user.companyId !== req.user.companyId)
-      return res.status(403).json({ message: "Unauthorized request." });
+    if (req.user.role !== "superadmin" && user.companyId !== req.user.companyId) return res.status(403).json({ message: "Unauthorized request." });
     return res.status(200).json({ data: user });
   } catch (error) {
     console.error("Error in getUserById:", error);

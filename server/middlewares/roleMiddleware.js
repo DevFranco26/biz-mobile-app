@@ -5,9 +5,7 @@ const authorizeRoles = (...allowedRoles) => {
       console.log("user:", req.user);
       console.log("role:", req.user.role);
 
-      return res
-        .status(403)
-        .json({ message: "Access denied: Insufficient permissions." });
+      return res.status(403).json({ message: "Access denied: Insufficient permissions." });
     }
     next();
   };

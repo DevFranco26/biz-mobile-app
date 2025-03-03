@@ -76,8 +76,7 @@ const createCompany = async (req, res) => {
 const updateCompany = async (req, res) => {
   const id = Number(req.params.id);
   const { name, domain, country, currency, language } = req.body;
-  if (!name && !domain && !country && !currency && !language)
-    return res.status(400).json({ message: "At least one field must be provided for update." });
+  if (!name && !domain && !country && !currency && !language) return res.status(400).json({ message: "At least one field must be provided for update." });
   try {
     const company = await prisma.companies.findUnique({ where: { id } });
     if (!company) return res.status(404).json({ message: "Company not found." });

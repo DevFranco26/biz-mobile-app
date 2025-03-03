@@ -154,8 +154,7 @@ const assignUsersToDepartment = async (req, res) => {
     if (!department) return res.status(404).json({ message: "Department not found." });
     if (userRole === "supervisor" && department.supervisorId !== requesterId)
       return res.status(403).json({ message: "You are not the supervisor of this department." });
-    if (!Array.isArray(userIds) || userIds.length === 0)
-      return res.status(400).json({ message: "Provide a non-empty array of userIds to assign." });
+    if (!Array.isArray(userIds) || userIds.length === 0) return res.status(400).json({ message: "Provide a non-empty array of userIds to assign." });
     const usersToAssign = await prisma.users.findMany({
       where: { id: { in: userIds }, companyId, role: { not: "superadmin" } },
       select: { id: true, role: true },
@@ -206,8 +205,7 @@ const removeUsersFromDepartment = async (req, res) => {
     if (!department) return res.status(404).json({ message: "Department not found." });
     if (userRole === "supervisor" && department.supervisorId !== requesterId)
       return res.status(403).json({ message: "You are not the supervisor of this department." });
-    if (!Array.isArray(userIds) || userIds.length === 0)
-      return res.status(400).json({ message: "Provide a non-empty array of userIds to remove." });
+    if (!Array.isArray(userIds) || userIds.length === 0) return res.status(400).json({ message: "Provide a non-empty array of userIds to remove." });
     const usersToRemove = await prisma.users.findMany({
       where: { id: { in: userIds }, departmentId: id, companyId },
       select: { id: true },

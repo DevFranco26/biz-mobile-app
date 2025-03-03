@@ -69,9 +69,7 @@ const getMyShifts = async (req, res) => {
       },
       orderBy: { id: "asc" },
     });
-    const data = assignments
-      .map((a) => (a.shiftSchedule ? { shiftSchedule: a.shiftSchedule, recurrence: a.recurrence } : null))
-      .filter((a) => a !== null);
+    const data = assignments.map((a) => (a.shiftSchedule ? { shiftSchedule: a.shiftSchedule, recurrence: a.recurrence } : null)).filter((a) => a !== null);
     return res.status(200).json({ message: "User shifts retrieved successfully.", data });
   } catch (error) {
     console.error("Error in getMyShifts:", error);

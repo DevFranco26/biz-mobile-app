@@ -6,7 +6,6 @@ const app = require("./app.js");
 const { connect } = require("./config/database.js");
 const router = require("./routes/index.js");
 const errorHandler = require("./middlewares/errorHandler.js");
-const stripe = require("stripe")("sk_test_...");
 
 const port = process.env.PORT || 5000;
 

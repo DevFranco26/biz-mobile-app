@@ -36,8 +36,7 @@ const createOrUpdatePayRate = async (req, res) => {
     const userId = Number(req.params.userId);
     const { payType, rate } = req.body;
     if (!payType || !rate) return res.status(400).json({ message: "payType and rate are required." });
-    if (!["hourly", "monthly"].includes(payType))
-      return res.status(400).json({ message: "Invalid payType (hourly or monthly)." });
+    if (!["hourly", "monthly"].includes(payType)) return res.status(400).json({ message: "Invalid payType (hourly or monthly)." });
     const user = await prisma.users.findFirst({
       where: { id: userId, companyId: req.user.companyId },
     });

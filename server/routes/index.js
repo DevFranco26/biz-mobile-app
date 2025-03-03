@@ -22,7 +22,6 @@ router.use("/auth", authRoutes);
 router.use("/subscription-plans", subscriptionPlansRoutes);
 router.use("/payment", paymentsRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
-router.use("/payments", paymentsRoutes);
 
 router.use(authenticate, updateActivityMiddleware);
 
@@ -35,5 +34,6 @@ router.use("/leaves", leavesRoutes);
 router.use("/shiftschedules", shiftSchedulesRoutes);
 router.use("/payroll", payrollRoutes);
 router.use("/departments", departmentsRoutes);
+router.use("/payments", paymentsRoutes);
 
 module.exports = router;

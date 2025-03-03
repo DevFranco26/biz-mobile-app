@@ -3,10 +3,11 @@ import React from "react";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { Stack } from "expo-router";
 import "../global.css";
+import { STRIPE_PUBLISHABLE_KEY } from "../config/constant";
 
 export default function RootLayout() {
   return (
-    <StripeProvider publishableKey="pk_test_51Oh4bHEjdw0xVgOBD5Tcqst7U3RHtR4Axv7Qd2hHTuJCjIq9UGBqsB7Ct300SxMtFZP0uxCZRZDJQN0MbE04rMFH00eRxVj3w3">
+    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <Stack>
         <Stack.Screen
           name="index"

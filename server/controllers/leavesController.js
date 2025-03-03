@@ -173,8 +173,7 @@ const getApprovers = async (req, res) => {
 // Get leaves for approver with optional status filter.
 const getLeavesForApprover = async (req, res) => {
   const { status } = req.query;
-  if (status && !["Pending", "Approved", "Rejected"].includes(status))
-    return res.status(400).json({ message: "Invalid status filter." });
+  if (status && !["Pending", "Approved", "Rejected"].includes(status)) return res.status(400).json({ message: "Invalid status filter." });
   const query = { approverId: req.user.id };
   if (status) query.status = status;
   try {

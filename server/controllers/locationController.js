@@ -66,8 +66,7 @@ const updateLocation = async (req, res) => {
     const adminUser = await prisma.users.findUnique({
       where: { id: location.adminid },
     });
-    if (!adminUser || adminUser.companyId !== req.user.companyId)
-      return res.status(403).json({ message: "Forbidden: Different company." });
+    if (!adminUser || adminUser.companyId !== req.user.companyId) return res.status(403).json({ message: "Forbidden: Different company." });
     const updatedLocation = await prisma.locations.update({
       where: { id: Number(locationId) },
       data: { label, latitude, longitude, radius, updatedBy: req.user.id },

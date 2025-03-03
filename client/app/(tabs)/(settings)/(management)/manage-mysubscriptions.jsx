@@ -1,5 +1,7 @@
+// File: app/(tabs)/(settings)/(management)/manage-mysubscription.jsx
+
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, Alert, Pressable, Modal, ScrollView, TouchableOpacity, Linking, RefreshControl } from "react-native";
+import { View, Text, ActivityIndicator, Alert, Pressable, Modal, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -137,7 +139,7 @@ const MySubscriptions = () => {
                   <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Features:</Text>
                   {Object.entries(currentSubscription.plan.features).map(([feature, available]) => (
                     <View key={feature} className="flex-row items-center mt-1">
-                      <Ionicons name={available ? "checkmark-circle" : "lock-closed"} size={16} color={available ? "#f97316" : "#f97316"} />
+                      <Ionicons name={available ? "checkmark-circle" : "lock-closed"} size={16} color="#f97316" />
                       <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
                         {feature.charAt(0).toUpperCase() + feature.slice(1)}
                       </Text>
@@ -234,25 +236,18 @@ const MySubscriptions = () => {
                           <View className="mt-6">
                             <Pressable
                               onPress={() => {
-                                const stripeUrls = {
-                                  25.99: "https://buy.stripe.com/7sIeWafmXfVZfyE7t8",
-                                  39.99: "https://buy.stripe.com/7sI29o1w711586c14L",
-                                  69.99: "https://buy.stripe.com/8wMg0e1w7h039ag6p6",
-                                  119.99: "https://buy.stripe.com/28og0egr1dNRaek5l3",
-                                  169.99: "https://buy.stripe.com/5kA3dsdePh030DKaFo",
-                                  49.99: "https://buy.stripe.com/7sI8xMfmXdNR4U0cNx",
-                                  59.99: "https://buy.stripe.com/6oEaFU1w7h032LS8xi",
-                                  79.99: "https://buy.stripe.com/bIYeWa1w7bFJ3PWeVH",
-                                  129.99: "https://buy.stripe.com/7sI15k6QrcJN72828W",
-                                  179.99: "https://buy.stripe.com/bIYbJY1w77ptdqwbJx",
-                                };
-                                const priceKey = plan.price?.toString();
-                                const url = stripeUrls[priceKey];
-                                if (url) {
-                                  Linking.openURL(url).catch(() => Alert.alert("Error", "Unable to open link."));
-                                } else {
-                                  Alert.alert("Error", "No payment link available for this plan.");
-                                }
+                                console.log("Subscribe pressed for plan:", plan);
+                                // First close the modal
+                                setPlanModalVisible(false);
+                                // Then navigate to the payment screen with the plan details
+                                router.push({
+                                  pathname: "(auth)/payment",
+                                  params: {
+                                    planId: plan.id,
+                                    planName: plan.planName,
+                                    planPrice: plan.price,
+                                  },
+                                });
                               }}
                               className="bg-orange-500 px-4 py-4 rounded-lg"
                             >

@@ -15,7 +15,15 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
+
+// Skip JSON parsing for the webhook endpoint
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/payment/stripe-webhook") {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 app.get("/api", (req, res) => {
   res.send("API is running!");
