@@ -1,8 +1,8 @@
 // File: client/store/timeLogsStore.jsx
 
-import { create } from 'zustand';
-import { Alert } from 'react-native';
-import { API_BASE_URL } from '../config/constant';
+import { create } from "zustand";
+import { Alert } from "react-native";
+import { API_BASE_URL } from "../config/constant";
 
 const useTimeLogsStore = create((set, get) => ({
   timeLogs: [],
@@ -18,27 +18,27 @@ const useTimeLogsStore = create((set, get) => ({
     if (startDate) params.push(`startDate=${startDate}`);
     if (endDate) params.push(`endDate=${endDate}`);
     if (params.length > 0) {
-      url += `?${params.join('&')}`;
+      url += `?${params.join("&")}`;
     }
 
     try {
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
       const data = await response.json();
       if (response.ok) {
         set({ timeLogs: data.data, loading: false });
       } else {
-        set({ error: data.message || 'Failed to fetch time logs.', loading: false });
-        Alert.alert('Error', data.message || 'Failed to fetch time logs.');
+        set({ error: data.message || "Failed to fetch time logs.", loading: false });
+        Alert.alert("Error", data.message || "Failed to fetch time logs.");
       }
     } catch (error) {
-      console.error('Error fetching time logs:', error);
-      set({ error: 'An error occurred while fetching time logs.', loading: false });
-      Alert.alert('Error', 'An error occurred while fetching time logs.');
+      console.error("Error fetching time logs:", error);
+      set({ error: "An error occurred while fetching time logs.", loading: false });
+      Alert.alert("Error", "An error occurred while fetching time logs.");
     }
   },
 }));

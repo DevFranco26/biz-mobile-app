@@ -1,8 +1,8 @@
 // File: store/locationsStore.js
 
-import {create} from 'zustand';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/constant';
+import { create } from "zustand";
+import axios from "axios";
+import { API_BASE_URL } from "../config/constant";
 
 const useLocationsStore = create((set) => ({
   locations: [],
@@ -14,13 +14,13 @@ const useLocationsStore = create((set) => ({
     try {
       const response = await axios.get(`${API_BASE_URL}/locations/all`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       set({ locations: response.data.data, loading: false });
     } catch (err) {
-      console.error('Error fetching locations:', err);
-      set({ error: err.message || 'Error fetching locations', loading: false });
+      console.error("Error fetching locations:", err);
+      set({ error: err.message || "Error fetching locations", loading: false });
     }
   },
 
@@ -28,14 +28,14 @@ const useLocationsStore = create((set) => ({
     try {
       const response = await axios.post(`${API_BASE_URL}/locations/create`, locationData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       set((state) => ({ locations: [...state.locations, response.data.data] }));
       return { success: true, message: response.data.message };
     } catch (err) {
-      console.error('Error creating location:', err);
-      return { success: false, message: err.response?.data?.message || 'Error creating location' };
+      console.error("Error creating location:", err);
+      return { success: false, message: err.response?.data?.message || "Error creating location" };
     }
   },
 
@@ -43,16 +43,16 @@ const useLocationsStore = create((set) => ({
     try {
       const response = await axios.put(`${API_BASE_URL}/locations/update/${locationId}`, locationData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       set((state) => ({
-        locations: state.locations.map((loc) => loc.id === locationId ? response.data.data : loc),
+        locations: state.locations.map((loc) => (loc.id === locationId ? response.data.data : loc)),
       }));
       return { success: true, message: response.data.message };
     } catch (err) {
-      console.error('Error updating location:', err);
-      return { success: false, message: err.response?.data?.message || 'Error updating location' };
+      console.error("Error updating location:", err);
+      return { success: false, message: err.response?.data?.message || "Error updating location" };
     }
   },
 
@@ -60,7 +60,7 @@ const useLocationsStore = create((set) => ({
     try {
       const response = await axios.delete(`${API_BASE_URL}/locations/delete/${locationId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       set((state) => ({
@@ -68,8 +68,8 @@ const useLocationsStore = create((set) => ({
       }));
       return { success: true, message: response.data.message };
     } catch (err) {
-      console.error('Error deleting location:', err);
-      return { success: false, message: err.response?.data?.message || 'Error deleting location' };
+      console.error("Error deleting location:", err);
+      return { success: false, message: err.response?.data?.message || "Error deleting location" };
     }
   },
 }));

@@ -1,416 +1,258 @@
 // File: server/controllers/departmentController.js
+const { prisma } = require("../config/database");
 
-const { Department, User } = require('../models');
-const { Op } = require('sequelize');
-
-/**
- * @desc    Create a new Department
- * @route   POST /api/departments/create
- * @access  Admin, SuperAdmin
- */
 const createDepartment = async (req, res) => {
   try {
     const { name, supervisorId } = req.body;
     const companyId = req.user.companyId;
-
-    // Validate required fields
-    if (!name) {
-      return res.status(400).json({ message: 'Department name is required.' });
-    }
-
-    // Check if department with the same name already exists within the company
-    const existingDepartment = await Department.findOne({ where: { name, companyId } });
-    if (existingDepartment) {
-      return res.status(409).json({ message: 'Department with this name already exists in your company.' });
-    }
-
-    // If supervisorId is provided, validate the supervisor
+    if (!name) return res.status(400).json({ message: "Department name is required." });
+    const existingDepartment = await prisma.departments.findFirst({
+      where: { name, companyId },
+    });
+    if (existingDepartment)
+      return res.status(409).json({
+        message: "Department with this name already exists in your company.",
+      });
     let supervisor = null;
     if (supervisorId) {
-      supervisor = await User.findOne({
-        where: {
-          id: supervisorId,
-          companyId,
-          role: 'supervisor',
-        },
+      supervisor = await prisma.users.findFirst({
+        where: { id: Number(supervisorId), companyId, role: "supervisor" },
       });
-
-      if (!supervisor) {
-        return res.status(400).json({ message: 'Invalid supervisorId. Supervisor must be a user with role "supervisor" in your company.' });
-      }
+      if (!supervisor) return res.status(400).json({ message: "Invalid supervisorId." });
     }
-
-    // Create the Department
-    const department = await Department.create({
-      name,
-      companyId,
-      supervisorId: supervisor ? supervisor.id : null,
+    const department = await prisma.departments.create({
+      data: {
+        name,
+        companyId,
+        supervisorId: supervisor ? supervisor.id : null,
+      },
     });
-
-    res.status(201).json({ message: 'Department created successfully.', department });
+    console.log("Created department:", department);
+    return res.status(201).json({ message: "Department created successfully.", department });
   } catch (error) {
-    console.error('Error in createDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in createDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @desc    Get All Departments
- * @route   GET /api/departments/all
- * @access  Admin, SuperAdmin
- */
 const getAllDepartments = async (req, res) => {
   try {
     const companyId = req.user.companyId;
-
-    const departments = await Department.findAll({
+    const departments = await prisma.departments.findMany({
       where: { companyId },
-      include: [
-        {
-          model: User,
-          as: 'Supervisor',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+      include: {
+        supervisor: {
+          select: { id: true, firstName: true, lastName: true, email: true },
         },
-        {
-          model: User,
-          as: 'Users',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+        Users: {
+          select: { id: true, firstName: true, lastName: true, email: true },
         },
-      ],
+      },
     });
-
-    res.status(200).json({ departments });
+    return res.status(200).json({ departments });
   } catch (error) {
-    console.error('Error in getAllDepartments:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in getAllDepartments:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @desc    Get Department by ID
- * @route   GET /api/departments/:id
- * @access  Admin, SuperAdmin
- */
 const getDepartmentById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
     const companyId = req.user.companyId;
-
-    // Validate ID
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid Department ID.' });
-    }
-
-    const department = await Department.findOne({
+    if (!id || isNaN(id)) return res.status(400).json({ message: "Invalid Department ID." });
+    const department = await prisma.departments.findFirst({
       where: { id, companyId },
-      include: [
-        {
-          model: User,
-          as: 'Supervisor',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+      include: {
+        supervisor: {
+          select: { id: true, firstName: true, lastName: true, email: true },
         },
-        {
-          model: User,
-          as: 'Users',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+        Users: {
+          select: { id: true, firstName: true, lastName: true, email: true },
         },
-      ],
+      },
     });
-
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    res.status(200).json({ department });
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    return res.status(200).json({ department });
   } catch (error) {
-    console.error('Error in getDepartmentById:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in getDepartmentById:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @desc    Update Department
- * @route   PUT /api/departments/update/:id
- * @access  Admin, SuperAdmin
- */
 const updateDepartment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
     const { name, supervisorId } = req.body;
     const companyId = req.user.companyId;
-
-    // Validate ID
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid Department ID.' });
-    }
-
-    const department = await Department.findOne({ where: { id, companyId } });
-
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    // If supervisorId is provided, validate the supervisor
-    if (supervisorId !== undefined) {
-      if (supervisorId !== null) {
-        const supervisor = await User.findOne({
-          where: {
-            id: supervisorId,
-            companyId,
-            role: 'supervisor',
-          },
-        });
-
-        if (!supervisor) {
-          return res.status(400).json({ message: 'Invalid supervisorId. Supervisor must be a user with role "supervisor" in your company.' });
-        }
-
-        department.supervisorId = supervisorId;
-      } else {
-        // Allow setting supervisorId to null
-        department.supervisorId = null;
-      }
-    }
-
-    // Update department name if provided
-    if (name) {
-      // Check for duplicate department name within the company
-      const existingDepartment = await Department.findOne({
-        where: {
-          name,
-          companyId,
-          id: { [Op.ne]: id },
-        },
+    if (!id || isNaN(id)) return res.status(400).json({ message: "Invalid Department ID." });
+    const department = await prisma.departments.findFirst({
+      where: { id, companyId },
+    });
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    if (supervisorId !== undefined && supervisorId !== null) {
+      const supervisor = await prisma.users.findFirst({
+        where: { id: Number(supervisorId), companyId, role: "supervisor" },
       });
-
-      if (existingDepartment) {
-        return res.status(409).json({ message: 'Another department with this name already exists in your company.' });
-      }
-
-      department.name = name;
+      if (!supervisor) return res.status(400).json({ message: "Invalid supervisorId." });
     }
-
-    await department.save();
-
-    res.status(200).json({ message: 'Department updated successfully.', department });
+    if (name) {
+      const duplicate = await prisma.departments.findFirst({
+        where: { name, companyId, NOT: { id } },
+      });
+      if (duplicate)
+        return res.status(409).json({
+          message: "Another department with this name already exists.",
+        });
+    }
+    const updatedDepartment = await prisma.departments.update({
+      where: { id },
+      data: {
+        name: name || department.name,
+        supervisorId: supervisorId !== undefined ? supervisorId : department.supervisorId,
+      },
+    });
+    return res.status(200).json({
+      message: "Department updated successfully.",
+      department: updatedDepartment,
+    });
   } catch (error) {
-    console.error('Error in updateDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in updateDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * @desc    Delete Department
- * @route   DELETE /api/departments/delete/:id
- * @access  Admin, SuperAdmin
- */
 const deleteDepartment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
     const companyId = req.user.companyId;
-
-    // Validate ID
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid Department ID.' });
-    }
-
-    const department = await Department.findOne({ where: { id, companyId } });
-
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    // Check if the department has users assigned
-    const usersCount = await User.count({ where: { departmentId: id } });
-    if (usersCount > 0) {
-      return res.status(400).json({ message: 'Cannot delete department with assigned users. Reassign or remove users first.' });
-    }
-
-    await department.destroy();
-
-    res.status(200).json({ message: 'Department deleted successfully.' });
+    if (!id || isNaN(id)) return res.status(400).json({ message: "Invalid Department ID." });
+    const department = await prisma.departments.findFirst({
+      where: { id, companyId },
+    });
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    console.log("Deleting department:", department);
+    await prisma.departments.delete({ where: { id } });
+    return res.status(200).json({ message: "Department deleted successfully." });
   } catch (error) {
-    console.error('Error in deleteDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in deleteDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Assign Users to Department
- * @route   PUT /api/departments/:id/assign-users
- * @access  Admin, SuperAdmin, Supervisor
- */
 const assignUsersToDepartment = async (req, res) => {
-  const { id } = req.params; // Department ID
+  const id = Number(req.params.id);
   const { userIds } = req.body;
   const companyId = req.user.companyId;
   const userRole = req.user.role;
-  const userId = req.user.id;
-
+  const requesterId = req.user.id;
   try {
-    const department = await Department.findOne({ where: { id, companyId } });
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    // If the user is a supervisor, ensure they are managing this department
-    if (userRole === 'supervisor') {
-      if (department.supervisorId !== userId) {
-        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-      }
-    }
-
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({ message: 'Provide a non-empty array of userIds to assign.' });
-    }
-
-    // Fetch users to assign
-    const usersToAssign = await User.findAll({
-      where: {
-        id: {
-          [Op.in]: userIds,
-        },
-        companyId,
-        role: {
-          [Op.ne]: 'superAdmin', // Prevent assigning superAdmins
-        },
-      },
-      attributes: ['id'],
+    const department = await prisma.departments.findFirst({
+      where: { id, companyId },
     });
-
-    // Check if all provided userIds exist within the company
-    const foundUserIds = usersToAssign.map(user => user.id);
-    const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
-
-    if (notFoundUserIds.length > 0) {
-      return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} not found in your company or have restricted roles.` });
+    console.log("Department before assignment:", department);
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    if (userRole === "supervisor" && department.supervisorId !== requesterId)
+      return res.status(403).json({ message: "You are not the supervisor of this department." });
+    if (!Array.isArray(userIds) || userIds.length === 0)
+      return res.status(400).json({ message: "Provide a non-empty array of userIds to assign." });
+    const usersToAssign = await prisma.users.findMany({
+      where: { id: { in: userIds }, companyId, role: { not: "superadmin" } },
+      select: { id: true, role: true },
+    });
+    console.log("Users to assign:", usersToAssign);
+    const foundUserIds = usersToAssign.map((u) => u.id);
+    const notFoundUserIds = userIds.filter((uid) => !foundUserIds.includes(uid));
+    if (notFoundUserIds.length > 0)
+      return res.status(400).json({
+        message: `Users with IDs ${notFoundUserIds.join(", ")} not found.`,
+      });
+    await prisma.users.updateMany({
+      where: { id: { in: foundUserIds }, companyId },
+      data: { departmentId: id },
+    });
+    let updatedDepartment = await prisma.departments.findFirst({
+      where: { id, companyId },
+    });
+    console.log("Department after user assignment, before supervisor check:", updatedDepartment);
+    // If supervisorId is still null, update it with the first assigned user's id regardless of role.
+    if (!updatedDepartment.supervisorId && usersToAssign.length > 0) {
+      updatedDepartment = await prisma.departments.update({
+        where: { id },
+        data: { supervisorId: usersToAssign[0].id },
+      });
+      console.log("Department after supervisor update:", updatedDepartment);
     }
-
-    // Update Users' departmentId
-    await User.update(
-      { departmentId: id },
-      {
-        where: {
-          id: {
-            [Op.in]: foundUserIds,
-          },
-          companyId,
-        },
-      }
-    );
-
-    res.status(200).json({ message: 'Users assigned to department successfully.', assignedUserIds: foundUserIds });
+    return res.status(200).json({
+      message: "Users assigned successfully.",
+      assignedUserIds: foundUserIds,
+    });
   } catch (error) {
-    console.error('Error in assignUsersToDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in assignUsersToDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Remove Users from Department
- * @route   PUT /api/departments/:id/remove-users
- * @access  Admin, SuperAdmin, Supervisor
- */
 const removeUsersFromDepartment = async (req, res) => {
-  const { id } = req.params; // Department ID
+  const id = Number(req.params.id);
   const { userIds } = req.body;
   const companyId = req.user.companyId;
   const userRole = req.user.role;
-  const userId = req.user.id;
-
+  const requesterId = req.user.id;
   try {
-    const department = await Department.findOne({ where: { id, companyId } });
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    // If the user is a supervisor, ensure they are managing this department
-    if (userRole === 'supervisor') {
-      if (department.supervisorId !== userId) {
-        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-      }
-    }
-
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({ message: 'Provide a non-empty array of userIds to remove.' });
-    }
-
-    // Fetch users to remove
-    const usersToRemove = await User.findAll({
-      where: {
-        id: {
-          [Op.in]: userIds,
-        },
-        departmentId: id,
-        companyId,
-      },
-      attributes: ['id'],
+    const department = await prisma.departments.findFirst({
+      where: { id, companyId },
     });
-
-    const foundUserIds = usersToRemove.map(user => user.id);
-    const notFoundUserIds = userIds.filter(id => !foundUserIds.includes(id));
-
-    if (notFoundUserIds.length > 0) {
-      return res.status(400).json({ message: `Users with IDs ${notFoundUserIds.join(', ')} are not assigned to this department.` });
-    }
-
-    // Update Users' departmentId to null
-    await User.update(
-      { departmentId: null },
-      {
-        where: {
-          id: {
-            [Op.in]: foundUserIds,
-          },
-          companyId,
-        },
-      }
-    );
-
-    res.status(200).json({ message: 'Users removed from department successfully.', removedUserIds: foundUserIds });
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    if (userRole === "supervisor" && department.supervisorId !== requesterId)
+      return res.status(403).json({ message: "You are not the supervisor of this department." });
+    if (!Array.isArray(userIds) || userIds.length === 0)
+      return res.status(400).json({ message: "Provide a non-empty array of userIds to remove." });
+    const usersToRemove = await prisma.users.findMany({
+      where: { id: { in: userIds }, departmentId: id, companyId },
+      select: { id: true },
+    });
+    const foundUserIds = usersToRemove.map((u) => u.id);
+    const notFoundUserIds = userIds.filter((uid) => !foundUserIds.includes(uid));
+    if (notFoundUserIds.length > 0)
+      return res.status(400).json({
+        message: `Users with IDs ${notFoundUserIds.join(", ")} are not assigned.`,
+      });
+    await prisma.users.updateMany({
+      where: { id: { in: foundUserIds }, companyId },
+      data: { departmentId: null },
+    });
+    return res.status(200).json({
+      message: "Users removed successfully.",
+      removedUserIds: foundUserIds,
+    });
   } catch (error) {
-    console.error('Error in removeUsersFromDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in removeUsersFromDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Get Users in Department
- * @route   GET /api/departments/:id/users
- * @access  Admin, SuperAdmin, Supervisor
- */
 const getUsersInDepartment = async (req, res) => {
-  const { id } = req.params; // Department ID
+  const id = Number(req.params.id);
   const companyId = req.user.companyId;
   const userRole = req.user.role;
-  const userId = req.user.id;
-
+  const requesterId = req.user.id;
   try {
-    const department = await Department.findOne({ where: { id, companyId } });
-    if (!department) {
-      return res.status(404).json({ message: 'Department not found.' });
-    }
-
-    // If the user is a supervisor, ensure they are managing this department
-    if (userRole === 'supervisor') {
-      if (department.supervisorId !== userId) {
-        return res.status(403).json({ message: 'You are not the supervisor of this department.' });
-      }
-    }
-
-    const users = await User.findAll({
-      where: {
-        departmentId: id,
-        companyId,
-      },
-      attributes: { exclude: ['password'] },
-      order: [['id', 'ASC']],
+    const department = await prisma.departments.findFirst({
+      where: { id, companyId },
     });
-
-    res.status(200).json({ message: 'Users retrieved successfully.', users });
+    if (!department) return res.status(404).json({ message: "Department not found." });
+    if (userRole === "supervisor" && department.supervisorId !== requesterId)
+      return res.status(403).json({ message: "You are not the supervisor of this department." });
+    const users = await prisma.users.findMany({
+      where: { departmentId: id, companyId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+      orderBy: { id: "asc" },
+    });
+    return res.status(200).json({ message: "Users retrieved successfully.", users });
   } catch (error) {
-    console.error('Error in getUsersInDepartment:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in getUsersInDepartment:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

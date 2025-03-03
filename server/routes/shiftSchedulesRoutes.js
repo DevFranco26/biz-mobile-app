@@ -1,6 +1,6 @@
 // File: server/routes/shiftSchedulesRoutes.js
 
-const express = require('express');
+const express = require("express");
 const {
   getAllShiftSchedules,
   createShiftSchedule,
@@ -8,10 +8,10 @@ const {
   deleteShiftSchedule,
   assignShiftToUser,
   getMyShifts,
-  deleteUserFromShift 
-} = require('../controllers/shiftScheduleController.js');
-const authenticate = require('../middlewares/authMiddleware.js');
-const { authorizeRoles } = require('../middlewares/roleMiddleware.js');
+  deleteUserFromShift,
+} = require("../controllers/shiftScheduleController.js");
+const authenticate = require("../middlewares/authMiddleware.js");
+const { authorizeRoles } = require("../middlewares/roleMiddleware.js");
 
 const router = express.Router();
 
@@ -19,20 +19,20 @@ const router = express.Router();
 router.use(authenticate);
 
 // User: Get own shifts
-router.get('/my', authorizeRoles('user', 'admin', 'superAdmin', 'supervisor'), getMyShifts);
+router.get("/my", authorizeRoles("user", "admin", "superadmin", "supervisor"), getMyShifts);
 
-// Admin/SuperAdmin/Supervisor: Get all shifts
-router.get('/', authorizeRoles('admin', 'superAdmin', 'supervisor'), getAllShiftSchedules);
+// admin/SuperAdmin/supervisor: Get all shifts
+router.get("/", authorizeRoles("admin", "superadmin", "supervisor"), getAllShiftSchedules);
 
-// Admin/SuperAdmin: Create, Update, Delete shifts
-router.post('/', authorizeRoles('admin', 'superAdmin'), createShiftSchedule);
-router.put('/:id', authorizeRoles('admin', 'superAdmin'), updateShiftSchedule);
-router.delete('/:id', authorizeRoles('admin', 'superAdmin'), deleteShiftSchedule);
+// admin/SuperAdmin: Create, Update, Delete shifts
+router.post("/", authorizeRoles("admin", "superadmin"), createShiftSchedule);
+router.put("/:id", authorizeRoles("admin", "superadmin"), updateShiftSchedule);
+router.delete("/:id", authorizeRoles("admin", "superadmin"), deleteShiftSchedule);
 
-// Admin/SuperAdmin/Supervisor: Assign shifts to users
-router.post('/:id/assign', authorizeRoles('admin', 'superAdmin', 'supervisor'), assignShiftToUser);
+// admin/SuperAdmin/supervisor: Assign shifts to users
+router.post("/:id/assign", authorizeRoles("admin", "superadmin", "supervisor"), assignShiftToUser);
 
 // Route to delete a user from a shift
-router.delete('/:shiftId/assignments/:userId', authorizeRoles('admin', 'superAdmin'), deleteUserFromShift);
+router.delete("/:shiftId/assignments/:userId", authorizeRoles("admin", "superadmin"), deleteUserFromShift);
 
 module.exports = router;

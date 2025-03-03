@@ -1,160 +1,108 @@
 // File: server/controllers/locationController.js
+const { prisma } = require("../config/database");
 
-const Location = require('../models/Location.js');
-const User = require('../models/Users.js');
-
-/**
- * Create a New Location
- * Allows an admin to create a new location.
- */
+// Create a new location.
 const createLocation = async (req, res) => {
   const adminId = req.user?.id;
   const { label, latitude, longitude, radius } = req.body;
+  console.log("create location:", req.body);
 
-  if (!adminId) {
-    return res.status(401).json({ message: 'Unauthorized: Admin ID not found.' });
-  }
-  if (!label || !latitude || !longitude || !radius) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
-
+  if (!adminId) return res.status(401).json({ message: "Unauthorized: admin ID not found." });
+  if (!label || !latitude || !longitude || !radius) return res.status(400).json({ message: "All fields are required." });
   try {
-    const location = await Location.create({
-      adminId,
-      label,
-      latitude,
-      longitude,
-      radius,
+    const location = await prisma.locations.create({
+      data: { adminid: adminId, label, latitude, longitude, radius },
     });
-
-    await location.reload({
-      include: [
-        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] }
-        // Removed 'lastEditor' include as per comment
-      ]
+    const fullLocation = await prisma.locations.findUnique({
+      where: { id: location.id },
+      include: {
+        admin: { select: { id: true, email: true, companyId: true } },
+      },
     });
-
-    console.log('createLocation - Created location:', location.toJSON());
-    res.status(201).json({ message: 'Location created successfully.', data: location });
+    return res.status(201).json({ message: "Location created successfully.", data: fullLocation });
   } catch (error) {
-    console.error('Error creating location:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error creating location:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Get All Locations Associated with the Authenticated User's Company
- * Retrieves all locations belonging to the user's company.
- */
+// Get all locations for the user's company.
 const getLocations = async (req, res) => {
   try {
-    console.log('getLocations - req.user:', req.user);
-    const { companyId } = req.user;
-    if (!companyId) {
-      console.log('getLocations - No companyId in req.user');
-      return res.status(400).json({ message: 'Company ID is required.' });
-    }
-
-    const locations = await Location.findAll({
-      include: [
-        {
-          model: User,
-          as: 'admin',
-          attributes: ['id', 'email', 'companyId'],
-          required: true,
-          where: { companyId },
+    const companyId = req.user.companyId;
+    if (!companyId) return res.status(400).json({ message: "Company ID is required." });
+    const locations = await prisma.locations.findMany({
+      where: {
+        admin: {
+          companyId: companyId,
         },
-        {
-          model: User,
-          as: 'lastEditor', // Include the user from `updatedBy`
-          attributes: ['id', 'email', 'companyId'],
+      },
+      include: {
+        admin: {
+          select: { id: true, email: true, companyId: true },
         },
-      ],
-      order: [['id', 'ASC']],
+        lastEditor: {
+          select: { id: true, email: true, companyId: true },
+        },
+      },
+      orderBy: { id: "asc" },
     });
-
-    console.log('getLocations - Found locations:', locations.map(loc => ({
-      id: loc.id,
-      label: loc.label,
-      adminEmail: loc.admin?.email,
-      lastEditorEmail: loc.lastEditor?.email, // Now we have it
-    })));
-
-    res.status(200).json({ message: 'Locations retrieved successfully.', data: locations });
+    return res.status(200).json({ message: "Locations retrieved successfully.", data: locations });
   } catch (error) {
-    console.error('Error fetching locations:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error fetching locations:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Update an Existing Location
- * Allows an admin to update details of an existing location.
- */
+// Update a location.
 const updateLocation = async (req, res) => {
   const { locationId } = req.params;
   const { label, latitude, longitude, radius } = req.body;
-
   try {
-    console.log('UpdateLocation - req.user:', req.user);
-
-    const location = await Location.findByPk(locationId, {
-      include: { model: User, as: 'admin' }
+    const location = await prisma.locations.findUnique({
+      where: { id: Number(locationId) },
     });
-
-    if (!location) {
-      return res.status(404).json({ message: 'Location not found.' });
-    }
-
-    const { companyId, id: userId } = req.user;
-    console.log('UpdateLocation - userId:', userId, 'companyId:', companyId);
-
-    const adminUser = await User.findOne({ where: { id: location.adminId } });
-    if (!adminUser || adminUser.companyId !== companyId) {
-      return res.status(403).json({ message: 'Forbidden: Different company.' });
-    }
-
-    await location.update({ label, latitude, longitude, radius, updatedBy: userId });
-    await location.reload({
-      include: [
-        { model: User, as: 'admin', attributes: ['id', 'email', 'companyId'] },
-        { model: User, as: 'lastEditor', attributes: ['id', 'email', 'companyId'] },
-      ]
+    if (!location) return res.status(404).json({ message: "Location not found." });
+    const adminUser = await prisma.users.findUnique({
+      where: { id: location.adminid },
     });
-
-    console.log('Updated Location after reload:', location.toJSON());
-    res.status(200).json({ message: 'Location updated successfully.', data: location });
+    if (!adminUser || adminUser.companyId !== req.user.companyId)
+      return res.status(403).json({ message: "Forbidden: Different company." });
+    const updatedLocation = await prisma.locations.update({
+      where: { id: Number(locationId) },
+      data: { label, latitude, longitude, radius, updatedBy: req.user.id },
+    });
+    const fullLocation = await prisma.locations.findUnique({
+      where: { id: updatedLocation.id },
+      include: {
+        admin: { select: { id: true, email: true, companyId: true } },
+        lastEditor: { select: { id: true, email: true, companyId: true } },
+      },
+    });
+    return res.status(200).json({ message: "Location updated successfully.", data: fullLocation });
   } catch (error) {
-    console.error('Error updating location:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error updating location:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Delete a Location
- * Allows an admin to delete a location they created.
- */
+// Delete a location.
 const deleteLocation = async (req, res) => {
   const { locationId } = req.params;
-
   try {
-    const location = await Location.findByPk(locationId);
-
-    if (!location) {
-      return res.status(404).json({ message: 'Location not found.' });
-    }
-
-    if (location.adminId !== req.user.id) {
-      return res.status(403).json({ message: 'Forbidden: You do not have permission to delete this location.' });
-    }
-
-    await location.destroy();
-    console.log('deleteLocation - Deleted location id:', locationId);
-
-    res.status(200).json({ message: 'Location deleted successfully.' });
+    const location = await prisma.locations.findUnique({
+      where: { id: Number(locationId) },
+    });
+    if (!location) return res.status(404).json({ message: "Location not found." });
+    if (location.adminid !== req.user.id)
+      return res.status(403).json({
+        message: "Forbidden: You do not have permission to delete this location.",
+      });
+    await prisma.locations.delete({ where: { id: Number(locationId) } });
+    return res.status(200).json({ message: "Location deleted successfully." });
   } catch (error) {
-    console.error('Error deleting location:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error deleting location:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

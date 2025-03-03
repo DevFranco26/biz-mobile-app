@@ -36,17 +36,14 @@ const Profile = () => {
   const isLightTheme = theme === "light";
   const accentColor = isLightTheme ? "#f97316" : "#f97316";
 
-  const [presenceStatus, setPresenceStatus] = useState(
-    user.presenceStatus || "offline"
-  );
+  const [presenceStatus, setPresenceStatus] = useState(user.presenceStatus || "offline");
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [editFirstName, setEditFirstName] = useState(user.firstName || "");
   const [editMiddleName, setEditMiddleName] = useState(user.middleName || "");
   const [editLastName, setEditLastName] = useState(user.lastName || "");
   const [editPhone, setEditPhone] = useState(user.phone || "");
-  const [changePasswordModalVisible, setChangePasswordModalVisible] =
-    useState(false);
+  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -84,12 +81,7 @@ const Profile = () => {
       }
     };
     initFetch();
-  }, [
-    user.companyId,
-    user.departmentId,
-    fetchCompanyById,
-    fetchDepartmentById,
-  ]);
+  }, [user.companyId, user.departmentId, fetchCompanyById, fetchDepartmentById]);
 
   const getInitials = (name) => {
     const nameArray = name.trim().split(" ");
@@ -168,18 +160,12 @@ const Profile = () => {
         setUser(data.data);
         setPresenceStatus(data.data.presenceStatus);
       } else {
-        Alert.alert(
-          "Error",
-          data.message || "Failed to update presence status."
-        );
+        Alert.alert("Error", data.message || "Failed to update presence status.");
         setPresenceStatus(user.presenceStatus || "offline");
       }
     } catch (error) {
       console.error("Update presence error:", error);
-      Alert.alert(
-        "Error",
-        "An unexpected error occurred while updating your presence status."
-      );
+      Alert.alert("Error", "An unexpected error occurred while updating your presence status.");
       setPresenceStatus(user.presenceStatus || "offline");
     }
   };
@@ -362,30 +348,17 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}
-    >
+    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
       <ScrollView
         contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        <View
-          className={`rounded-xl p-6 mb-6 flex-row items-center relative ${
-            isLightTheme ? "bg-slate-100" : "bg-slate-800"
-          }`}
-        >
+        <View className={`rounded-xl p-6 mb-6 flex-row items-center relative ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
           {user.profileImage ? (
-            <Image
-              source={{ uri: user.profileImage }}
-              className="w-20 h-20 rounded-full"
-            />
+            <Image source={{ uri: user.profileImage }} className="w-20 h-20 rounded-full" />
           ) : (
             <View
-              className={`w-20 h-20 rounded-full justify-center items-center ${
-                isLightTheme ? "bg-orange-500" : "bg-orange-500"
-              }`}
+              className={`w-20 h-20 rounded-full justify-center items-center ${isLightTheme ? "bg-orange-500" : "bg-orange-500"}`}
             >
               <Text className="text-white text-2xl font-bold tracking-widest">
                 {getInitials(`${user.firstName} ${user.lastName}`)}
@@ -403,188 +376,86 @@ const Profile = () => {
               accessibilityLabel="Change Presence Status"
               className="flex-row items-center"
             >
-              <Ionicons
-                name={presenceIcon}
-                size={24}
-                color={presenceColors[presenceStatus]}
-              />
-              <Text
-                className={`px-1 text-base capitalize ${
-                  isLightTheme ? "text-slate-800" : "text-slate-200"
-                }`}
-              >
+              <Ionicons name={presenceIcon} size={24} color={presenceColors[presenceStatus]} />
+              <Text className={`px-1 text-base capitalize ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>
                 {presenceStatus}
               </Text>
             </Pressable>
           </View>
 
           <View className="ml-4">
-            <Text
-              className={`text-2xl font-bold ${
-                isLightTheme ? "text-slate-800" : "text-slate-100"
-              }`}
-            >
+            <Text className={`text-2xl font-bold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
               {user.firstName} {user.lastName}
             </Text>
-            <Text
-              className={`${
-                isLightTheme ? "text-slate-600" : "text-slate-300"
-              }`}
-            >
+            <Text className={`${isLightTheme ? "text-slate-600" : "text-slate-300"}`}>
               {user.position || getCompanyName(user.companyId)}
             </Text>
           </View>
         </View>
 
-        <View
-          className={`rounded-lg p-6 mb-6 ${
-            isLightTheme ? "bg-slate-100" : "bg-slate-800"
-          }`}
-        >
-          <Text
-            className={`text-xl font-semibold mb-4 ${
-              isLightTheme ? "text-slate-800" : "text-slate-100"
-            }`}
-          >
+        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+          <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
             Contact Information
           </Text>
           <View className="flex-row items-center mb-4">
-            <Ionicons
-              name="mail-outline"
-              size={20}
-              color={accentColor}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base ${
-                isLightTheme ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
-              <Text className="font-semibold">Email:</Text>{" "}
-              {user.email && capitalizeFirst(user.email)}
+            <Ionicons name="mail-outline" size={20} color={accentColor} className="mr-3" />
+            <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+              <Text className="font-semibold">Email:</Text> {user.email && capitalizeFirst(user.email)}
             </Text>
           </View>
           <View className="flex-row items-center mb-4">
-            <Ionicons
-              name="id-card-outline"
-              size={20}
-              color={accentColor}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base capitalize ${
-                isLightTheme ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
-              <Text className="font-semibold">Company:</Text>{" "}
-              {getCompanyName(user.companyId) || "Bench"}
+            <Ionicons name="id-card-outline" size={20} color={accentColor} className="mr-3" />
+            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+              <Text className="font-semibold">Company:</Text> {getCompanyName(user.companyId) || "Bench"}
             </Text>
           </View>
           <View className="flex-row items-center mb-4">
-            <AntDesign
-              name="team"
-              size={20}
-              color={accentColor}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base capitalize ${
-                isLightTheme ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
-              <Text className="font-semibold capitalize">Department:</Text>{" "}
-              {getDepartmentName(user.departmentId) || "Bench"}
+            <AntDesign name="team" size={20} color={accentColor} className="mr-3" />
+            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+              <Text className="font-semibold capitalize">Department:</Text> {getDepartmentName(user.departmentId) || "Bench"}
             </Text>
           </View>
           <View className="flex-row items-center mb-4">
-            <Ionicons
-              name="briefcase-outline"
-              size={20}
-              color={accentColor}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base capitalize ${
-                isLightTheme ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
+            <Ionicons name="briefcase-outline" size={20} color={accentColor} className="mr-3" />
+            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
               <Text className="font-semibold">Role:</Text> {user.role}
             </Text>
           </View>
           <View className="flex-row items-center">
-            <Ionicons
-              name="call-outline"
-              size={20}
-              color={accentColor}
-              className="mr-3"
-            />
-            <Text
-              className={`text-base ${
-                isLightTheme ? "text-slate-700" : "text-slate-300"
-              }`}
-            >
+            <Ionicons name="call-outline" size={20} color={accentColor} className="mr-3" />
+            <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
               <Text className="font-semibold">Phone:</Text> {user.phone}
             </Text>
           </View>
         </View>
 
-        <View
-          className={`rounded-lg p-6 ${
-            isLightTheme ? "bg-slate-100" : "bg-slate-800"
-          }`}
-        >
-          <Text
-            className={`text-xl font-semibold mb-6 ${
-              isLightTheme ? "text-slate-800" : "text-slate-100"
-            }`}
-          >
+        <View className={`rounded-lg p-6 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+          <Text className={`text-xl font-semibold mb-6 ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
             Account Settings
           </Text>
 
           <Pressable
-            className={`p-4 rounded-lg mb-4 ${
-              isLightTheme ? "bg-white" : "bg-slate-700"
-            }`}
+            className={`p-4 rounded-lg mb-4 ${isLightTheme ? "bg-white" : "bg-slate-700"}`}
             onPress={handleOpenChangePassword}
           >
-            <Text
-              className={`${
-                isLightTheme ? "text-slate-800" : "text-slate-100"
-              } font-medium text-center`}
-            >
+            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>
               Change Password
             </Text>
           </Pressable>
 
           <Pressable
-            className={`p-4 rounded-lg mb-4 ${
-              isLightTheme ? "bg-white" : "bg-slate-700"
-            }`}
+            className={`p-4 rounded-lg mb-4 ${isLightTheme ? "bg-white" : "bg-slate-700"}`}
             onPress={handleOpenEditProfile}
           >
-            <Text
-              className={`${
-                isLightTheme ? "text-slate-800" : "text-slate-100"
-              } font-medium text-center`}
-            >
-              Edit Profile
-            </Text>
+            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>Edit Profile</Text>
           </Pressable>
 
           <Pressable
-            className={`p-4 rounded-lg ${
-              isLightTheme ? "bg-white" : "bg-slate-700"
-            }`}
+            className={`p-4 rounded-lg ${isLightTheme ? "bg-white" : "bg-slate-700"}`}
             onPress={confirmLogout}
             disabled={isLoggingOut}
           >
-            <Text
-              className={`${
-                isLightTheme ? "text-slate-800" : "text-slate-100"
-              } font-medium text-center`}
-            >
-              Logout
-            </Text>
+            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>Logout</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -595,74 +466,26 @@ const Profile = () => {
         animationType="fade"
         onRequestClose={() => setIsDropdownVisible(false)}
       >
-        <TouchableOpacity
-          className="flex-1"
-          activeOpacity={1}
-          onPressOut={() => setIsDropdownVisible(false)}
-        >
+        <TouchableOpacity className="flex-1" activeOpacity={1} onPressOut={() => setIsDropdownVisible(false)}>
           <View
-            className={`absolute rounded-2xl shadow-md p-2 ${
-              isLightTheme ? `bg-slate-200` : `bg-slate-800`
-            }`}
+            className={`absolute rounded-2xl shadow-md p-2 ${isLightTheme ? `bg-slate-200` : `bg-slate-800`}`}
             style={{
               width: 85,
               top: iconLayout.y,
               left: iconLayout.x - 7,
             }}
           >
-            <TouchableOpacity
-              onPress={() => handleStatusSelect("active")}
-              className="flex-row items-center mb-2"
-            >
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={presenceColors.active}
-                className="mr-2"
-              />
-              <Text
-                className={`text-base ${
-                  isLightTheme ? `text-slate-700` : `text-slate-300`
-                }`}
-              >
-                Active
-              </Text>
+            <TouchableOpacity onPress={() => handleStatusSelect("active")} className="flex-row items-center mb-2">
+              <Ionicons name="checkmark-circle" size={20} color={presenceColors.active} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Active</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleStatusSelect("away")}
-              className="flex-row items-center mb-2"
-            >
-              <Ionicons
-                name="time"
-                size={20}
-                color={presenceColors.away}
-                className="mr-2"
-              />
-              <Text
-                className={`text-base ${
-                  isLightTheme ? `text-slate-700` : `text-slate-300`
-                }`}
-              >
-                Away
-              </Text>
+            <TouchableOpacity onPress={() => handleStatusSelect("away")} className="flex-row items-center mb-2">
+              <Ionicons name="time" size={20} color={presenceColors.away} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Away</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleStatusSelect("offline")}
-              className="flex-row items-center"
-            >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={presenceColors.offline}
-                className="mr-2"
-              />
-              <Text
-                className={`text-base ${
-                  isLightTheme ? `text-slate-700` : `text-slate-300`
-                }`}
-              >
-                Offline
-              </Text>
+            <TouchableOpacity onPress={() => handleStatusSelect("offline")} className="flex-row items-center">
+              <Ionicons name="close-circle" size={20} color={presenceColors.offline} className="mr-2" />
+              <Text className={`text-base ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>Offline</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -674,26 +497,12 @@ const Profile = () => {
         animationType="none"
         onRequestClose={() => setEditProfileModalVisible(false)}
       >
-        <TouchableWithoutFeedback
-          onPress={() => setEditProfileModalVisible(false)}
-        >
-          <View
-            className={`flex-1 justify-center items-center ${
-              isLightTheme ? "bg-slate-950/70" : "bg-slate-950/70"
-            }`}
-          >
+        <TouchableWithoutFeedback onPress={() => setEditProfileModalVisible(false)}>
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? "bg-slate-950/70" : "bg-slate-950/70"}`}>
             <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 p-6 rounded-2xl shadow-md ${
-                  isLightTheme ? "bg-white" : "bg-slate-800"
-                }`}
-              >
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
                 <View className="mb-2">
-                  <Text
-                    className={`text-xl font-semibold ${
-                      isLightTheme ? "text-slate-800" : "text-slate-100"
-                    }`}
-                  >
+                  <Text className={`text-xl font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
                     Edit Profile
                   </Text>
                 </View>
@@ -702,105 +511,55 @@ const Profile = () => {
                   behavior={Platform.OS === "ios" ? "padding" : "height"}
                   keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
                 >
-                  <ScrollView
-                    contentContainerStyle={{ flexGrow: 1 }}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      First Name
-                    </Text>
+                  <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>First Name</Text>
                     <TextInput
                       className={`w-full p-3 mb-2 rounded-lg ${
-                        isLightTheme
-                          ? "bg-slate-100 text-slate-800"
-                          : "bg-slate-700 text-slate-300"
+                        isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-slate-300"
                       } text-sm`}
                       value={editFirstName}
                       onChangeText={setEditFirstName}
                       placeholder="e.g., John"
-                      placeholderTextColor={
-                        isLightTheme ? "#9ca3af" : "#6b7280"
-                      }
+                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                     />
 
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      Middle Name
-                    </Text>
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Middle Name</Text>
                     <TextInput
                       className={`w-full p-3 mb-2 rounded-lg ${
-                        isLightTheme
-                          ? "bg-slate-100 text-slate-800"
-                          : "bg-slate-700 text-slate-300"
+                        isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-slate-300"
                       } text-sm`}
                       value={editMiddleName}
                       onChangeText={setEditMiddleName}
                       placeholder="e.g., A."
-                      placeholderTextColor={
-                        isLightTheme ? "#9ca3af" : "#6b7280"
-                      }
+                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                     />
 
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      Last Name
-                    </Text>
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Last Name</Text>
                     <TextInput
                       className={`w-full p-3 mb-2 rounded-lg ${
-                        isLightTheme
-                          ? "bg-slate-100 text-slate-800"
-                          : "bg-slate-700 text-slate-300"
+                        isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-slate-300"
                       } text-sm`}
                       value={editLastName}
                       onChangeText={setEditLastName}
                       placeholder="e.g., Doe"
-                      placeholderTextColor={
-                        isLightTheme ? "#9ca3af" : "#6b7280"
-                      }
+                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                     />
 
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      Phone
-                    </Text>
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Phone</Text>
                     <TextInput
                       className={`w-full p-3 mb-2 rounded-lg ${
-                        isLightTheme
-                          ? "bg-slate-100 text-slate-800"
-                          : "bg-slate-700 text-slate-300"
+                        isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-slate-300"
                       } text-sm`}
                       value={editPhone}
                       onChangeText={setEditPhone}
                       placeholder="e.g., +1 234 567 890"
                       keyboardType="phone-pad"
-                      placeholderTextColor={
-                        isLightTheme ? "#9ca3af" : "#6b7280"
-                      }
+                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                     />
 
                     <View className="flex-row justify-end mt-4">
-                      <Pressable
-                        onPress={() => setEditProfileModalVisible(false)}
-                        className="p-4 rounded-lg mr-2"
-                      >
-                        <Text
-                          className={`text-center font-semibold ${
-                            isLightTheme ? `text-slate-700` : `text-slate-300`
-                          }`}
-                        >
+                      <Pressable onPress={() => setEditProfileModalVisible(false)} className="p-4 rounded-lg mr-2">
+                        <Text className={`text-center font-semibold ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>
                           Cancel
                         </Text>
                       </Pressable>
@@ -810,16 +569,8 @@ const Profile = () => {
                         className="bg-orange-500 py-3 px-6 rounded-lg flex-row items-center"
                         disabled={isSavingProfile}
                       >
-                        {isSavingProfile && (
-                          <ActivityIndicator
-                            size="small"
-                            color="#FFFFFF"
-                            className="mr-2"
-                          />
-                        )}
-                        <Text className="text-white text-base font-semibold">
-                          Save
-                        </Text>
+                        {isSavingProfile && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
+                        <Text className="text-white text-base font-semibold">Save</Text>
                       </Pressable>
                     </View>
                   </ScrollView>
@@ -836,26 +587,12 @@ const Profile = () => {
         animationType="none"
         onRequestClose={() => setChangePasswordModalVisible(false)}
       >
-        <TouchableWithoutFeedback
-          onPress={() => setChangePasswordModalVisible(false)}
-        >
-          <View
-            className={`flex-1 justify-center items-center ${
-              isLightTheme ? "bg-slate-950/70" : "bg-slate-950/70"
-            }`}
-          >
+        <TouchableWithoutFeedback onPress={() => setChangePasswordModalVisible(false)}>
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? "bg-slate-950/70" : "bg-slate-950/70"}`}>
             <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 p-6 rounded-2xl shadow-md ${
-                  isLightTheme ? "bg-white" : "bg-slate-800"
-                }`}
-              >
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
                 <View className="mb-2">
-                  <Text
-                    className={`text-xl font-semibold ${
-                      isLightTheme ? "text-slate-800" : "text-slate-100"
-                    }`}
-                  >
+                  <Text className={`text-xl font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
                     Change Password
                   </Text>
                 </View>
@@ -864,38 +601,20 @@ const Profile = () => {
                   behavior={Platform.OS === "ios" ? "padding" : "height"}
                   keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
                 >
-                  <ScrollView
-                    contentContainerStyle={{ flexGrow: 1 }}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      Old Password
-                    </Text>
+                  <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Old Password</Text>
                     <View
-                      className={`flex-row items-center mb-2 rounded-lg ${
-                        isLightTheme ? "bg-slate-100" : "bg-slate-700"
-                      } h-12`}
+                      className={`flex-row items-center mb-2 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-700"} h-12`}
                     >
                       <TextInput
-                        className={`flex-1 px-3 text-sm ${
-                          isLightTheme ? "text-slate-800" : "text-slate-300"
-                        }`}
+                        className={`flex-1 px-3 text-sm ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}
                         value={oldPassword}
                         onChangeText={setOldPassword}
                         placeholder="Enter old password"
                         secureTextEntry={!showOldPassword}
-                        placeholderTextColor={
-                          isLightTheme ? "#9ca3af" : "#6b7280"
-                        }
+                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                       />
-                      <Pressable
-                        onPress={() => setShowOldPassword(!showOldPassword)}
-                        className="pr-3"
-                      >
+                      <Pressable onPress={() => setShowOldPassword(!showOldPassword)} className="pr-3">
                         <Ionicons
                           name={showOldPassword ? "eye-off" : "eye"}
                           size={20}
@@ -904,34 +623,19 @@ const Profile = () => {
                       </Pressable>
                     </View>
 
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
-                      New Password
-                    </Text>
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>New Password</Text>
                     <View
-                      className={`flex-row items-center mb-2 rounded-lg ${
-                        isLightTheme ? "bg-slate-100" : "bg-slate-700"
-                      } h-12`}
+                      className={`flex-row items-center mb-2 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-700"} h-12`}
                     >
                       <TextInput
-                        className={`flex-1 px-3 text-sm ${
-                          isLightTheme ? "text-slate-800" : "text-slate-300"
-                        }`}
+                        className={`flex-1 px-3 text-sm ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}
                         value={newPassword}
                         onChangeText={setNewPassword}
                         placeholder="Enter new password"
                         secureTextEntry={!showNewPassword}
-                        placeholderTextColor={
-                          isLightTheme ? "#9ca3af" : "#6b7280"
-                        }
+                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                       />
-                      <Pressable
-                        onPress={() => setShowNewPassword(!showNewPassword)}
-                        className="pr-3"
-                      >
+                      <Pressable onPress={() => setShowNewPassword(!showNewPassword)} className="pr-3">
                         <Ionicons
                           name={showNewPassword ? "eye-off" : "eye"}
                           size={20}
@@ -940,36 +644,21 @@ const Profile = () => {
                       </Pressable>
                     </View>
 
-                    <Text
-                      className={`text-sm mb-1 ${
-                        isLightTheme ? "text-slate-800" : "text-slate-300"
-                      }`}
-                    >
+                    <Text className={`text-sm mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
                       Confirm New Password
                     </Text>
                     <View
-                      className={`flex-row items-center mb-2 rounded-lg ${
-                        isLightTheme ? "bg-slate-100" : "bg-slate-700"
-                      } h-12`}
+                      className={`flex-row items-center mb-2 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-700"} h-12`}
                     >
                       <TextInput
-                        className={`flex-1 px-3 text-sm ${
-                          isLightTheme ? "text-slate-800" : "text-slate-300"
-                        }`}
+                        className={`flex-1 px-3 text-sm ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         placeholder="Confirm new password"
                         secureTextEntry={!showConfirmPassword}
-                        placeholderTextColor={
-                          isLightTheme ? "#9ca3af" : "#6b7280"
-                        }
+                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
                       />
-                      <Pressable
-                        onPress={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="pr-3"
-                      >
+                      <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="pr-3">
                         <Ionicons
                           name={showConfirmPassword ? "eye-off" : "eye"}
                           size={20}
@@ -979,26 +668,14 @@ const Profile = () => {
                     </View>
 
                     <View className="flex-row justify-end mt-4">
-                      <Pressable
-                        onPress={() => setChangePasswordModalVisible(false)}
-                        className="mr-4"
-                      >
-                        <Text
-                          className={`text-base font-semibold my-auto ${
-                            isLightTheme ? `text-slate-700` : `text-slate-300`
-                          }`}
-                        >
+                      <Pressable onPress={() => setChangePasswordModalVisible(false)} className="mr-4">
+                        <Text className={`text-base font-semibold my-auto ${isLightTheme ? `text-slate-700` : `text-slate-300`}`}>
                           Cancel
                         </Text>
                       </Pressable>
 
-                      <Pressable
-                        onPress={handleChangePassword}
-                        className="bg-orange-500 py-3 px-6 rounded-lg"
-                      >
-                        <Text className="text-white text-base font-semibold">
-                          Save
-                        </Text>
+                      <Pressable onPress={handleChangePassword} className="bg-orange-500 py-3 px-6 rounded-lg">
+                        <Text className="text-white text-base font-semibold">Save</Text>
                       </Pressable>
                     </View>
                   </ScrollView>
@@ -1010,22 +687,11 @@ const Profile = () => {
       </Modal>
 
       {isLoggingOut && (
-        <Modal
-          visible={isLoggingOut}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => {}}
-        >
+        <Modal visible={isLoggingOut} transparent={true} animationType="fade" onRequestClose={() => {}}>
           <View className="flex-1 justify-center items-center bg-black/50">
             <View className="bg-white p-6 rounded-lg flex-row items-center">
-              <ActivityIndicator
-                size="large"
-                color="#f97316"
-                className="mr-4"
-              />
-              <Text className="text-lg font-semibold text-slate-800">
-                Logging Out...
-              </Text>
+              <ActivityIndicator size="large" color="#f97316" className="mr-4" />
+              <Text className="text-lg font-semibold text-slate-800">Logging Out...</Text>
             </View>
           </View>
         </Modal>

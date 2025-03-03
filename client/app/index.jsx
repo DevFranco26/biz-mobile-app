@@ -1,14 +1,6 @@
 // app/index.jsx
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  View,
-  Text,
-  StatusBar,
-  Modal,
-  TouchableOpacity,
-  Linking,
-} from "react-native";
+import { ActivityIndicator, View, Text, StatusBar, Modal, TouchableOpacity, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useThemeStore from "../store/themeStore";
 import * as SecureStore from "expo-secure-store";
@@ -42,17 +34,14 @@ export default function Index() {
           setUser(userData);
 
           try {
-            const setActiveResponse = await fetch(
-              `${API_BASE_URL}/users/me/presence`,
-              {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ presenceStatus: "active" }),
-              }
-            );
+            const setActiveResponse = await fetch(`${API_BASE_URL}/users/me/presence`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ presenceStatus: "active" }),
+            });
 
             if (setActiveResponse.ok) {
               const updatedPresenceData = await setActiveResponse.json();
@@ -92,19 +81,11 @@ export default function Index() {
       />
 
       <SafeAreaView
-        className={`flex-1 ${
-          isLightTheme ? "bg-white" : "bg-slate-900"
-        } justify-center items-center`}
+        className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"} justify-center items-center`}
         style={{ paddingTop: 60 }}
       >
         <ActivityIndicator size="large" color="#0f766e" />
-        <Text
-          className={`mt-4 ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
-          Checking authentication...
-        </Text>
+        <Text className={`mt-4 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Checking authentication...</Text>
       </SafeAreaView>
 
       {/* Update Modal */}
@@ -112,14 +93,8 @@ export default function Index() {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="w-11/12 bg-white p-6 rounded-lg">
             <Text className="text-xl font-bold mb-4">Update Required</Text>
-            <Text className="mb-6">
-              A new version of the app is available. Please update to continue
-              using BizBuddy.
-            </Text>
-            <TouchableOpacity
-              onPress={handleUpdate}
-              className="bg-orange-500 py-3 rounded-lg"
-            >
+            <Text className="mb-6">A new version of the app is available. Please update to continue using BizBuddy.</Text>
+            <TouchableOpacity onPress={handleUpdate} className="bg-orange-500 py-3 rounded-lg">
               <Text className="text-white text-center">Update Now</Text>
             </TouchableOpacity>
           </View>

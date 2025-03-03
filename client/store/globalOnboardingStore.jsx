@@ -1,18 +1,24 @@
 // File: store/globalOnboardingStore.js
-import  {create}  from 'zustand'; 
+import { create } from "zustand";
 
 const useOnboardingStore = create((set) => ({
   step1Data: {
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
   },
   step2Data: {
-    companyName: '',
-    pax: '',
-    subscriptionPlanId: null,
+    companyName: "",
+    country: "USA",
+    currency: "USD",
+    language: "en",
   },
+  selectedPlan: null,
+  paymentStatus: "unpaid",
 
   setStep1Data: (data) =>
     set((state) => ({
@@ -24,19 +30,29 @@ const useOnboardingStore = create((set) => ({
       step2Data: { ...state.step2Data, ...data },
     })),
 
+  setSelectedPlan: (plan) => set({ selectedPlan: plan }),
+
+  setPaymentStatus: (status) => set({ paymentStatus: status }),
+
   resetOnboardingData: () =>
     set(() => ({
       step1Data: {
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
       },
       step2Data: {
-        companyName: '',
-        pax: '',
-        subscriptionPlanId: null,
+        companyName: "",
+        country: "USA",
+        currency: "USD",
+        language: "en",
       },
+      selectedPlan: null,
+      paymentStatus: "unpaid",
     })),
 }));
 

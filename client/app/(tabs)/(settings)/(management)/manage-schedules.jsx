@@ -1,6 +1,5 @@
 // File: app/(tabs)/(settings)/(management)/manage-schedules.jsx
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,73 +17,72 @@ import {
   Keyboard,
   Platform,
   StyleSheet,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import DropDownPicker from 'react-native-dropdown-picker';
-import RadioButtonRN from 'radio-buttons-react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-
-import useThemeStore from '../../../../store/themeStore';
-import useShiftSchedulesStore from '../../../../store/shiftSchedulesStore';
-import useUsersStore from '../../../../store/usersStore';
-import { convertUTCToLocal, convertLocalToUTC } from '../../../../utils/timeUtils';
+} from "react-native";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DropDownPicker from "react-native-dropdown-picker";
+import RadioButtonRN from "radio-buttons-react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import useThemeStore from "../../../../store/themeStore";
+import useShiftSchedulesStore from "../../../../store/shiftSchedulesStore";
+import useUsersStore from "../../../../store/usersStore";
+import { convertUTCToLocal, convertLocalToUTC } from "../../../../utils/timeUtils";
 
 const COLORS = {
   light: {
-    background: '#FFFFFF',
-    backgroundSecondary: '#f1f5f9',
-    text: '#374151',
-    modalBackground: '#f8fafc',
-    inputBackground: '#F1F5F9',
-    borderColor: '#E5E7EB',
-    placeholder: '#6B7280',
-    iconColor: '#374151',
-    activityIndicator: '#374151',
-    deleteIconColor: '#EF4444',
+    background: "#FFFFFF",
+    backgroundSecondary: "#f1f5f9",
+    text: "#374151",
+    modalBackground: "#f8fafc",
+    inputBackground: "#F1F5F9",
+    borderColor: "#E5E7EB",
+    placeholder: "#6B7280",
+    iconColor: "#374151",
+    activityIndicator: "#374151",
+    deleteIconColor: "#EF4444",
   },
   dark: {
-    background: '#0F172A',
-    backgroundSecondary: '#1e293b',
-    text: '#D1D5DB',
-    modalBackground: '#1F2937',
-    inputBackground: '#374151',
-    borderColor: '#374151',
-    placeholder: '#9CA3AF',
-    iconColor: '#D1D5DB',
-    activityIndicator: '#D1D5DB',
-    deleteIconColor: '#EF4444',
+    background: "#0F172A",
+    backgroundSecondary: "#1e293b",
+    text: "#D1D5DB",
+    modalBackground: "#1F2937",
+    inputBackground: "#374151",
+    borderColor: "#374151",
+    placeholder: "#9CA3AF",
+    iconColor: "#D1D5DB",
+    activityIndicator: "#D1D5DB",
+    deleteIconColor: "#EF4444",
   },
 };
 
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 9999,
     elevation: 9999,
   },
   modalInner: {
-    width: '100%',
+    width: "100%",
     padding: 24,
     borderRadius: 12,
   },
   assignModalInner: {
-    width: '90%',
+    width: "90%",
     padding: 24,
     borderRadius: 12,
     zIndex: 1000,
   },
   usersModalInner: {
-    width: '90%',
-    maxHeight: '80%',
+    width: "90%",
+    maxHeight: "80%",
     padding: 24,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
 });
 
@@ -100,9 +98,8 @@ function computeTotalHours(startUTC, endUTC) {
 
 const Schedules = () => {
   const { theme } = useThemeStore();
-  const isLightTheme = theme === 'light';
+  const isLightTheme = theme === "light";
   const router = useRouter();
-
   const {
     shiftSchedules,
     loading,
@@ -114,11 +111,10 @@ const Schedules = () => {
     deleteUserFromShift,
   } = useShiftSchedulesStore();
   const { users, fetchUsers } = useUsersStore();
-
   const [token, setToken] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedShift, setSelectedShift] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
+  const [editTitle, setEditTitle] = useState("");
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date(Date.now() + 3600000));
   const [editShiftModalVisible, setEditShiftModalVisible] = useState(false);
@@ -128,20 +124,20 @@ const Schedules = () => {
   const [userPickerValue, setUserPickerValue] = useState(null);
   const [userPickerItems, setUserPickerItems] = useState([]);
   const recurrenceOptions = [
-    { label: 'All Days', value: 'all' },
-    { label: 'Weekdays Only (Mon-Fri)', value: 'weekdays' },
-    { label: 'Weekends Only (Sat-Sun)', value: 'weekends' },
+    { label: "All Days", value: "all" },
+    { label: "Weekdays Only (Mon-Fri)", value: "weekdays" },
+    { label: "Weekends Only (Sat-Sun)", value: "weekends" },
   ];
-  const [selectedRecurrence, setSelectedRecurrence] = useState('all');
+  const [selectedRecurrence, setSelectedRecurrence] = useState("all");
   const [assignedUsersModalVisible, setAssignedUsersModalVisible] = useState(false);
   const [selectedShiftForUsers, setSelectedShiftForUsers] = useState(null);
 
   useEffect(() => {
     const initialize = async () => {
-      const storedToken = await SecureStore.getItemAsync('token');
+      const storedToken = await SecureStore.getItemAsync("token");
       if (!storedToken) {
-        Alert.alert('Authentication Error', 'Please sign in again.');
-        router.replace('(auth)/login-user');
+        Alert.alert("Authentication Error", "Please sign in again.");
+        router.replace("(auth)/login-user");
         return;
       }
       setToken(storedToken);
@@ -162,8 +158,8 @@ const Schedules = () => {
 
   useEffect(() => {
     const items = [
-      { label: 'Select a user...', value: 'null' },
-      { label: 'All Users', value: '0' },
+      { label: "Select a user...", value: "null" },
+      { label: "All Users", value: "0" },
       ...users.map((user) => ({
         label: user.email,
         value: String(user.id),
@@ -182,7 +178,7 @@ const Schedules = () => {
 
   const handleAddShift = () => {
     setSelectedShift(null);
-    setEditTitle('');
+    setEditTitle("");
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 3600000);
     setStartTime(now);
@@ -201,16 +197,12 @@ const Schedules = () => {
   const handleSaveShift = async () => {
     if (!token) return;
     if (!editTitle) {
-      Alert.alert('Validation Error', 'Title is required.');
+      Alert.alert("Validation Error", "Title is required.");
       return;
     }
     const startUTC = convertLocalToUTC(startTime);
     const endUTC = convertLocalToUTC(endTime);
-    const payload = {
-      title: editTitle,
-      startTime: startUTC,
-      endTime: endUTC,
-    };
+    const payload = { title: editTitle, startTime: startUTC, endTime: endUTC };
     let result;
     if (selectedShift) {
       result = await updateShiftSchedule(token, selectedShift.id, payload);
@@ -221,23 +213,23 @@ const Schedules = () => {
       setEditShiftModalVisible(false);
       await fetchShiftSchedules(token);
     } else if (result && result.message) {
-      Alert.alert('Error', result.message);
+      Alert.alert("Error", result.message);
     }
   };
 
   const handleDeleteShift = async (shiftId) => {
     if (!token) return;
-    Alert.alert('Confirm Deletion', 'Are you sure you want to delete this shift schedule?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Confirm Deletion", "Are you sure you want to delete this shift schedule?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: "Delete",
+        style: "destructive",
         onPress: async () => {
           const result = await deleteShiftSchedule(token, shiftId);
           if (result && result.success) {
             await fetchShiftSchedules(token);
           } else if (result && result.message) {
-            Alert.alert('Error', result.message);
+            Alert.alert("Error", result.message);
           }
         },
       },
@@ -245,46 +237,40 @@ const Schedules = () => {
   };
 
   const handleShiftAction = (shift) => {
-    Alert.alert(
-      'Shift Actions',
-      `Choose an action for "${shift.title}".`,
-      [
-        { text: 'Edit', onPress: () => handleEditShift(shift) },
-        { text: 'Delete', onPress: () => handleDeleteShift(shift.id) },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert("Shift Actions", `Choose an action for "${shift.title}".`, [
+      { text: "Edit", onPress: () => handleEditShift(shift) },
+      { text: "Delete", onPress: () => handleDeleteShift(shift.id) },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const openAssignModal = (shift) => {
     setSelectedShift(shift);
     setSelectedUserId(null);
     setUserPickerValue(null);
-    setSelectedRecurrence('all');
+    setSelectedRecurrence("all");
     setAssignModalVisible(true);
   };
 
   const handleAssignShift = async () => {
     if (!token || !selectedShift) {
-      Alert.alert('Validation Error', 'Missing shift information.');
+      Alert.alert("Validation Error", "Missing shift information.");
       return;
     }
     if (selectedUserId === 0) {
-      const assignPromises = users.map((u) =>
-        assignShiftToUser(token, selectedShift.id, u.id, selectedRecurrence)
-      );
+      const assignPromises = users.map((u) => assignShiftToUser(token, selectedShift.id, u.id, selectedRecurrence));
       const results = await Promise.all(assignPromises);
       const success = results.every((res) => res && res.success);
       if (success) {
         setAssignModalVisible(false);
         await fetchShiftSchedules(token);
       } else {
-        Alert.alert('Error', 'Failed to assign shift to some users.');
+        Alert.alert("Error", "Failed to assign shift to some users.");
       }
       return;
     }
     if (selectedUserId === null) {
-      Alert.alert('Validation Error', 'Please select a user.');
+      Alert.alert("Validation Error", "Please select a user.");
       return;
     }
     const result = await assignShiftToUser(token, selectedShift.id, selectedUserId, selectedRecurrence);
@@ -292,7 +278,7 @@ const Schedules = () => {
       setAssignModalVisible(false);
       await fetchShiftSchedules(token);
     } else if (result && result.message) {
-      Alert.alert('Error', result.message);
+      Alert.alert("Error", result.message);
     }
   };
 
@@ -302,87 +288,53 @@ const Schedules = () => {
   };
 
   const handleDeleteUserFromShift = (shiftId, userId, userName) => {
-    Alert.alert(
-      'Confirm Removal',
-      `Are you sure you want to remove ${userName} from this shift?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteUserFromShift(token, shiftId, userId);
-            if (result && result.success) {
-              // Refresh the shifts
-              await fetchShiftSchedules(token);
-            }
-          },
+    Alert.alert("Confirm Removal", `Are you sure you want to remove ${userName} from this shift?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          const result = await deleteUserFromShift(token, shiftId, userId);
+          if (result && result.success) {
+            await fetchShiftSchedules(token);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderItem = ({ item }) => {
     const hours = computeTotalHours(item.startTime, item.endTime).toFixed(2);
     return (
-      <View
-        className={`p-3 mb-3 rounded-lg flex-row justify-between items-center ${
-          isLightTheme ? 'bg-slate-100' : 'bg-slate-800'
-        }`}
-      >
+      <View className={`p-3 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text
-              className={`text-lg font-semibold ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
-              }`}
-            >
-              {item.title}
-            </Text>
-            
+            <Text className={`text-lg font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{item.title}</Text>
           </View>
-          <Text
-            className={`text-sm  ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            Start: {new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+            Start:{" "}
+            {new Date(item.startTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
-          <Text
-            className={`text-sm  ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            End: {new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+            End:{" "}
+            {new Date(item.endTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
-          <Text
-            className={`text-sm  ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            Total Hours: {hours} hrs
-          </Text>
+          <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Total Hours: {hours} hrs</Text>
         </View>
         <TouchableOpacity onPress={() => handleViewAssignedUsers(item)} className="ml-2">
-              <Ionicons
-                name="people-outline"
-                size={24}
-                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => openAssignModal(item)} className="ml-2">
-              <Ionicons
-                name="add-circle-outline"
-                size={24}
-                color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-              />
-            </TouchableOpacity>
+          <Ionicons name="people-outline" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => openAssignModal(item)} className="ml-2">
+          <Ionicons name="add-circle-outline" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} />
+        </TouchableOpacity>
         <Pressable onPress={() => handleShiftAction(item)} className="ml-2">
-          <Ionicons
-            name="ellipsis-vertical"
-            size={24}
-            color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-          />
+          <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} />
         </Pressable>
       </View>
     );
@@ -391,89 +343,41 @@ const Schedules = () => {
   const renderAssignedUserItem = ({ item }) => {
     return (
       <View className="flex-row items-center mb-3">
-        <Ionicons
-          name="person-circle-outline"
-          size={24}
-          color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-          className="mr-2"
-        />
+        <Ionicons name="person-circle-outline" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} className="mr-2" />
         <View style={{ flex: 1 }}>
-          <Text
-            className={`font-semibold ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            {item.firstName} {item.middleName} {item.lastName}
+          <Text className={`font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+            {item.user.firstName} {item.user.middleName} {item.user.lastName}
           </Text>
-          <Text
-            className={`text-sm ${
-              isLightTheme ? 'text-slate-700' : 'text-slate-300'
-            }`}
-          >
-            ID: {item.id} | {item.UserShiftAssignment.recurrence}
+          <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+            ID: {item.user.id} | {item.recurrence}
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() =>
-            handleDeleteUserFromShift(
-              selectedShiftForUsers.id,
-              item.id,
-              `${item.firstName} ${item.lastName}`
-            )
-          }
+          onPress={() => handleDeleteUserFromShift(selectedShiftForUsers.id, item.user.id, `${item.user.firstName} ${item.user.lastName}`)}
           className="ml-2"
         >
-          <Ionicons
-            name="trash-outline"
-            size={20}
-            color={COLORS[theme].deleteIconColor}
-          />
+          <Ionicons name="trash-outline" size={20} color={COLORS[theme].deleteIconColor} />
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? 'bg-white' : 'bg-slate-900'}`}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
-          <Ionicons
-            name="chevron-back-outline"
-            size={24}
-            color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-          />
+          <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} />
         </Pressable>
-        <Text
-          className={`text-lg font-bold ${
-            isLightTheme ? 'text-slate-700' : 'text-slate-300'
-          }`}
-        >
-          Shifts Schedules
-        </Text>
+        <Text className={`text-lg font-bold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Shifts Schedules</Text>
       </View>
       <View className="flex-row justify-between items-center px-4 mb-4">
-        <Text
-          className={`text-2xl font-bold ${
-            isLightTheme ? 'text-slate-700' : 'text-slate-300'
-          }`}
-        >
-          Shift Schedules
-        </Text>
-        <Pressable
-          onPress={handleAddShift}
-          className={`p-2 rounded-full ${
-            isLightTheme ? 'bg-white' : 'bg-slate-900'
-          }`}
-        >
-          <Ionicons name="add" size={24} color={isLightTheme ? `#1e293b` : `#cbd5e1`} />
+        <Text className={`text-2xl font-bold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Shift Schedules</Text>
+        <Pressable onPress={handleAddShift} className={`p-2 rounded-full ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
+          <Ionicons name="add" size={24} color={isLightTheme ? "#1e293b" : "#cbd5e1"} />
         </Pressable>
       </View>
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color={isLightTheme ? COLORS.light.activityIndicator : COLORS.dark.activityIndicator}
-          style={{ marginTop: 48 }}
-        />
+        <ActivityIndicator size="large" color={isLightTheme ? COLORS.light.activityIndicator : COLORS.dark.activityIndicator} style={{ marginTop: 48 }} />
       ) : (
         <FlatList
           data={shiftSchedules}
@@ -489,81 +393,45 @@ const Schedules = () => {
             />
           }
           ListEmptyComponent={
-            <Text
-              className={`text-center mt-12 text-lg ${
-                isLightTheme ? 'text-slate-700' : 'text-slate-300'
-              }`}
-            >
-              No shift schedules found.
-            </Text>
+            <Text className={`text-center mt-12 text-lg ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>No shift schedules found.</Text>
           }
         />
       )}
-      <Modal
-        visible={editShiftModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setEditShiftModalVisible(false)}
-      >
+      <Modal visible={editShiftModalVisible} animationType="fade" transparent={true} onRequestClose={() => setEditShiftModalVisible(false)}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalContainer}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ width: '90%' }}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{ width: "90%" }}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
             >
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
                 <View
                   style={[
                     styles.modalInner,
                     {
-                      backgroundColor: isLightTheme
-                        ? COLORS.light.modalBackground
-                        : COLORS.dark.modalBackground,
+                      backgroundColor: isLightTheme ? COLORS.light.modalBackground : COLORS.dark.modalBackground,
                     },
                   ]}
                 >
-                  <Text
-                    className={`font-bold mb-8 ${
-                      isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                    style={{ fontSize: 18 }}
-                  >
-                    {selectedShift ? 'Edit Shift' : 'Create Shift'}
+                  <Text className={`font-bold mb-8 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`} style={{ fontSize: 18 }}>
+                    {selectedShift ? "Edit Shift" : "Create Shift"}
                   </Text>
-                  <Text
-                    className={`${
-                      isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                    } mb-2`}
-                    style={{ fontSize: 14 }}
-                  >
+                  <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} mb-2`} style={{ fontSize: 14 }}>
                     Title
                   </Text>
-                  <View
-                    className={`${
-                      isLightTheme ? 'bg-slate-100' : 'bg-slate-700'
-                    } rounded-lg mb-6 p-2`}
-                  >
+                  <View className={`${isLightTheme ? "bg-slate-100" : "bg-slate-700"} rounded-lg mb-6 p-2`}>
                     <TextInput
-                      className={`${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      } text-md py-1`}
+                      className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} text-md py-1`}
                       value={editTitle}
                       onChangeText={setEditTitle}
                       placeholder="e.g., Morning Shift"
-                      placeholderTextColor={
-                        isLightTheme ? COLORS.light.placeholder : COLORS.dark.placeholder
-                      }
+                      placeholderTextColor={isLightTheme ? COLORS.light.placeholder : COLORS.dark.placeholder}
                     />
                   </View>
                   <View className="flex-row justify-between mb-8">
                     <View className="flex-1 mr-2">
-                      <Text
-                        className={`${
-                          isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                        } mb-2`}
-                        style={{ fontSize: 14 }}
-                      >
+                      <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} mb-2`} style={{ fontSize: 14 }}>
                         Start Time
                       </Text>
                       <DateTimePicker
@@ -575,25 +443,17 @@ const Schedules = () => {
                           if (selectedDate) {
                             setStartTime(selectedDate);
                             if (selectedDate >= endTime) {
-                              Alert.alert(
-                                'Invalid Time',
-                                'Start time cannot be after or equal to end time.'
-                              );
+                              Alert.alert("Invalid Time", "Start time cannot be after or equal to end time.");
                               setStartTime(new Date(endTime.getTime() - 3600000));
                             }
                           }
                         }}
-                        style={{ width: '100%' }}
+                        style={{ width: "100%" }}
                         textColor={isLightTheme ? COLORS.light.text : COLORS.dark.text}
                       />
                     </View>
                     <View className="flex-1 ml-2">
-                      <Text
-                        className={`${
-                          isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                        } mb-1`}
-                        style={{ fontSize: 14 }}
-                      >
+                      <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} mb-1`} style={{ fontSize: 14 }}>
                         End Time
                       </Text>
                       <DateTimePicker
@@ -604,38 +464,23 @@ const Schedules = () => {
                         onChange={(event, selectedDate) => {
                           if (selectedDate) {
                             if (selectedDate <= startTime) {
-                              Alert.alert(
-                                'Invalid Time',
-                                'End time cannot be before or equal to start time.'
-                              );
+                              Alert.alert("Invalid Time", "End time cannot be before or equal to start time.");
                               setEndTime(new Date(startTime.getTime() + 3600000));
                             } else {
                               setEndTime(selectedDate);
                             }
                           }
                         }}
-                        style={{ width: '100%' }}
+                        style={{ width: "100%" }}
                         textColor={isLightTheme ? COLORS.light.text : COLORS.dark.text}
                       />
                     </View>
                   </View>
                   <View className="flex-row justify-end mt-3">
-                    <TouchableOpacity
-                      onPress={() => setEditShiftModalVisible(false)}
-                      className="mr-3"
-                    >
-                      <Text
-                        className={`${
-                          isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                        } font-semibold text-sm my-auto`}
-                      >
-                        Cancel
-                      </Text>
+                    <TouchableOpacity onPress={() => setEditShiftModalVisible(false)} className="mr-3">
+                      <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} font-semibold text-sm my-auto`}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={handleSaveShift}
-                      className="bg-orange-500 py-2 px-4 rounded-full"
-                    >
+                    <TouchableOpacity onPress={handleSaveShift} className="bg-orange-500 py-2 px-4 rounded-full">
                       <Text className="text-white font-semibold text-sm">Save</Text>
                     </TouchableOpacity>
                   </View>
@@ -645,12 +490,7 @@ const Schedules = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      <Modal
-        visible={assignModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setAssignModalVisible(false)}
-      >
+      <Modal visible={assignModalVisible} animationType="fade" transparent={true} onRequestClose={() => setAssignModalVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setAssignModalVisible(false)}>
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
@@ -658,36 +498,17 @@ const Schedules = () => {
                 style={[
                   styles.assignModalInner,
                   {
-                    backgroundColor: isLightTheme
-                      ? COLORS.light.background
-                      : COLORS.dark.background,
+                    backgroundColor: isLightTheme ? COLORS.light.background : COLORS.dark.background,
                   },
                 ]}
               >
-                <Text
-                  className={`font-bold mb-8 ${
-                    isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                  }`}
-                  style={{ fontSize: 20 }}
-                >
+                <Text className={`font-bold mb-8 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`} style={{ fontSize: 20 }}>
                   Assign Shift: {selectedShift?.title}
                 </Text>
-                <Text
-                  className={`${
-                    isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                  } mb-1`}
-                  style={{ fontSize: 16 }}
-                >
+                <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} mb-1`} style={{ fontSize: 16 }}>
                   Select User
                 </Text>
-                <View
-                  className={`${
-                    isLightTheme
-                      ? 'border-white bg-white'
-                      : 'border-slate-900 bg-slate-900'
-                  } border rounded-lg mb-6`}
-                  style={{ zIndex: 3000 }}
-                >
+                <View className={`${isLightTheme ? "border-white bg-white" : "border-slate-900 bg-slate-900"} border rounded-lg mb-6`} style={{ zIndex: 3000 }}>
                   <DropDownPicker
                     open={userPickerOpen}
                     value={userPickerValue}
@@ -697,102 +518,63 @@ const Schedules = () => {
                     setItems={setUserPickerItems}
                     placeholder="Select a user..."
                     onChangeValue={(value) => {
-                      if (value === '0') {
+                      if (value === "0") {
                         setSelectedUserId(0);
-                      } else if (value === 'null') {
+                      } else if (value === "null") {
                         setSelectedUserId(null);
                       } else {
                         setSelectedUserId(Number(value));
                       }
                     }}
                     style={{
-                      borderColor: isLightTheme
-                        ? COLORS.light.background
-                        : COLORS.dark.backgroundSecondary,
-                      backgroundColor: isLightTheme
-                        ? COLORS.light.background
-                        : COLORS.dark.backgroundSecondary,
+                      borderColor: isLightTheme ? COLORS.light.background : COLORS.dark.backgroundSecondary,
+                      backgroundColor: isLightTheme ? COLORS.light.background : COLORS.dark.backgroundSecondary,
                     }}
                     dropDownContainerStyle={{
-                      borderColor: isLightTheme
-                        ? COLORS.light.background
-                        : COLORS.dark.backgroundSecondary,
-                      backgroundColor: isLightTheme
-                        ? COLORS.light.background
-                        : COLORS.dark.backgroundSecondary,
+                      borderColor: isLightTheme ? COLORS.light.background : COLORS.dark.backgroundSecondary,
+                      backgroundColor: isLightTheme ? COLORS.light.background : COLORS.dark.backgroundSecondary,
                     }}
                     placeholderStyle={{
-                      color: isLightTheme
-                        ? COLORS.light.placeholder
-                        : COLORS.dark.placeholder,
+                      color: isLightTheme ? COLORS.light.placeholder : COLORS.dark.placeholder,
                     }}
                     listMode="SCROLLVIEW"
                     zIndex={9999}
                     textStyle={{
-                      color: isLightTheme
-                        ? COLORS.light.text
-                        : COLORS.dark.text,
+                      color: isLightTheme ? COLORS.light.text : COLORS.dark.text,
                     }}
                     selectedItemContainerStyle={{
-                      backgroundColor: isLightTheme ? '#F3F4F6' : '#374151',
+                      backgroundColor: isLightTheme ? "#F3F4F6" : "#374151",
                     }}
                     selectedItemLabelStyle={{
                       color: isLightTheme ? COLORS.light.text : COLORS.dark.text,
-                      fontWeight: 'bold',
+                      fontWeight: "bold",
                     }}
                   />
                 </View>
-                <Text
-                  className={`${
-                    isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                  } mb-1`}
-                  style={{ fontSize: 16 }}
-                >
+                <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} mb-1`} style={{ fontSize: 16 }}>
                   Recurrence Pattern
                 </Text>
-                <View
-                  className={`${
-                    isLightTheme ? 'bg-white' : 'bg-slate-900'
-                  } rounded-lg p-4 mb-8`}
-                >
+                <View className={`${isLightTheme ? "bg-white" : "bg-slate-900"} rounded-lg p-4 mb-8`}>
                   <RadioButtonRN
                     data={recurrenceOptions}
-                    initial={
-                      recurrenceOptions.findIndex(
-                        (option) => option.value === selectedRecurrence
-                      ) + 1
-                    }
+                    initial={recurrenceOptions.findIndex((option) => option.value === selectedRecurrence) + 1}
                     box={false}
                     activeColor="#f97316"
                     textColor={isLightTheme ? COLORS.light.text : COLORS.dark.text}
                     selectedBtn={(e) => setSelectedRecurrence(e.value)}
                     layout="row"
                     style={{
-                      justifyContent: 'space-evenly',
-                      alignItems: 'center',
+                      justifyContent: "space-evenly",
+                      alignItems: "center",
                     }}
                   />
                 </View>
                 <View className="flex-row justify-end mt-6">
-                  <TouchableOpacity
-                    onPress={() => setAssignModalVisible(false)}
-                    className="mr-4"
-                  >
-                    <Text
-                      className={`${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      } font-semibold text-base my-auto`}
-                    >
-                      Cancel
-                    </Text>
+                  <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="mr-4">
+                    <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"} font-semibold text-base my-auto`}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleAssignShift}
-                    className="bg-orange-500 py-3 px-6 rounded-lg my-auto"
-                  >
-                    <Text className="text-white font-semibold text-base my-auto text-center">
-                      Save
-                    </Text>
+                  <TouchableOpacity onPress={handleAssignShift} className="bg-orange-500 py-3 px-6 rounded-lg my-auto">
+                    <Text className="text-white font-semibold text-base my-auto text-center">Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -800,12 +582,7 @@ const Schedules = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      <Modal
-        visible={assignedUsersModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setAssignedUsersModalVisible(false)}
-      >
+      <Modal visible={assignedUsersModalVisible} animationType="fade" transparent={true} onRequestClose={() => setAssignedUsersModalVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setAssignedUsersModalVisible(false)}>
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
@@ -813,98 +590,58 @@ const Schedules = () => {
                 style={[
                   styles.usersModalInner,
                   {
-                    backgroundColor: isLightTheme
-                      ? COLORS.light.modalBackground
-                      : COLORS.dark.modalBackground,
+                    backgroundColor: isLightTheme ? COLORS.light.modalBackground : COLORS.dark.modalBackground,
                   },
                 ]}
               >
                 <View className="flex-row justify-between items-center mb-4">
-                  <Text
-                    className={`font-bold ${
-                      isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                    style={{ fontSize: 20 }}
-                  >
+                  <Text className={`font-bold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`} style={{ fontSize: 20 }}>
                     Assigned Users
                   </Text>
                   <TouchableOpacity onPress={() => setAssignedUsersModalVisible(false)}>
-                    <Ionicons
-                      name="close-circle-outline"
-                      size={24}
-                      color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-                    />
+                    <Ionicons name="close-circle-outline" size={24} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} />
                   </TouchableOpacity>
                 </View>
-                <Text
-                  className={`font-semibold ${
-                    isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                  }`}
-                  style={{ fontSize: 16, marginBottom: 16 }}
-                >
+                <Text className={`font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`} style={{ fontSize: 16, marginBottom: 16 }}>
                   Shift: {selectedShiftForUsers?.title}
                 </Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons
-                      name="time-outline"
-                      size={20}
-                      color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text
-                      className={`text-sm ${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      }`}
-                    >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons name="time-outline" size={20} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} style={{ marginRight: 8 }} />
+                    <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                       {new Date(selectedShiftForUsers?.startTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons
-                      name="time-outline"
-                      size={20}
-                      color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text
-                      className={`text-sm ${
-                        isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                      }`}
-                    >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons name="time-outline" size={20} color={isLightTheme ? COLORS.light.iconColor : COLORS.dark.iconColor} style={{ marginRight: 8 }} />
+                    <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                       {new Date(selectedShiftForUsers?.endTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Text>
                   </View>
                 </View>
-                {selectedShiftForUsers && selectedShiftForUsers.assignedUsers.length > 0 ? (
+                {selectedShiftForUsers?.UserShiftAssignments?.length > 0 ? (
                   <FlatList
-                    data={selectedShiftForUsers.assignedUsers}
-                    keyExtractor={(user) => user.id.toString()}
+                    data={selectedShiftForUsers.UserShiftAssignments}
+                    keyExtractor={(assignment) => assignment.id.toString()}
                     renderItem={renderAssignedUserItem}
                     ListEmptyComponent={
-                      <Text
-                        className={`text-center text-sm ${
-                          isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                        }`}
-                      >
-                        No users assigned to this shift.
-                      </Text>
+                      <Text className={`text-center text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>No users assigned to this shift.</Text>
                     }
                   />
                 ) : (
-                  <Text
-                    className={`text-center text-sm ${
-                      isLightTheme ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                  >
-                    No users assigned to this shift.
-                  </Text>
+                  <Text className={`text-center text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>No users assigned to this shift.</Text>
                 )}
               </View>
             </TouchableWithoutFeedback>

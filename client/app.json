@@ -10,14 +10,27 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bizsolutions.bizbuddy"
+      "bundleIdentifier": "com.bizsolutions.bizbuddy",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BizBuddy requires location access to accurately track time-in, time-out, and breaks. We only use your location at the time of punching in or out.",
+        "NSLocationAlwaysUsageDescription": "We require your location to verify work shift activities even when the app is not active."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bizsolutions.bizbuddy"
+      "package": "com.bizsolutions.bizbuddy",
+      "permissions": [
+        {
+          "name": "android.permission.ACCESS_FINE_LOCATION",
+          "rationale": {
+            "title": "Location Access Needed",
+            "message": "BizBuddy requires access to your location to accurately track your time-in, time-out, and breaks."
+          }
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,6 +46,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.your-identifier",
+          "enableGooglePay": true
         }
       ],
       "expo-secure-store"

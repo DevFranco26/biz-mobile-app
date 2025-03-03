@@ -20,7 +20,6 @@ import * as SecureStore from "expo-secure-store";
 import "nativewind";
 import useThemeStore from "../../store/themeStore";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 
 const Payroll = () => {
@@ -128,10 +127,7 @@ const Payroll = () => {
       const currentYear = new Date().getFullYear();
       filtered = filtered.filter((record) => {
         const recordDate = new Date(record.startDate);
-        return (
-          recordDate.getMonth() === currentMonth &&
-          recordDate.getFullYear() === currentYear
-        );
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
       });
     } else if (filterValue === "weekly") {
       const today = new Date();
@@ -231,10 +227,7 @@ const Payroll = () => {
           </tr>
           <tr>
             <th>Period</th>
-            <td>${format(
-              new Date(record.startDate),
-              "MMMM d, yyyy"
-            )} ~ ${format(new Date(record.endDate), "MMMM d, yyyy")}</td>
+            <td>${format(new Date(record.startDate), "MMMM d, yyyy")} ~ ${format(new Date(record.endDate), "MMMM d, yyyy")}</td>
           </tr>
           <tr>
             <th>Pay Type</th>
@@ -293,96 +286,50 @@ const Payroll = () => {
 
   // Render Payroll Item
   const renderPayrollItem = ({ item }) => (
-    <View
-      className={`p-4 mb-4 rounded-lg ${
-        isLightTheme ? "bg-slate-100" : "bg-slate-800"
-      }`}
-      style={{ width: "100%" }}
-    >
+    <View className={`p-4 mb-4 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`} style={{ width: "100%" }}>
       <View className="mb-2">
-        <Text
-          className={`text-lg font-semibold ${
-            isLightTheme ? "text-slate-800" : "text-slate-300"
-          }`}
-        >
-          {format(new Date(item.startDate), "MMMM d, yyyy")} -{" "}
-          {format(new Date(item.endDate), "MMMM d, yyyy")}
+        <Text className={`text-lg font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
+          {format(new Date(item.startDate), "MMMM d, yyyy")} - {format(new Date(item.endDate), "MMMM d, yyyy")}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
           <Text className="font-semibold">Pay Type:</Text> {item.payType}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
-          <Text className="font-semibold">Hours worked:</Text>{" "}
-          {item.hoursWorked}
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+          <Text className="font-semibold">Hours worked:</Text> {item.hoursWorked}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
-          <Text className="font-semibold">Overtime Hours:</Text> $
-          {item.overtimeHours}
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+          <Text className="font-semibold">Overtime Hours:</Text> ${item.overtimeHours}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
-          <Text className="font-semibold">Overtime Pay:</Text> $
-          {item.overtimePay}
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+          <Text className="font-semibold">Overtime Pay:</Text> ${item.overtimePay}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
           <Text className="font-semibold">Gross Pay:</Text> ${item.grossPay}
         </Text>
       </View>
       <View className="mb-1">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
           <Text className="font-semibold">Deductions:</Text> ${item.deductions}
         </Text>
       </View>
       <View className="mb-3">
-        <Text
-          className={`text-md ${
-            isLightTheme ? "text-slate-700" : "text-slate-300"
-          }`}
-        >
+        <Text className={`text-md ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
           <Text className="font-semibold">Net Pay:</Text> ${item.netPay}
         </Text>
       </View>
       <View className="flex-row justify-center">
-        <Pressable
-          className="bg-orange-500 px-4 py-2 rounded"
-          onPress={() => handleDownloadPDF(item)}
-        >
-          <Text className="text-white text-center font-semibold">
-            Download PDF
-          </Text>
+        <Pressable className="bg-orange-500 px-4 py-2 rounded" onPress={() => handleDownloadPDF(item)}>
+          <Text className="text-white text-center font-semibold">Download PDF</Text>
         </Pressable>
       </View>
     </View>
@@ -414,19 +361,10 @@ const Payroll = () => {
   };
 
   return (
-    <View
-      className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}
-      style={{ paddingTop: insets.top }}
-    >
+    <View className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`} style={{ paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row justify-center items-center px-4 py-4">
-        <Text
-          className={`text-2xl font-bold ${
-            isLightTheme ? "text-slate-800" : "text-slate-300"
-          }`}
-        >
-          My Payroll
-        </Text>
+        <Text className={`text-2xl font-bold ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>My Payroll</Text>
       </View>
 
       {/* Active Filters and Sorts with Icons on the Right */}
@@ -448,11 +386,7 @@ const Payroll = () => {
                 {filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}
               </Text>
               <Pressable onPress={() => removeFilter("filter")}>
-                <Ionicons
-                  name="close-circle"
-                  size={16}
-                  color={isLightTheme ? "#4b5563" : "#d1d5db"}
-                />
+                <Ionicons name="close-circle" size={16} color={isLightTheme ? "#4b5563" : "#d1d5db"} />
               </Pressable>
             </View>
           )}
@@ -475,11 +409,7 @@ const Payroll = () => {
                 {sortValue === "netPay_asc" && "Net Pay Asc"}
               </Text>
               <Pressable onPress={() => removeFilter("sort")}>
-                <Ionicons
-                  name="close-circle"
-                  size={16}
-                  color={isLightTheme ? "#4b5563" : "#d1d5db"}
-                />
+                <Ionicons name="close-circle" size={16} color={isLightTheme ? "#4b5563" : "#d1d5db"} />
               </Pressable>
             </View>
           )}
@@ -488,28 +418,13 @@ const Payroll = () => {
         {/* Sort and Filter Icons Positioned on the Right */}
         <View className="flex-row">
           {/* Sort Icon */}
-          <Pressable
-            onPress={openSortModal}
-            className="mr-4"
-            accessibilityLabel="Open Sort Options"
-          >
-            <MaterialIcons
-              name="sort"
-              size={24}
-              color={isLightTheme ? "#374151" : "#9ca3af"}
-            />
+          <Pressable onPress={openSortModal} className="mr-4" accessibilityLabel="Open Sort Options">
+            <MaterialIcons name="sort" size={24} color={isLightTheme ? "#374151" : "#9ca3af"} />
           </Pressable>
 
           {/* Filter Icon */}
-          <Pressable
-            onPress={() => setIsFilterModalVisible(true)}
-            accessibilityLabel="Open Filter Options"
-          >
-            <Ionicons
-              name="filter"
-              size={24}
-              color={isLightTheme ? "#374151" : "#9ca3af"}
-            />
+          <Pressable onPress={() => setIsFilterModalVisible(true)} accessibilityLabel="Open Filter Options">
+            <Ionicons name="filter" size={24} color={isLightTheme ? "#374151" : "#9ca3af"} />
           </Pressable>
         </View>
       </View>
@@ -522,31 +437,15 @@ const Payroll = () => {
         onRequestClose={() => setIsSortModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsSortModalVisible(false)}>
-          <View
-            className={`flex-1 justify-center items-center ${
-              isLightTheme ? `bg-slate-950/70` : `bg-slate-950/70`
-            }`}
-          >
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? `bg-slate-950/70` : `bg-slate-950/70`}`}>
             <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 p-6 rounded-2xl shadow-md ${
-                  isLightTheme ? "bg-white" : "bg-slate-800"
-                }`}
-              >
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
                 <View className="flex-row justify-between items-center mb-4">
-                  <Text
-                    className={`text-xl font-semibold ${
-                      isLightTheme ? "text-slate-800" : "text-slate-100"
-                    }`}
-                  >
+                  <Text className={`text-xl font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
                     Sort Options
                   </Text>
                   <Pressable onPress={() => setIsSortModalVisible(false)}>
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isLightTheme ? "#374151" : "#9ca3af"}
-                    />
+                    <Ionicons name="close" size={24} color={isLightTheme ? "#374151" : "#9ca3af"} />
                   </Pressable>
                 </View>
 
@@ -569,13 +468,7 @@ const Payroll = () => {
                         color: isLightTheme ? "#e5e7eb" : "#4b5563",
                       }}
                     >
-                      <Text
-                        className={`text-lg ${
-                          isLightTheme ? "text-slate-800" : "text-slate-100"
-                        }`}
-                      >
-                        {item.label}
-                      </Text>
+                      <Text className={`text-lg ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{item.label}</Text>
                     </Pressable>
                   )}
                 />
@@ -583,13 +476,9 @@ const Payroll = () => {
                 {/* Confirm Button */}
                 <Pressable
                   onPress={() => setIsSortModalVisible(false)}
-                  className={`mt-4 p-4 rounded-lg ${
-                    isLightTheme ? "bg-orange-500" : "bg-orange-500"
-                  }`}
+                  className={`mt-4 p-4 rounded-lg ${isLightTheme ? "bg-orange-500" : "bg-orange-500"}`}
                 >
-                  <Text className="text-white text-center font-semibold">
-                    Confirm
-                  </Text>
+                  <Text className="text-white text-center font-semibold">Confirm</Text>
                 </Pressable>
               </View>
             </TouchableWithoutFeedback>
@@ -604,34 +493,16 @@ const Payroll = () => {
         animationType="fade"
         onRequestClose={() => setIsFilterModalVisible(false)}
       >
-        <TouchableWithoutFeedback
-          onPress={() => setIsFilterModalVisible(false)}
-        >
-          <View
-            className={`flex-1 justify-center items-center ${
-              isLightTheme ? `bg-slate-950/60` : `bg-slate-950/60`
-            }`}
-          >
+        <TouchableWithoutFeedback onPress={() => setIsFilterModalVisible(false)}>
+          <View className={`flex-1 justify-center items-center ${isLightTheme ? `bg-slate-950/60` : `bg-slate-950/60`}`}>
             <TouchableWithoutFeedback>
-              <View
-                className={`w-11/12 p-6 rounded-2xl shadow-md ${
-                  isLightTheme ? "bg-white" : "bg-slate-900"
-                }`}
-              >
+              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
                 <View className="flex-row justify-between items-center mb-4">
-                  <Text
-                    className={`text-xl font-semibold ${
-                      isLightTheme ? "text-slate-800" : "text-slate-100"
-                    }`}
-                  >
+                  <Text className={`text-xl font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
                     Filter Options
                   </Text>
                   <Pressable onPress={() => setIsFilterModalVisible(false)}>
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isLightTheme ? "#374151" : "#9ca3af"}
-                    />
+                    <Ionicons name="close" size={24} color={isLightTheme ? "#374151" : "#9ca3af"} />
                   </Pressable>
                 </View>
 
@@ -654,13 +525,7 @@ const Payroll = () => {
                         color: isLightTheme ? "#e5e7eb" : "#4b5563",
                       }}
                     >
-                      <Text
-                        className={`text-lg ${
-                          isLightTheme ? "text-slate-800" : "text-slate-100"
-                        }`}
-                      >
-                        {item.label}
-                      </Text>
+                      <Text className={`text-lg ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{item.label}</Text>
                     </Pressable>
                   )}
                 />
@@ -668,13 +533,9 @@ const Payroll = () => {
                 {/* Confirm Button */}
                 <Pressable
                   onPress={() => setIsFilterModalVisible(false)}
-                  className={`mt-4 p-4 rounded-lg ${
-                    isLightTheme ? "bg-orange-500" : "bg-orange-500"
-                  }`}
+                  className={`mt-4 p-4 rounded-lg ${isLightTheme ? "bg-orange-500" : "bg-orange-500"}`}
                 >
-                  <Text className="text-white text-center font-semibold">
-                    Confirm
-                  </Text>
+                  <Text className="text-white text-center font-semibold">Confirm</Text>
                 </Pressable>
               </View>
             </TouchableWithoutFeedback>
@@ -691,11 +552,7 @@ const Payroll = () => {
         ListEmptyComponent={
           !loading &&
           !isFetching && (
-            <Text
-              className={`text-center mt-8 text-lg ${
-                isLightTheme ? "text-slate-500" : "text-slate-400"
-              }`}
-            >
+            <Text className={`text-center mt-8 text-lg ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>
               No payroll records found.
             </Text>
           )
@@ -712,17 +569,9 @@ const Payroll = () => {
 
       {/* Loading Indicator */}
       {(loading || isFetching) && (
-        <View
-          className={`absolute inset-0 justify-center items-center bg-black/10`}
-        >
+        <View className={`absolute inset-0 justify-center items-center bg-black/10`}>
           <ActivityIndicator size="large" color="#0f766e" />
-          <Text
-            className={`mt-2 ${
-              isLightTheme ? "text-slate-700" : "text-slate-300"
-            }`}
-          >
-            Loading payroll...
-          </Text>
+          <Text className={`mt-2 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Loading payroll...</Text>
         </View>
       )}
     </View>

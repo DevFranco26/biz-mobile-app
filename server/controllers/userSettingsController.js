@@ -1,108 +1,97 @@
 // File: server/controllers/userSettingsController.js
+const { prisma } = require("../config/database");
 
-const UserSettings = require('../models/UserSettings.js');
-const Location = require('../models/Location.js');
-const User = require('../models/Users.js');
-
-/**
- * Assign or Update Location Restriction for a User
- * Allows an admin to assign or update location restrictions for a user.
- */
+// Assign or update location restriction for a user.
 const assignLocationToUser = async (req, res) => {
   const { userId, locationId, restrictionEnabled } = req.body;
-
   try {
-    // Check if the user exists
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    // If restriction is enabled, locationId is required
-    if (restrictionEnabled && !locationId) {
-      return res.status(400).json({ message: 'Location ID is required when enabling restriction.' });
-    }
-
-    // If restriction is enabled, verify the location exists
+    const user = await prisma.users.findUnique({
+      where: { id: Number(userId) },
+    });
+    if (!user) return res.status(404).json({ message: "User not found." });
+    if (restrictionEnabled && !locationId)
+      return res.status(400).json({
+        message: "Location ID is required when enabling restriction.",
+      });
     let location = null;
     if (restrictionEnabled && locationId) {
-      location = await Location.findByPk(locationId);
-      if (!location) {
-        return res.status(404).json({ message: 'Location not found.' });
-      }
+      location = await prisma.locations.findUnique({
+        where: { id: Number(locationId) },
+      });
+      if (!location) return res.status(404).json({ message: "Location not found." });
     }
-
-    // Find existing user settings for this user
-    let setting = await UserSettings.findOne({ where: { userId } });
-
+    let setting = await prisma.userSettings.findFirst({
+      where: { userId: Number(userId) },
+    });
     if (setting) {
-      // Update existing setting
-      await setting.update({
-        restrictionEnabled,
-        locationId: restrictionEnabled ? locationId : null
+      setting = await prisma.userSettings.update({
+        where: { id: setting.id },
+        data: {
+          restrictionenabled: restrictionEnabled,
+          locationId: restrictionEnabled ? Number(locationId) : null,
+        },
       });
-      return res.status(200).json({ message: 'User setting updated successfully.', data: setting });
+      return res.status(200).json({ message: "User setting updated successfully.", data: setting });
     } else {
-      if (!restrictionEnabled) {
-        // If restriction is not enabled and no setting exists, no action needed
-        return res.status(400).json({ message: 'Cannot disable restriction without an existing setting.' });
-      }
-
-      // Create a new user setting
-      setting = await UserSettings.create({
-        userId,
-        restrictionEnabled,
-        locationId
+      if (!restrictionEnabled)
+        return res.status(400).json({
+          message: "Cannot disable restriction without an existing setting.",
+        });
+      setting = await prisma.userSettings.create({
+        data: {
+          userId: Number(userId),
+          restrictionenabled: restrictionEnabled,
+          locationId: Number(locationId),
+        },
       });
-
-      return res.status(201).json({ message: 'User setting created successfully.', data: setting });
+      return res.status(201).json({ message: "User setting created successfully.", data: setting });
     }
   } catch (error) {
-    console.error('Error in assignLocationToUser:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in assignLocationToUser:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Toggle Location Restriction for a User
- * Allows an admin to toggle the location restriction status for a user.
- */
+// Toggle location restriction for a user.
 const toggleLocationRestriction = async (req, res) => {
   const { userId } = req.body;
-
   try {
-    const setting = await UserSettings.findOne({ where: { userId } });
-    if (!setting) {
-      return res.status(404).json({ message: 'User setting not found. Cannot toggle restriction without an existing setting.' });
-    }
-
-    // Toggle the restrictionEnabled flag
-    await setting.update({ restrictionEnabled: !setting.restrictionEnabled });
-
-    res.status(200).json({ message: 'Location restriction toggled successfully.', data: setting });
+    const setting = await prisma.userSettings.findFirst({
+      where: { userId: Number(userId) },
+    });
+    if (!setting)
+      return res.status(404).json({
+        message: "User setting not found. Cannot toggle restriction.",
+      });
+    const updatedSetting = await prisma.userSettings.update({
+      where: { id: setting.id },
+      data: { restrictionenabled: !setting.restrictionenabled },
+    });
+    return res.status(200).json({
+      message: "Location restriction toggled successfully.",
+      data: updatedSetting,
+    });
   } catch (error) {
-    console.error('Error in toggleLocationRestriction:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in toggleLocationRestriction:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-/**
- * Get All User Settings
- * Retrieves all location settings for a specific user.
- */
+// Get all user settings.
 const getUserSettings = async (req, res) => {
   const { userId } = req.query;
-
   try {
-    const settings = await UserSettings.findAll({
-      where: { userId },
-      include: [{ model: Location, as: 'location' }],
+    const settings = await prisma.userSettings.findMany({
+      where: { userId: Number(userId) },
+      include: { location: true },
     });
-
-    res.status(200).json({ message: 'User settings retrieved successfully.', data: settings });
+    return res.status(200).json({
+      message: "User settings retrieved successfully.",
+      data: settings,
+    });
   } catch (error) {
-    console.error('Error in getUserSettings:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error("Error in getUserSettings:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

@@ -1,13 +1,15 @@
 // File: server/config/database.js
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-const { Sequelize } = require('sequelize');
-const dotenv = require('dotenv');
+async function connect() {
+  try {
+    await prisma.$connect();
+    console.log("Database connected successfully.");
+  } catch (error) {
+    console.error("Database connection error:", error);
+    throw error;
+  }
+}
 
-dotenv.config();
-
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  logging: false, 
-});
-
-module.exports = sequelize;
+module.exports = { prisma, connect };

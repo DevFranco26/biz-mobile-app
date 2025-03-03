@@ -1,36 +1,50 @@
 // File: app/(auth)/_layout.jsx
 
-import React from 'react';
-import { Stack } from 'expo-router';
+import React from "react";
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
   return (
     <Stack>
-
       <Stack.Screen
         name="login-user"
         options={{
-          title: 'Login User',
+          title: "Login User",
           headerShown: false,
         }}
       />
 
-       <Stack.Screen
-        name="registration-user"
+      <Stack.Screen
+        name="details-user"
         options={{
-          title: 'Registration User',
+          title: "Registration User",
           headerShown: false,
         }}
       />
 
-        <Stack.Screen
-        name="registration-company"
+      <Stack.Screen
+        name="details-company"
         options={{
-          title: 'Registration Company',
+          title: "Registration Company",
           headerShown: false,
         }}
       />
 
+      <Stack.Screen
+        name="pricing"
+        options={{
+          title: "Subscription Plans Pricing",
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="payment"
+        options={{
+          title: "Subscription Plans Payment",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

@@ -24,6 +24,7 @@
     "@react-navigation/bottom-tabs": "^7.0.0",
     "@react-navigation/material-top-tabs": "^7.0.18",
     "@react-navigation/native": "^7.0.0",
+    "@stripe/stripe-react-native": "0.38.6",
     "axios": "^1.7.8",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
@@ -47,6 +48,7 @@
     "expo-status-bar": "~2.0.0",
     "expo-symbols": "~0.2.0",
     "expo-system-ui": "~4.0.4",
+    "expo-updates": "~0.26.13",
     "expo-web-browser": "~14.0.1",
     "formik": "^2.4.6",
     "leaflet": "^1.9.4",
@@ -73,10 +75,10 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "^13.12.5",
+    "stripe": "^17.7.0",
     "tailwindcss": "^3.4.15",
     "yup": "^1.4.0",
-    "zustand": "^4.4.0",
-    "expo-updates": "~0.26.13"
+    "zustand": "^4.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
