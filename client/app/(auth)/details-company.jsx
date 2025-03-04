@@ -1,4 +1,3 @@
-// File: app/(auth)/details-company.jsx
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -67,12 +66,10 @@ export default function RegistrationCompany() {
     setOpenCurrency(false);
     setOpenLanguage(false);
   }, []);
-
   const onCurrencyOpen = useCallback(() => {
     setOpenCountry(false);
     setOpenLanguage(false);
   }, []);
-
   const onLanguageOpen = useCallback(() => {
     setOpenCountry(false);
     setOpenCurrency(false);
@@ -147,7 +144,6 @@ export default function RegistrationCompany() {
               text: "OK",
               onPress: () => {
                 resetOnboardingData();
-                // Changed redirect to login-user as requested
                 router.replace("(auth)/login-user");
               },
             },
@@ -179,7 +175,6 @@ export default function RegistrationCompany() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          {/* Using a regular View instead of ScrollView to avoid VirtualizedList nesting issues */}
           <View className="flex-1 px-6 py-6">
             <View className="items-center mb-6">
               <View className={`w-16 h-16 rounded-full mb-3 items-center justify-center ${isLightTheme ? "bg-orange-100" : "bg-orange-900"}`}>
@@ -207,8 +202,9 @@ export default function RegistrationCompany() {
                 setStep2Data(values);
                 handleSignup(values);
               }}
+              validateOnMount
             >
-              {({ values, handleChange, handleBlur, handleSubmit, errors, touched, setFieldValue }) => (
+              {({ values, handleChange, handleBlur, handleSubmit, errors, touched, setFieldValue, isValid, dirty }) => (
                 <View className="flex-1">
                   <View className="w-full mb-5">
                     <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
@@ -402,9 +398,11 @@ export default function RegistrationCompany() {
                   {/* Action Buttons */}
                   <View className="mt-auto">
                     <Pressable
-                      className={`w-full py-4 rounded-xl flex-row justify-center items-center ${isSubmitting ? "bg-orange-400" : "bg-orange-500"}`}
                       onPress={handleSubmit}
-                      disabled={isSubmitting}
+                      disabled={!isValid || isSubmitting}
+                      className={`w-full py-4 rounded-xl flex-row justify-center items-center ${
+                        !isValid || isSubmitting ? "bg-gray-400" : "bg-orange-500"
+                      }`}
                       style={{
                         shadowColor: "#f97316",
                         shadowOffset: { width: 0, height: 4 },

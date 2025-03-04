@@ -1,4 +1,3 @@
-// File: app/(auth)/details-user.jsx
 import React, { useState } from "react";
 import {
   View,
@@ -19,6 +18,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import useThemeStore from "../../store/themeStore";
 import useOnboardingStore from "../../store/globalOnboardingStore";
+import { API_BASE_URL } from "../../config/constant";
 
 const StepOneSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -56,6 +56,20 @@ export default function RegistrationUser() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
+  // Real-time email check function
+  const checkEmailExists = async (email, setFieldError) => {
+    if (!email) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/check-email?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      if (data.exists) {
+        setFieldError("email", "Email already exists");
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    }
+  };
+
   const handleNext = (values) => {
     setStep1Data(values);
     router.push("(auth)/details-company");
@@ -81,9 +95,10 @@ export default function RegistrationUser() {
                   <Text className={`text-sm mt-1 ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>Enter your personal information</Text>
                 </View>
 
-                <Formik initialValues={step1Data} validationSchema={StepOneSchema} onSubmit={handleNext}>
-                  {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
+                <Formik initialValues={step1Data} validationSchema={StepOneSchema} onSubmit={handleNext} validateOnMount>
+                  {({ values, handleChange, handleBlur, handleSubmit, errors, touched, setFieldError, isValid, dirty }) => (
                     <>
+                      {/* First Name */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           First Name <Text className="text-red-500">*</Text>
@@ -102,12 +117,13 @@ export default function RegistrationUser() {
                             placeholderTextColor={isLightTheme ? "#94a3b8" : "#64748b"}
                             value={values.firstName}
                             onChangeText={handleChange("firstName")}
-                            onBlur={handleBlur("firstName")}
+                            onBlur={(e) => handleBlur("firstName")(e)}
                           />
                         </View>
-                        {touched.firstName && errors.firstName && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.firstName}</Text>}
+                        {touched.firstName && errors.firstName && <Text className="text-red-500 text-xs mt-1">{errors.firstName}</Text>}
                       </View>
 
+                      {/* Middle Name */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Middle Name</Text>
                         <View
@@ -124,12 +140,13 @@ export default function RegistrationUser() {
                             placeholderTextColor={isLightTheme ? "#94a3b8" : "#64748b"}
                             value={values.middleName}
                             onChangeText={handleChange("middleName")}
-                            onBlur={handleBlur("middleName")}
+                            onBlur={(e) => handleBlur("middleName")(e)}
                           />
                         </View>
-                        {touched.middleName && errors.middleName && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.middleName}</Text>}
+                        {touched.middleName && errors.middleName && <Text className="text-red-500 text-xs mt-1">{errors.middleName}</Text>}
                       </View>
 
+                      {/* Last Name */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           Last Name <Text className="text-red-500">*</Text>
@@ -148,12 +165,13 @@ export default function RegistrationUser() {
                             placeholderTextColor={isLightTheme ? "#94a3b8" : "#64748b"}
                             value={values.lastName}
                             onChangeText={handleChange("lastName")}
-                            onBlur={handleBlur("lastName")}
+                            onBlur={(e) => handleBlur("lastName")(e)}
                           />
                         </View>
-                        {touched.lastName && errors.lastName && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.lastName}</Text>}
+                        {touched.lastName && errors.lastName && <Text className="text-red-500 text-xs mt-1">{errors.lastName}</Text>}
                       </View>
 
+                      {/* Email */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           Email <Text className="text-red-500">*</Text>
@@ -173,12 +191,16 @@ export default function RegistrationUser() {
                             keyboardType="email-address"
                             value={values.email}
                             onChangeText={handleChange("email")}
-                            onBlur={handleBlur("email")}
+                            onBlur={(e) => {
+                              handleBlur("email")(e);
+                              checkEmailExists(values.email, setFieldError);
+                            }}
                           />
                         </View>
-                        {touched.email && errors.email && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.email}</Text>}
+                        {touched.email && errors.email && <Text className="text-red-500 text-xs mt-1">{errors.email}</Text>}
                       </View>
 
+                      {/* Phone Number */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           Phone Number <Text className="text-red-500">*</Text>
@@ -198,12 +220,13 @@ export default function RegistrationUser() {
                             keyboardType="phone-pad"
                             value={values.phone}
                             onChangeText={handleChange("phone")}
-                            onBlur={handleBlur("phone")}
+                            onBlur={(e) => handleBlur("phone")(e)}
                           />
                         </View>
-                        {touched.phone && errors.phone && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.phone}</Text>}
+                        {touched.phone && errors.phone && <Text className="text-red-500 text-xs mt-1">{errors.phone}</Text>}
                       </View>
 
+                      {/* Password */}
                       <View className="mb-4 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           Password <Text className="text-red-500">*</Text>
@@ -223,7 +246,7 @@ export default function RegistrationUser() {
                             secureTextEntry={!passwordVisible}
                             value={values.password}
                             onChangeText={handleChange("password")}
-                            onBlur={handleBlur("password")}
+                            onBlur={(e) => handleBlur("password")(e)}
                           />
                           <Pressable
                             onPress={() => setPasswordVisible(!passwordVisible)}
@@ -232,9 +255,10 @@ export default function RegistrationUser() {
                             <Ionicons name={passwordVisible ? "eye-off-outline" : "eye-outline"} size={22} color={isLightTheme ? "#64748b" : "#94a3b8"} />
                           </Pressable>
                         </View>
-                        {touched.password && errors.password && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.password}</Text>}
+                        {touched.password && errors.password && <Text className="text-red-500 text-xs mt-1">{errors.password}</Text>}
                       </View>
 
+                      {/* Confirm Password */}
                       <View className="mb-6 w-full">
                         <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
                           Confirm Password <Text className="text-red-500">*</Text>
@@ -254,7 +278,7 @@ export default function RegistrationUser() {
                             secureTextEntry={!confirmPasswordVisible}
                             value={values.confirmPassword}
                             onChangeText={handleChange("confirmPassword")}
-                            onBlur={handleBlur("confirmPassword")}
+                            onBlur={(e) => handleBlur("confirmPassword")(e)}
                           />
                           <Pressable
                             onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
@@ -267,14 +291,16 @@ export default function RegistrationUser() {
                             />
                           </Pressable>
                         </View>
-                        {touched.confirmPassword && errors.confirmPassword && (
-                          <Text className="text-red-500 text-xs mt-1 ml-1">{errors.confirmPassword}</Text>
-                        )}
+                        {touched.confirmPassword && errors.confirmPassword && <Text className="text-red-500 text-xs mt-1">{errors.confirmPassword}</Text>}
                       </View>
 
+                      {/* Continue Button */}
                       <Pressable
-                        className="w-full py-4 rounded-xl mt-2 bg-orange-500 flex-row justify-center items-center"
                         onPress={handleSubmit}
+                        disabled={!isValid || !dirty}
+                        className={`w-full py-4 rounded-xl mt-2 flex-row justify-center items-center ${
+                          !isValid || !dirty ? "bg-gray-400" : "bg-orange-500"
+                        }`}
                         style={{
                           shadowColor: "#f97316",
                           shadowOffset: { width: 0, height: 4 },

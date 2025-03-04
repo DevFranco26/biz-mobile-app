@@ -231,7 +231,7 @@ const ApprovalLeaves = () => {
 
   const renderLeaveItem = ({ item }) => (
     <View
-      className={`rounded-xl mb-4 overflow-hidden ${isLightTheme ? "bg-white" : "bg-slate-800"}`}
+      className={`rounded-xl mb-4 overflow-hidden ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -246,7 +246,7 @@ const ApprovalLeaves = () => {
           <Text className={`ml-2 font-bold ${getTypeTextColor(item.type)}`}>{item.type}</Text>
         </View>
         <View className={`px-3 py-1 rounded-full ${getStatusColor(item.status)}`}>
-          <Text className="text-xs font-medium">{item.status}</Text>
+          <Text className={`text-xs font-medium ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>{item.status}</Text>
         </View>
       </View>
 
@@ -346,7 +346,7 @@ const ApprovalLeaves = () => {
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? "white" : "bg-slate-900"}`} edges={["right", "left", "bottom"]} style={{ paddingTop: 120 }}>
+    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`} edges={["right", "left", "bottom"]} style={{ paddingTop: 120 }}>
       <StatusBar barStyle={isLightTheme ? "dark-content" : "light-content"} />
 
       <View className="flex-row justify-end items-center px-4 py-2">
