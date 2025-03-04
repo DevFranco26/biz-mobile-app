@@ -1,5 +1,3 @@
-// File: client/app/(tabs)/(settings)/my-account.jsx
-
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,13 +12,12 @@ import { API_BASE_URL } from "../../../../config/constant";
 const MyAccount = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
-  const { user, removeUserFromStore } = useUserStore();
+  const { user, clearUser } = useUserStore(); // Fix: Use correct function
   const isLightTheme = theme === "light";
 
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Get token on mount
   useEffect(() => {
     const init = async () => {
       const storedToken = await SecureStore.getItemAsync("token");
@@ -34,7 +31,6 @@ const MyAccount = () => {
     init();
   }, []);
 
-  // If user store doesn't have a user, show sign in prompt
   if (!user) {
     return (
       <SafeAreaView edges={["top"]} className={`flex-1 items-center justify-center px-4 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
@@ -47,30 +43,20 @@ const MyAccount = () => {
   }
 
   const handleDeleteAccount = () => {
-    const role = user.role.toLowerCase();
-    if (role === "admin") {
-      Alert.alert(
-        "Confirm Deletion - admin",
-        "Deleting your account may also remove your entire organization and terminate any active subscriptions. All employees and data will be lost.\n\nAre you sure you want to proceed?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete Everything",
-            style: "destructive",
-            onPress: proceedWithAccountDeletion,
-          },
-        ]
-      );
-    } else {
-      Alert.alert("Confirm Deletion", "Are you sure you want to delete your account? This action cannot be undone.", [
+    Alert.alert(
+      "Confirm Account Deletion",
+      user.role === "admin"
+        ? "As an admin, deleting your account will remove your entire company, all employees, and active subscriptions. This action is irreversible."
+        : "This action will permanently delete your account. Are you sure?",
+      [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: proceedWithAccountDeletion,
         },
-      ]);
-    }
+      ]
+    );
   };
 
   const proceedWithAccountDeletion = async () => {
@@ -81,19 +67,18 @@ const MyAccount = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/users/${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/account/delete`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      const data = await res.json();
       if (res.ok) {
-        // Clear local session
         await SecureStore.deleteItemAsync("token");
-        removeUserFromStore();
+        clearUser(); // Fix: Use correct function
         Alert.alert("Account Deleted", "Your account has been deleted.");
         router.replace("(auth)/login-user");
       } else {
-        const data = await res.json();
         Alert.alert("Error", data.message || "Failed to delete account.");
       }
     } catch (error) {
@@ -106,7 +91,6 @@ const MyAccount = () => {
 
   return (
     <SafeAreaView edges={["top"]} className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => router.back()} className="mr-2">
           <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? "#333333" : "#ffffff"} />
@@ -114,23 +98,17 @@ const MyAccount = () => {
         <Text className={`text-lg font-bold ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>My Account</Text>
       </View>
 
-      {/* Content */}
       <View className="flex-1 px-4 py-2">
-        {/* User Info */}
         <View className={`p-4 rounded-xl mb-4 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
           <Text className={`text-xl font-bold mb-2 ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>
-            {user.firstName}
-            {user.middleName ? ` ${user.middleName}` : ""} {user.lastName}
+            {user.firstName} {user.middleName ? ` ${user.middleName}` : ""} {user.lastName}
           </Text>
 
           <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Role: {user.role}</Text>
-
           <Text className={`text-base mt-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Email: {user.email}</Text>
-
           <Text className={`text-base mt-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Phone: {user.phone || "N/A"}</Text>
         </View>
 
-        {/* Delete Account */}
         <Pressable className="bg-red-600 p-4 rounded-xl items-center justify-center mt-4" onPress={handleDeleteAccount} disabled={loading}>
           {loading ? <ActivityIndicator size="small" color="#ffffff" /> : <Text className="text-white font-semibold">Delete Account</Text>}
         </Pressable>

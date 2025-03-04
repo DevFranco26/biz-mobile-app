@@ -13,6 +13,7 @@ const departmentsRoutes = require("./departmentsRoutes.js");
 const subscriptionPlansRoutes = require("./subscriptionPlansRoutes.js");
 const subscriptionsRoutes = require("./subscriptionsRoutes.js");
 const paymentsRoutes = require("./paymentsRoutes.js");
+const accountRoutes = require("./accountRoutes.js"); // New account routes
 const authenticate = require("../middlewares/authMiddleware.js");
 const updateActivityMiddleware = require("../middlewares/updateActivityMiddleware.js");
 
@@ -22,6 +23,8 @@ router.use("/auth", authRoutes);
 router.use("/subscription-plans", subscriptionPlansRoutes);
 router.use("/payment", paymentsRoutes);
 router.use("/subscriptions", subscriptionsRoutes);
+router.use("/companies", companiesRoutes);
+router.use("/account", accountRoutes); // Mount account routes here
 
 router.use(authenticate, updateActivityMiddleware);
 
