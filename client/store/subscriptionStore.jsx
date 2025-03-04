@@ -1,5 +1,4 @@
 // File: client/store/subscriptionStore.jsx
-
 import { create } from "zustand";
 import { Alert } from "react-native";
 import { API_BASE_URL } from "../config/constant";
@@ -27,7 +26,6 @@ const useSubscriptionStore = create((set, get) => ({
       });
       const data = await response.json();
       if (response.ok) {
-        // data.data is an array of subscriptions
         set({ allSubscriptions: data.data || [], loadingAll: false });
       } else {
         set({
@@ -72,9 +70,9 @@ const useSubscriptionStore = create((set, get) => ({
 
   /**
    * PUT /api/subscriptions/upgrade (admin or superadmin)
-   * Provide { planId } in body
+   * Provide { planId, paymentMethod } in body
    */
-  upgradeSubscription: async (token, planId) => {
+  upgradeSubscription: async (token, planId, paymentMethod = "stripe") => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscriptions/upgrade`, {
         method: "PUT",
@@ -82,7 +80,7 @@ const useSubscriptionStore = create((set, get) => ({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, paymentMethod }),
       });
       const data = await response.json();
       if (response.ok) {

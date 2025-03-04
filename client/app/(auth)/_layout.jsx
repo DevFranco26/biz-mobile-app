@@ -45,6 +45,14 @@ export default function AuthLayout() {
           headerShown: false,
         }}
       />
+
+      <Stack.Screen
+        name="upgrade-subscription"
+        options={{
+          title: "Upgrade Subscription",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
