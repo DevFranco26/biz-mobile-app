@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import useThemeStore from "../../store/themeStore";
 import useOnboardingStore from "../../store/globalOnboardingStore";
-import { API_BASE_URL } from "../../config/constant";
 
 const StepOneSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -36,7 +35,6 @@ const StepOneSchema = Yup.object().shape({
     .oneOf([Yup.ref("password"), null], "Passwords must match")
     .required("Confirm Password is required"),
 });
-
 export default function RegistrationUser() {
   const router = useRouter();
   const { theme } = useThemeStore();
@@ -44,12 +42,10 @@ export default function RegistrationUser() {
   const isLightTheme = theme === "light";
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-
   const handleNext = (values) => {
     setStep1Data(values);
     router.push("(auth)/details-company");
   };
-
   return (
     <View className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"} ${Platform.OS === "ios" ? "pt-16" : "pt-2"}`}>
       <StatusBar barStyle={isLightTheme ? "dark-content" : "light-content"} />

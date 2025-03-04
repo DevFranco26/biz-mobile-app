@@ -1,4 +1,4 @@
-// File: app/(auth)/pricing.jsx
+// File: client/app/(auth)/pricing.jsx
 
 "use client";
 import { useEffect, useState } from "react";
@@ -66,7 +66,13 @@ export default function PricingPage() {
   const handleProceedToPayment = (planName) => {
     const selectedPlan = selectedPlans[planName];
     setSelectedPlan(selectedPlan);
-    router.push("(auth)/payment");
+
+    // Skip payment page if the plan is free
+    if (selectedPlan.id === 1) {
+      router.replace("(auth)/details-user"); // Use replace to prevent going back to the payment page
+    } else {
+      router.push("(auth)/payment");
+    }
   };
 
   const getPlanIcon = (planName) => {
