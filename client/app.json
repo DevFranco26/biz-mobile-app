@@ -23,13 +23,8 @@
       },
       "package": "com.bizsolutions.bizbuddy",
       "permissions": [
-        {
-          "name": "android.permission.ACCESS_FINE_LOCATION",
-          "rationale": {
-            "title": "Location Access Needed",
-            "message": "BizBuddy requires access to your location to accurately track your time-in, time-out, and breaks."
-          }
-        }
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
