@@ -18,19 +18,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import useThemeStore from "../../../store/themeStore";
 import useUserStore from "../../../store/userStore";
 import axios from "axios";
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  addMonths,
-  subMonths,
-  startOfWeek,
-  endOfWeek,
-  addWeeks,
-  subWeeks,
-  startOfDay,
-  endOfDay,
-} from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay, endOfDay } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -322,29 +310,17 @@ const TimeCard = () => {
         </View>
         {rangeType === "Custom" && (
           <View className="mb-6">
-            <Pressable
-              onPress={() => openPicker("startDate")}
-              className={`py-4 px-4 mb-3 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-            >
-              <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-                Start Date: {format(customStartDate, "MMMM d, yyyy")}
-              </Text>
+            <Pressable onPress={() => openPicker("startDate")} className={`py-4 px-4 mb-3 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+              <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Start Date: {format(customStartDate, "MMMM d, yyyy")}</Text>
             </Pressable>
-            <Pressable
-              onPress={() => openPicker("endDate")}
-              className={`py-4 px-4 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-            >
-              <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-                End Date: {format(customEndDate, "MMMM d, yyyy")}
-              </Text>
+            <Pressable onPress={() => openPicker("endDate")} className={`py-4 px-4 rounded-lg ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+              <Text className={`${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>End Date: {format(customEndDate, "MMMM d, yyyy")}</Text>
             </Pressable>
           </View>
         )}
         {rangeType !== "Custom" && (
           <View className="flex-row items-center my-2">
-            <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              {getDateRangeLabel()}
-            </Text>
+            <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{getDateRangeLabel()}</Text>
             <View className="flex-row items-center ml-auto space-x-3">
               <Pressable onPress={handlePrev} className={`p-2 rounded-full ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
                 <FontAwesome5 name="arrow-left" size={20} color={isLightTheme ? "#374151" : "#CBD5E1"} />
@@ -357,32 +333,19 @@ const TimeCard = () => {
         )}
         {rangeType === "Custom" && (
           <View className="mb-4">
-            <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              {getDateRangeLabel()}
-            </Text>
+            <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{getDateRangeLabel()}</Text>
           </View>
         )}
-        <View
-          className={`p-4 rounded-lg mb-1 flex-row justify-between items-center ${
-            isLightTheme ? "bg-slate-100" : "bg-slate-800"
-          }`}
-        >
+        <View className={`p-4 rounded-lg mb-1 flex-row justify-between items-center ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
           <Text className={`font-medium ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Total Hours:</Text>
-          <Text className={`text-llg font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-            {decimalHoursToHHMM(grandTotalHours)}
-          </Text>
+          <Text className={`text-llg font-semibold ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{decimalHoursToHHMM(grandTotalHours)}</Text>
         </View>
       </View>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#475569"]}
-            tintColor={isLightTheme ? "#475569" : "#94a3b8"}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#475569"]} tintColor={isLightTheme ? "#475569" : "#94a3b8"} />
         }
       >
         {loading ? (
@@ -411,8 +374,7 @@ const TimeCard = () => {
                   {timeInAt ? format(timeInAt, "MMM d, yyyy (EEE)") : "No Date"}
                 </Text>
                 <Text className="text-md text-slate-500">
-                  {timeInAt ? format(timeInAt, "hh:mm:ss aaa") : "--:--:--"} -{" "}
-                  {timeOutAt ? format(timeOutAt, "hh:mm:ss aaa") : "--:--:--"}
+                  {timeInAt ? format(timeInAt, "hh:mm:ss aaa") : "--:--:--"} - {timeOutAt ? format(timeOutAt, "hh:mm:ss aaa") : "--:--:--"}
                 </Text>
                 <View className="flex-row items-center mt-2">
                   <Ionicons name="cafe" size={16} color={isLightTheme ? "#0EA5E9" : "#38BDF8"} />
@@ -422,9 +384,7 @@ const TimeCard = () => {
                 </View>
                 <View className="flex-row items-center mt-1">
                   <Ionicons name="fast-food" size={16} color={isLightTheme ? "#FBBF24" : "#FCD34D"} />
-                  <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-                    Lunch Break: {formatTotalDuration(lunchMs)}
-                  </Text>
+                  <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Lunch Break: {formatTotalDuration(lunchMs)}</Text>
                 </View>
                 <Text className={`text-sm text-right mt-2 ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
                   Shift Hours: {decimalHoursToHHMM(totalHours)}
@@ -433,9 +393,7 @@ const TimeCard = () => {
             );
           })
         ) : (
-          <Text className={`text-center mt-12 text-md ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>
-            No logs available for this range.
-          </Text>
+          <Text className={`text-center mt-12 text-md ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>No logs available for this range.</Text>
         )}
       </ScrollView>
       {renderIOSPickerModal()}

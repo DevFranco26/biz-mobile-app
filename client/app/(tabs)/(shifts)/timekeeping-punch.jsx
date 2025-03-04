@@ -1,17 +1,9 @@
+"use client";
+
 // File: app/(tabs)/(shifts)/timekeeping-punch.jsx
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  Alert,
-  ToastAndroid,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-  RefreshControl,
-} from "react-native";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { View, Text, Pressable, Alert, ToastAndroid, Platform, ActivityIndicator, ScrollView, RefreshControl, Animated } from "react-native";
 import { MaterialIcons, Ionicons, Entypo } from "@expo/vector-icons";
 import { API_BASE_URL } from "../../../config/constant";
 import * as Location from "expo-location";
@@ -31,6 +23,10 @@ const Punch = () => {
   const isLightTheme = theme === "light";
   const insets = useSafeAreaInsets();
   const { currentSubscription, fetchCurrentSubscription } = useSubscriptionStore();
+
+  // Animation values
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Main Timekeeping States
   const [isTimeIn, setIsTimeIn] = useState(false);
@@ -62,6 +58,37 @@ const Punch = () => {
   // Refreshing state for pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
 
+  // Start pulse animation
+  useEffect(() => {
+    if (isTimeIn) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isTimeIn, pulseAnim]);
+
+  // Start slide animation on mount
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [slideAnim]);
+
   // Helper Function: Format Time in HH:MM:SS
   const formatTime = (seconds = 0) => {
     const hrs = Math.floor(seconds / 3600);
@@ -76,20 +103,26 @@ const Punch = () => {
       <Pressable
         onPress={onPress}
         disabled={disabled}
-        className={`flex-row items-center px-12 w-1/2 py-2 justify-center rounded-lg mx-2 mb-3 ${
-          isActive ? `bg-red-500` : `bg-orange-500`
+        className={`flex-row items-center px-6 w-1/2 py-3 justify-center rounded-xl mx-2 mb-3 ${
+          isActive ? `bg-gradient-to-r from-red-500 to-red-600` : `bg-gradient-to-r from-orange-500 to-orange-600`
         }`}
+        style={{
+          shadowColor: isActive ? "#ef4444" : "#f97316",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+          elevation: 8,
+        }}
         accessibilityLabel={`${label} Break Button`}
         accessibilityRole="button"
       >
-        <Ionicons name={iconName} size={32} color="#f8fafc" />
+        <Ionicons name={iconName} size={28} color="#ffffff" />
         <View className="ml-2">
-          <Text className={`${isLightTheme ? "text-white" : "text-white"} text-xs`} numberOfLines={1} ellipsizeMode="tail">
-            {usedCount >= maxCount
-              ? `(${usedCount}/${maxCount})`
-              : isActive
-              ? formatTime(timeElapsed)
-              : `(${usedCount}/${maxCount})`}
+          <Text className="text-white font-medium text-sm" numberOfLines={1} ellipsizeMode="tail">
+            {label}
+          </Text>
+          <Text className="text-white text-xs opacity-90" numberOfLines={1} ellipsizeMode="tail">
+            {usedCount >= maxCount ? `(${usedCount}/${maxCount})` : isActive ? formatTime(timeElapsed) : `(${usedCount}/${maxCount})`}
           </Text>
         </View>
       </Pressable>
@@ -98,7 +131,7 @@ const Punch = () => {
 
   // Initial Load: Fetch Subscription and Restore Session
   useEffect(() => {
-    (async () => {
+    const init = async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
         if (token) {
@@ -108,7 +141,8 @@ const Punch = () => {
       } catch (error) {
         console.error("Error during initial load:", error);
       }
-    })();
+    };
+    init();
   }, [fetchCurrentSubscription]);
 
   // Restore Session: Handle Existing Time Logs
@@ -650,7 +684,7 @@ const Punch = () => {
         }
       } else {
         // Offline Coffee Break
-        let updatedQueue = [...punchQueueRef.current];
+        const updatedQueue = [...punchQueueRef.current];
         updatedQueue.push(punchData);
         setPunchQueue(updatedQueue);
         await AsyncStorage.setItem("punchQueue", JSON.stringify(updatedQueue));
@@ -747,7 +781,7 @@ const Punch = () => {
         }
       } else {
         // Offline Lunch Break
-        let updatedQueue = [...punchQueueRef.current];
+        const updatedQueue = [...punchQueueRef.current];
         updatedQueue.push(punchData);
         setPunchQueue(updatedQueue);
         await AsyncStorage.setItem("punchQueue", JSON.stringify(updatedQueue));
@@ -816,18 +850,36 @@ const Punch = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#475569"]} // Android spinner color
-            tintColor={isLightTheme ? "#475569" : "#f9fafb"} // iOS spinner color
+            colors={["#f97316"]} // Android spinner color
+            tintColor={isLightTheme ? "#f97316" : "#f97316"} // iOS spinner color
             progressBackgroundColor={isLightTheme ? "#f1f5f9" : "#1e293b"} // Background color of the spinner
           />
         }
       >
-        <View className="mx-4 mt-20 space-y-4">
+        <Animated.View
+          className="mx-4 mt-20 space-y-4"
+          style={{
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0],
+                }),
+              },
+            ],
+            opacity: slideAnim,
+          }}
+        >
           {/* Date Section */}
           <View
-            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
-              isLightTheme ? "bg-slate-100" : "bg-slate-800"
-            }`}
+            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
+            style={{
+              shadowColor: isLightTheme ? "#94a3b8" : "#0f172a",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
           >
             <View className="flex-row items-center">
               <MaterialIcons name="date-range" size={30} color="#3B82F6" className="mr-4" accessibilityLabel="Date Icon" />
@@ -842,21 +894,35 @@ const Punch = () => {
           </View>
 
           {/* Timezone Section */}
-          <View className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+          <View
+            className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
+            style={{
+              shadowColor: isLightTheme ? "#94a3b8" : "#0f172a",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
             <Ionicons name="location" size={30} color="#10B981" className="mr-4" accessibilityLabel="Timezone Icon" />
             <View>
               <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>Timezone</Text>
               <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-                {timeZone} ({getGMTOffset()})
+                \{timeZone} ({getGMTOffset()})
               </Text>
             </View>
           </View>
 
           {/* Status Section */}
           <View
-            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${
-              isLightTheme ? "bg-slate-100" : "bg-slate-800"
-            }`}
+            className={`flex-row items-center justify-between p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
+            style={{
+              shadowColor: isLightTheme ? "#94a3b8" : "#0f172a",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
           >
             <View className="flex-row items-center">
               <Entypo
@@ -868,48 +934,53 @@ const Punch = () => {
               />
               <View>
                 <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>Status</Text>
-                <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-                  {isTimeIn ? "On the Clock" : "Off the Clock"}
-                </Text>
+                <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{isTimeIn ? "On the Clock" : "Off the Clock"}</Text>
               </View>
             </View>
             <View className="flex-col items-end">
-              <Text className={`text-md ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-                {isTimeIn ? punchedInTime : "00:00:00"}
-              </Text>
+              <Text className={`text-md ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{isTimeIn ? punchedInTime : "00:00:00"}</Text>
             </View>
           </View>
 
           {/* Network Section */}
-          <View className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
+          <View
+            className={`flex-row items-center p-4 rounded-xl my-2 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
+            style={{
+              shadowColor: isLightTheme ? "#94a3b8" : "#0f172a",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
             {isConnected ? (
               <MaterialIcons name="wifi" size={30} color="#8B5CF6" className="mr-4" accessibilityLabel="Network Icon Online" />
             ) : (
-              <MaterialIcons
-                name="wifi-off"
-                size={30}
-                color="#6B7280"
-                className="mr-4"
-                accessibilityLabel="Network Icon Offline"
-              />
+              <MaterialIcons name="wifi-off" size={30} color="#6B7280" className="mr-4" accessibilityLabel="Network Icon Offline" />
             )}
             <View>
               <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>Network</Text>
-              <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-                {isConnected ? "Online" : "Offline"}
-              </Text>
+              <Text className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{isConnected ? "Online" : "Offline"}</Text>
             </View>
           </View>
 
           {/* Timer Section */}
-          <View
+          <Animated.View
             className={`w-full p-5 rounded-xl h-40 justify-center items-center ${isLightTheme ? "bg-white" : "bg-slate-900"}`}
+            style={{
+              shadowColor: isTimeIn ? "#f97316" : isLightTheme ? "#94a3b8" : "#0f172a",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isTimeIn ? 0.3 : 0.1,
+              shadowRadius: isTimeIn ? 8 : 4,
+              elevation: isTimeIn ? 6 : 2,
+              transform: isTimeIn ? [{ scale: pulseAnim }] : [{ scale: 1 }],
+            }}
           >
-            <Text className={`text-6xl font-medium text-center  ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
+            <Text className={`text-6xl font-medium text-center ${isTimeIn ? "text-orange-500" : isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
               {formatTime(timeElapsed)}
             </Text>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       </ScrollView>
 
       {/* Action Buttons */}
@@ -943,9 +1014,16 @@ const Punch = () => {
           <Pressable
             onPress={handlePunch}
             disabled={isLoading}
-            className={`py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
-              isTimeIn ? "bg-red-500" : "bg-orange-500"
-            } ${isLoading ? "opacity-50" : "opacity-100"}`}
+            className={`py-4 px-5 rounded-xl w-full flex-row items-center justify-center ${isTimeIn ? "bg-red-500" : "bg-orange-500"} ${
+              isLoading ? "opacity-50" : "opacity-100"
+            }`}
+            style={{
+              shadowColor: isTimeIn ? "#ef4444" : "#f97316",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: 8,
+            }}
             accessibilityLabel="Time Out Button"
             accessibilityRole="button"
           >
@@ -957,18 +1035,27 @@ const Punch = () => {
 
       {!isTimeIn && (
         <View className="mb-4 mx-4">
-          <Pressable
-            onPress={handlePunch}
-            disabled={isLoading}
-            className={`py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${
-              isTimeIn ? "bg-red-500" : "bg-orange-500"
-            } ${isLoading ? "opacity-50" : "opacity-100"}`}
-            accessibilityLabel="Time In Button"
-            accessibilityRole="button"
+          <View
+            className="rounded-xl overflow-hidden bg-orange-500"
+            style={{
+              shadowColor: "#f97316",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 6,
+              elevation: 8,
+            }}
           >
-            {isLoading && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
-            <Text className="text-center text-white text-xl font-semibold">{isTimeIn ? "Time Out" : "Time In"}</Text>
-          </Pressable>
+            <Pressable
+              onPress={handlePunch}
+              disabled={isLoading}
+              className={`py-4 px-5 w-full flex-row items-center justify-center ${isLoading ? "opacity-50" : "opacity-100"}`}
+              accessibilityLabel="Time In Button"
+              accessibilityRole="button"
+            >
+              {isLoading && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
+              <Text className="text-center text-white text-xl font-semibold">{isTimeIn ? "Time Out" : "Time In"}</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>

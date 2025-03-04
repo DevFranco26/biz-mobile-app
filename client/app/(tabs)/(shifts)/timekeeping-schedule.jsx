@@ -158,16 +158,11 @@ const Schedule = () => {
 
   return (
     <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`} style={{ paddingTop: insets.top }}>
-      <Text className={`font-bold text-xl mt-5 ml-4 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-        My Shift Schedule
-      </Text>
+      <Text className={`font-bold text-xl mt-5 ml-4 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>My Shift Schedule</Text>
       {loading ? (
         <ActivityIndicator size="large" color={isLightTheme ? "#475569" : "#94a3b8"} style={{ marginTop: 48 }} />
       ) : (
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
           <View className="mx-4 mt-4 rounded-2xl overflow-hidden">
             <Calendar
               key={isLightTheme ? "light" : "dark"} // Force re-render when theme changes

@@ -14,6 +14,7 @@ export default function Index() {
   const { setUser } = useUserStore();
   const router = useRouter();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [deviceVersion, setDeviceVersion] = useState(null);
 
   useEffect(() => {
     const initApp = async () => {
@@ -22,6 +23,7 @@ export default function Index() {
         if (!storedVersion) {
           await SecureStore.setItemAsync("appVersion", VERSION);
         } else if (storedVersion !== VERSION) {
+          setDeviceVersion(storedVersion);
           setShowUpdateModal(true);
           return;
         }
@@ -85,6 +87,8 @@ export default function Index() {
           <View className="w-11/12 bg-white p-6 rounded-lg">
             <Text className="text-xl font-bold mb-4">Update Required</Text>
             <Text className="mb-6">A new version of the app is available. Please update to continue using BizBuddy.</Text>
+            <Text className="mb-2">Current Version: {deviceVersion}</Text>
+            <Text className="mb-4">Latest Version: {VERSION}</Text>
             <TouchableOpacity onPress={handleUpdate} className="bg-orange-500 py-3 rounded-lg">
               <Text className="text-white text-center">Update Now</Text>
             </TouchableOpacity>
