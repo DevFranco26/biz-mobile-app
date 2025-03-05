@@ -6,4 +6,6 @@ const router = express.Router();
 
 router.delete("/delete", authenticate, accountController.deleteAccount);
 
+router.post("/user-delete", accountController.deleteUserAccount);
+
 module.exports = router;

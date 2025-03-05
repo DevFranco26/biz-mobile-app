@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 exports.deleteAccount = async (req, res) => {
@@ -32,6 +33,45 @@ exports.deleteAccount = async (req, res) => {
     }
   } catch (error) {
     console.error("Error in deleteAccount:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+exports.deleteUserAccount = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required." });
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { email },
+      include: { company: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid password." });
+    }
+
+    if (user.role === "admin") {
+      await prisma.companies.delete({
+        where: { id: user.companyId },
+      });
+      return res.status(200).json({ message: "Admin account and associated company deleted successfully." });
+    } else {
+      await prisma.users.delete({
+        where: { id: user.id },
+      });
+      return res.status(200).json({ message: "User account deleted successfully." });
+    }
+  } catch (error) {
+    console.error("Error deleting account:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };
