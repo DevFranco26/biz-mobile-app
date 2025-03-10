@@ -67,63 +67,6 @@ const useSubscriptionStore = create((set, get) => ({
       Alert.alert("Error", "Error fetching the current subscription.");
     }
   },
-
-  /**
-   * PUT /api/subscriptions/upgrade (admin or superadmin)
-   * Provide { planId, paymentMethod } in body
-   */
-  upgradeSubscription: async (token, planId, paymentMethod = "stripe") => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/subscriptions/upgrade`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ planId, paymentMethod }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        Alert.alert("Success", data.message || "Subscription upgraded successfully.");
-        // Refresh current subscription
-        await get().fetchCurrentSubscription(token);
-        return { success: true, data: data.data };
-      } else {
-        Alert.alert("Error", data.message || "Failed to upgrade subscription.");
-        return { success: false };
-      }
-    } catch (error) {
-      console.error("upgradeSubscription Error:", error);
-      Alert.alert("Error", "Error upgrading subscription.");
-      return { success: false };
-    }
-  },
-
-  /**
-   * PUT /api/subscriptions/cancel (admin or superadmin)
-   */
-  cancelSubscription: async (token) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/subscriptions/cancel`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        Alert.alert("Success", data.message || "Subscription canceled successfully.");
-        // The server reverts to a Free plan, so let's refetch
-        await get().fetchCurrentSubscription(token);
-        return { success: true };
-      } else {
-        Alert.alert("Error", data.message || "Failed to cancel subscription.");
-        return { success: false };
-      }
-    } catch (error) {
-      console.error("cancelSubscription Error:", error);
-      Alert.alert("Error", "Error canceling subscription.");
-      return { success: false };
-    }
-  },
 }));
 
 export default useSubscriptionStore;

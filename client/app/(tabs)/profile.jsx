@@ -1,5 +1,3 @@
-// File: client/app/(tabs)/Profile.jsx
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -102,7 +100,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
+      router.replace("(auth)/signin");
       return;
     }
     try {
@@ -211,7 +209,8 @@ const Profile = () => {
     }
   };
 
-  // Logout functions
+  // Updated Logout function for Scenario 2
+  // We do NOT delete saved credentials on logout
   const confirmLogout = () => {
     Alert.alert(
       "Confirm Logout",
@@ -236,10 +235,12 @@ const Profile = () => {
         },
       });
       if (response.ok) {
+        // Only delete token and user data.
         await SecureStore.deleteItemAsync("token");
         await SecureStore.deleteItemAsync("user");
+        // Do not delete savedEmail or savedPassword so biometric sign‑in can use them.
         clearUser();
-        router.replace("(auth)/login-user");
+        router.replace("(auth)/signin");
         Alert.alert("Success", "You have been logged out successfully");
       } else {
         Alert.alert("Error", "Failed to log out, please try again.");
@@ -252,7 +253,7 @@ const Profile = () => {
     }
   };
 
-  // Handlers for editing profile and changing password
+  // Handlers for editing profile and changing password (unchanged)
   const handleOpenEditProfile = () => {
     setEditFirstName(user && user.firstName ? user.firstName : "");
     setEditMiddleName(user && user.middleName ? user.middleName : "");
@@ -266,7 +267,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
+      router.replace("(auth)/signin");
       setIsSavingProfile(false);
       return;
     }
@@ -313,7 +314,7 @@ const Profile = () => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
+      router.replace("(auth)/signin");
       return;
     }
     try {

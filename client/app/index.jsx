@@ -4,14 +4,12 @@ import { ActivityIndicator, View, Text, StatusBar, Modal, TouchableOpacity, Link
 import { SafeAreaView } from "react-native-safe-area-context";
 import useThemeStore from "../store/themeStore";
 import * as SecureStore from "expo-secure-store";
-import useUserStore from "../store/userStore";
 import { useRouter } from "expo-router";
-import { API_BASE_URL, VERSION } from "../config/constant";
+import { VERSION } from "../config/constant";
 
 export default function Index() {
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
-  const { setUser } = useUserStore();
   const router = useRouter();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [deviceVersion, setDeviceVersion] = useState(null);
@@ -27,45 +25,16 @@ export default function Index() {
           setShowUpdateModal(true);
           return;
         }
-
-        const token = await SecureStore.getItemAsync("token");
-        const user = await SecureStore.getItemAsync("user");
-
-        if (token && user) {
-          const userData = JSON.parse(user);
-          setUser(userData);
-
-          try {
-            const setActiveResponse = await fetch(`${API_BASE_URL}/users/me/presence`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ presenceStatus: "active" }),
-            });
-
-            if (setActiveResponse.ok) {
-              const updatedPresenceData = await setActiveResponse.json();
-              setUser(updatedPresenceData.data);
-            } else {
-              console.log("Failed to set presence to active on app load");
-            }
-          } catch (err) {
-            console.error("Error setting presence to active on app load:", err);
-          }
-          router.replace("(tabs)/profile");
-        } else {
-          router.replace("(auth)/login-user");
-        }
+        // Removed auto sign-in logic.
+        router.replace("(auth)/signin");
       } catch (error) {
         console.error("Error during app initialization:", error);
-        router.replace("(auth)/login-user");
+        router.replace("(auth)/signin");
       }
     };
 
     initApp();
-  }, [setUser, router]);
+  }, [router]);
 
   const handleUpdate = () => {
     Linking.openURL("https://your-app-update-url.com");
