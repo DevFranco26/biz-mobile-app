@@ -1,9 +1,5 @@
 // File: src/middlewares/updateActivityMiddleware.js
-/**
- * Update Activity Middleware
- * --------------------------
- * Updates the last active timestamp and sets the presence status to "active" for the authenticated employee.
- */
+
 const { prisma } = require("@config/database");
 
 async function updateUserActivity(req, res, next) {

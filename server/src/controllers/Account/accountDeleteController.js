@@ -1,76 +1,62 @@
-const bcrypt = require("bcryptjs");
+// File: @controllers/Account/accountDeleteController.js
 const { prisma } = require("@config/database");
 
-/**
- * DELETE /api/account/delete
- * Deletes the current user account. If admin, deletes the associated company and related data.
- */
-const deleteAccount = async (req, res) => {
+async function deleteAccountController(req, res, next) {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role.toLowerCase();
-    const companyId = req.user.companyId;
-    if (userRole === "admin") {
-      if (!companyId) {
-        return res.status(400).json({ message: "No company associated with this user." });
-      }
-      await prisma.$transaction(async (tx) => {
-        await tx.leave.deleteMany({ where: { companyId } });
-        await tx.department.deleteMany({ where: { companyId } });
-        await tx.shiftSchedule.deleteMany({ where: { companyId } });
-        await tx.payrollRecord.deleteMany({ where: { companyId } });
-        await tx.payrollSetting.deleteMany({ where: { companyId } });
-        await tx.subscription.deleteMany({ where: { companyId } });
-        await tx.payment.deleteMany({ where: { companyId } });
-        await tx.user.deleteMany({ where: { companyId } });
-        await tx.company.delete({ where: { id: companyId } });
-      });
-      return res.status(200).json({ message: "Company and all related data have been deleted successfully." });
-    } else {
-      await prisma.user.delete({ where: { id: userId } });
-      return res.status(200).json({ message: "User account deleted successfully." });
+    // Get authenticated user info from the auth middleware.
+    const { id: userId, companyId } = req.user;
+    if (!companyId) {
+      return res.status(400).json({ message: "No associated company found for this user." });
     }
-  } catch (error) {
-    console.error("Error in deleteAccount:", error);
-    return res.status(500).json({ message: "Internal server error." });
-  }
-};
 
-/**
- * DELETE /api/account/delete-google
- * Deletes a user account for Google authentication.
- */
-const deleteUserAccountForGoogle = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+    // Verify that the company exists and that the owner is deleting the account.
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      return res.status(404).json({ message: "Company not found." });
     }
-    const user = await prisma.users.findUnique({
-      where: { email },
-      include: { company: true },
-    });
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
+    if (company.userId !== userId) {
+      return res.status(403).json({ message: "Only the company owner can delete the account." });
     }
-    const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches) {
-      return res.status(401).json({ message: "Invalid password." });
-    }
-    if (user.role === "admin") {
-      await prisma.company.delete({ where: { id: user.companyId } });
-      return res.status(200).json({ message: "Admin account and associated company deleted successfully." });
-    } else {
-      await prisma.user.delete({ where: { id: user.id } });
-      return res.status(200).json({ message: "User account deleted successfully." });
-    }
-  } catch (error) {
-    console.error("Error in deleteUserAccountForGoogle:", error);
-    return res.status(500).json({ message: "Internal server error." });
-  }
-};
 
-module.exports = {
-  deleteAccount,
-  deleteUserAccountForGoogle,
-};
+    // Get all user IDs associated with the company.
+    const users = await prisma.user.findMany({ where: { companyId } });
+    const userIds = users.map((u) => u.id);
+
+    // Run all deletions in a transaction.
+    await prisma.$transaction([
+      // Delete payments linked to the company (using companyName).
+      prisma.payment.deleteMany({ where: { companyName: company.name } }),
+      // Delete subscriptions for the company.
+      prisma.subscription.deleteMany({ where: { companyId } }),
+      // Delete user-related data.
+      prisma.userRate.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.deduction.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.payroll.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.timeLog.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.locationRestriction.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.userActivity.deleteMany({ where: { userId: { in: userIds } } }),
+      // Delete leaves where the user is the requester.
+      prisma.leave.deleteMany({ where: { userId: { in: userIds } } }),
+      // Also delete leaves where the user acted as approver.
+      prisma.leave.deleteMany({ where: { approverId: { in: userIds } } }),
+      // Delete user shifts.
+      prisma.userShift.deleteMany({ where: { userId: { in: userIds } } }),
+      // Delete shift recurrences for shifts associated with these users.
+      prisma.shiftRecurrence.deleteMany({ where: { userShift: { userId: { in: userIds } } } }),
+      // Delete user profiles.
+      prisma.userProfile.deleteMany({ where: { userId: { in: userIds } } }),
+      // Delete departments belonging to the company.
+      prisma.department.deleteMany({ where: { companyId } }),
+      // Delete all users in the company.
+      prisma.user.deleteMany({ where: { companyId } }),
+      // Finally, delete the company record.
+      prisma.company.delete({ where: { id: companyId } }),
+    ]);
+
+    return res.status(200).json({ message: "Account and all related data deleted successfully." });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = deleteAccountController;

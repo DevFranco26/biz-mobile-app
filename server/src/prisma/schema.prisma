@@ -141,25 +141,22 @@ model Payroll {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/**
- * Updated Payment model
- */
 model Payment {
   id                String   @id @default(cuid())
-  stripeId          String // The Stripe charge id (e.g. 'ch_...')
+  stripeId          String
   companyName       String
   email             String
   amount            Decimal  @db.Decimal(10, 2)
-  paymentMethod     String? // E.g. "card"
-  paymentMethodType String? // E.g. "card" (if more types are added, store type)
-  cardLast4         String? // Last 4 digits of the card
-  cardBrand         String? // Brand of the card (Visa, MasterCard, etc.)
+  paymentMethod     String?
+  paymentMethodType String?
+  cardLast4         String?
+  cardBrand         String?
   cardExpMonth      Int?
   cardExpYear       Int?
-  paymentReceiptUrl String? // Stripe receipt URL
-  paymentIntentId   String? // The payment intent id (from Stripe)
-  planId            String? // Plan id from metadata if needed
-  paymentStatus     String? // E.g. "succeeded", "failed"
+  paymentReceiptUrl String?
+  paymentIntentId   String?
+  planId            String?
+  paymentStatus     String?
   paymentDate       DateTime @default(now()) @db.Timestamptz
   createdAt         DateTime @default(now()) @db.Timestamptz
   updatedAt         DateTime @default(now()) @db.Timestamptz

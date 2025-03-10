@@ -78,7 +78,6 @@ const upgradeSubscription = async (req, res) => {
       where: { companyId, active: true },
       data: { active: false, endDate: new Date() },
     });
-    console.log("Number of subscriptions deactivated:", deactivationResult.count);
 
     // Set the new subscription dates.
     const startDate = new Date();
