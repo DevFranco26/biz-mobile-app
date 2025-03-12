@@ -1,9 +1,7 @@
-// File: src/controllers/Features/timeLogController.js
-const { prisma } = require("@config/database");
+// src/controllers/Features/timeLogController.js
 
-/**
- * Helper function: Calculates distance between two coordinates using the Haversine formula.
- */
+const { prisma } = require("@config/connection");
+
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const toRad = (value) => (value * Math.PI) / 180;
   const R = 6371e3; // Earth's radius in meters
@@ -16,10 +14,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-/**
- * POST /api/features/time-logs/time-in
- * Description: Records time-in for a user.
- */
 const timeIn = async (req, res) => {
   try {
     const { userId, deviceInfo, location, timeZone } = req.body;
@@ -65,10 +59,6 @@ const timeIn = async (req, res) => {
   }
 };
 
-/**
- * POST /api/features/time-logs/time-out
- * Description: Records time-out for a user.
- */
 const timeOut = async (req, res) => {
   try {
     const { userId, deviceInfo, location, timeZone } = req.body;
@@ -131,10 +121,6 @@ const timeOut = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/time-logs/monthly
- * Description: Retrieves monthly time logs for a user.
- */
 const getMonthlyLogs = async (req, res) => {
   try {
     const { userId, year, month } = req.query;
@@ -151,10 +137,6 @@ const getMonthlyLogs = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/time-logs/range
- * Description: Retrieves time logs for a user within a specified date range.
- */
 const getRangeLogs = async (req, res) => {
   try {
     let { userId, startDate, endDate } = req.query;
@@ -186,10 +168,6 @@ const getRangeLogs = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/time-logs/:userId/latest
- * Description: Retrieves the latest time log for a user.
- */
 const getUserTimeLog = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -205,10 +183,6 @@ const getUserTimeLog = async (req, res) => {
   }
 };
 
-/**
- * POST /api/features/time-logs/coffee-break
- * Description: Toggles coffee break status for the active time log.
- */
 const coffeeBreakToggle = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -252,10 +226,6 @@ const coffeeBreakToggle = async (req, res) => {
   }
 };
 
-/**
- * POST /api/features/time-logs/lunch-break
- * Description: Toggles lunch break status for the active time log.
- */
 const lunchBreakToggle = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -264,7 +234,6 @@ const lunchBreakToggle = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
     if (!activeLog) return res.status(400).json({ message: "No active time-in found." });
-    // End any ongoing coffee break if present
     if (activeLog.coffeeBreakStart && !activeLog.coffeeBreakEnd) {
       await prisma.timeLogs.update({
         where: { id: activeLog.id },

@@ -1,3 +1,5 @@
+// src/routes/Account/departmentRoutes.js
+
 const express = require("express");
 const router = express.Router();
 const authenticate = require("@middlewares/authMiddleware");
@@ -13,14 +15,13 @@ const {
   getUsersInDepartment,
 } = require("@controllers/Account/departmentController");
 
-router.use(authenticate);
-router.post("/create", authorizeRoles("admin", "superadmin"), createDepartment);
-router.get("/", authorizeRoles("admin", "superadmin"), getAllDepartments);
-router.get("/:id", authorizeRoles("superadmin", "admin", "supervisor", "employee"), getDepartmentById);
-router.put("/update/:id", authorizeRoles("admin", "superadmin"), updateDepartment);
-router.delete("/delete/:id", authorizeRoles("admin", "superadmin"), deleteDepartment);
-router.put("/:id/assign-users", authorizeRoles("admin", "superadmin", "supervisor"), assignUsersToDepartment);
-router.put("/:id/remove-users", authorizeRoles("admin", "superadmin", "supervisor"), removeUsersFromDepartment);
-router.get("/:id/employees", authorizeRoles("admin", "superadmin", "supervisor"), getUsersInDepartment);
+router.post("/create", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), createDepartment);
+router.get("/", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), getAllDepartments);
+router.get("/:id", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), getDepartmentById);
+router.put("/update/:id", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), updateDepartment);
+router.delete("/delete/:id", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), deleteDepartment);
+router.put("/:id/assign-users", authenticate, authorizeRoles("admin", "superadmin"), assignUsersToDepartment);
+router.put("/:id/remove-users", authenticate, authorizeRoles("admin", "superadmin"), removeUsersFromDepartment);
+router.get("/:id/employees", authenticate, authorizeRoles("admin", "superadmin", "supervisor"), getUsersInDepartment);
 
 module.exports = router;

@@ -1,9 +1,7 @@
-const { prisma } = require("@config/database");
+// src/controllers/Account/subscriptionPlanController.js
 
-/**
- * GET /api/subscription-plans
- * Retrieves all subscription plans, ordered by name.
- */
+const { prisma } = require("@config/connection");
+
 const getAllPlans = async (req, res) => {
   try {
     const plans = await prisma.subscriptionPlan.findMany({
@@ -16,10 +14,6 @@ const getAllPlans = async (req, res) => {
   }
 };
 
-/**
- * POST /api/subscription-plans
- * Creates a new subscription plan.
- */
 const createPlan = async (req, res) => {
   try {
     const { name, rangeOfUsers, price, description, features } = req.body;

@@ -1,10 +1,7 @@
-// File: src/controllers/Features/adminController.js
-const { prisma } = require("@config/database");
+// src/controllers/Features/adminController.js
 
-/**
- * GET /api/features/admin/users
- * Description: Retrieves all users in the same company as the authenticated admin.
- */
+const { prisma } = require("@config/connection");
+
 const getCompanyUsers = async (req, res) => {
   try {
     const admin = await prisma.users.findUnique({

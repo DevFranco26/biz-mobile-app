@@ -1,18 +1,12 @@
+// src/controllers/Account/paymentController.js
+
 const Stripe = require("stripe");
 const jwt = require("jsonwebtoken");
-const { prisma } = require("@config/database");
+const { prisma } = require("@config/connection");
 const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, JWT_SECRET } = require("@config/env");
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
-/**
- * POST /api/payments/create-payment-intent
- * Creates a Stripe PaymentIntent for initial payments.
- * Expects: { amount (in dollars), planId }
- *
- * If req.user is set (by your auth middleware), it will override client-passed values
- * with the user's email and companyId.
- */
 const createPaymentIntent = async (req, res) => {
   try {
     let { amount, planId } = req.body;

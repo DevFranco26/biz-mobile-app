@@ -1,13 +1,10 @@
-// File: src/controllers/Account/accountSignupController.js
+// src/controllers/Account/accountSignupController.js
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { prisma } = require("@config/database");
+const { prisma } = require("@config/connection");
 const { JWT_SECRET } = require("@config/env");
 
-/**
- * GET /api/account/plans
- * Retrieves all subscription plans for sign-up.
- */
 const getAllSubscriptionPlans = async (req, res) => {
   try {
     const plans = await prisma.subscriptionPlan.findMany({

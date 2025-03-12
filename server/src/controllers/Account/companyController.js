@@ -1,4 +1,6 @@
-const { prisma } = require("@config/database");
+// src/controllers/Account/companyController.js
+
+const { prisma } = require("@config/connection");
 
 const getAllCompanies = async (req, res) => {
   try {

@@ -1,10 +1,7 @@
-// File: src/controllers/Features/leaveController.js
-const { prisma } = require("@config/database");
+// src/controllers/Features/leaveController.js
 
-/**
- * POST /api/features/leaves
- * Description: Submits a new leave request.
- */
+const { prisma } = require("@config/connection");
+
 const submitLeaveRequest = async (req, res) => {
   try {
     const { type, reason, fromDate, toDate, approverId } = req.body;
@@ -45,10 +42,6 @@ const submitLeaveRequest = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/leaves/user
- * Description: Retrieves all leave requests for the authenticated user.
- */
 const getUserLeaves = async (req, res) => {
   try {
     const leaves = await prisma.leaves.findMany({
@@ -75,10 +68,6 @@ const getUserLeaves = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/leaves/pending
- * Description: Retrieves pending leave requests for the authenticated approver.
- */
 const getPendingLeavesForApprover = async (req, res) => {
   try {
     const leaves = await prisma.leaves.findMany({
@@ -105,10 +94,6 @@ const getPendingLeavesForApprover = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/features/leaves/:id/approve
- * Description: Approves a leave request.
- */
 const approveLeave = async (req, res) => {
   try {
     const leaveId = Number(req.params.id);
@@ -129,10 +114,6 @@ const approveLeave = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/features/leaves/:id/reject
- * Description: Rejects a leave request.
- */
 const rejectLeave = async (req, res) => {
   try {
     const leaveId = Number(req.params.id);
@@ -157,10 +138,6 @@ const rejectLeave = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/leaves/approvers
- * Description: Retrieves approvers for the authenticated user's company.
- */
 const getApprovers = async (req, res) => {
   try {
     const approvers = await prisma.users.findMany({
@@ -178,10 +155,6 @@ const getApprovers = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/leaves/approver
- * Description: Retrieves leave requests for the approver with an optional status filter.
- */
 const getLeavesForApprover = async (req, res) => {
   try {
     const { status } = req.query;

@@ -1,12 +1,8 @@
-// File: src/controllers/Features/employeeController.js
-const bcrypt = require("bcryptjs");
-const { prisma } = require("@config/database");
+// src/controllers/Features/employeeController.js
 
-/**
- * GET /api/features/employee
- * Retrieves all employees in the same company (excluding the current employee)
- * along with their profile and related data.
- */
+const bcrypt = require("bcryptjs");
+const { prisma } = require("@config/connection");
+
 const getAllEmployees = async (req, res) => {
   try {
     const companyId = req.user.companyId;

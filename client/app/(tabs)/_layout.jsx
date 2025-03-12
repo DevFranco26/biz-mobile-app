@@ -1,182 +1,144 @@
+// app/(tabs)/_layout.jsx
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
-import { Tabs, useRouter } from "expo-router";
+import { AppState } from "react-native";
+import { Tabs } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-
-// Stores
+import UserInactivity from "react-native-user-inactivity";
+import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "../../config/constant";
 import useThemeStore from "../../store/themeStore";
-import useUserStore from "../../store/userStore";
-import useSubscriptionStore from "../../store/subscriptionStore";
+import useAuthStore from "../../store/useAuthStore";
+import usePresenceStore from "../../store/presenceStore";
 
-// Helper to get initials
-const getInitials = (user) => {
-  if (!user) return "";
-  const { firstName = "", lastName = "" } = user;
-  const firstInitial = firstName.charAt(0).toUpperCase() || "";
-  const lastInitial = lastName.charAt(0).toUpperCase() || "";
-  return `${firstInitial}${lastInitial}`;
+const AvatarIcon = ({ color, size }) => {
+  const circleSize = 23;
+  return (
+    <Ionicons
+      name="person-outline"
+      size={size}
+      color="#fff"
+      style={{
+        width: circleSize,
+        height: circleSize,
+        borderRadius: circleSize / 2,
+        backgroundColor: color,
+        textAlign: "center",
+        paddingTop: 2,
+      }}
+    />
+  );
 };
 
 const TabsLayout = () => {
-  const router = useRouter();
   const { theme } = useThemeStore();
-  const { user } = useUserStore();
-  const { currentSubscription, fetchCurrentSubscription } = useSubscriptionStore();
-
+  const { token } = useAuthStore();
+  const { setPresence } = usePresenceStore();
   const isLightTheme = theme === "light";
-  const [isLocked, setIsLocked] = useState(false);
-  const userRole = (user?.role || "").toLowerCase();
+  const [appState, setAppState] = useState(AppState.currentState);
 
-  // Allowed (unlocked) plans for non-superadmins
-  const ALLOWED_PLANS = ["basic", "pro"];
-
-  // Fetch current subscription for locking logic
-  useEffect(() => {
-    const fetchSub = async () => {
-      if (!user || !["user", "supervisor", "admin", "superadmin"].includes(userRole)) return;
-      const token = await SecureStore.getItemAsync("token");
-      if (token) {
-        await fetchCurrentSubscription(token);
-      }
-    };
-    fetchSub();
-  }, [userRole, fetchCurrentSubscription, user]);
-
-  // Determine lock status based on subscription plan
-  useEffect(() => {
-    if (!currentSubscription || !currentSubscription.plan) {
-      setIsLocked(userRole !== "superadmin");
-    } else {
-      const planName = (currentSubscription.plan?.planName || "").toLowerCase();
-
-      if (userRole === "superadmin") {
-        setIsLocked(false);
-        return;
-      }
-
-      if (planName !== "pro" && planName !== "basic") {
-        setIsLocked(true);
-      } else {
-        setIsLocked(false);
-      }
+  const updateUserPresence = async (status) => {
+    let currentToken = token;
+    if (!currentToken) {
+      currentToken = await SecureStore.getItemAsync("token");
     }
-  }, [currentSubscription, userRole]);
-
-  // Reusable Avatar icon for settings tab
-  const AvatarIcon = ({ color, size }) => {
-    const initials = getInitials(user);
-    const circleSize = 23;
-    return (
-      <View
-        style={{
-          width: circleSize,
-          height: circleSize,
-          borderRadius: circleSize / 2,
-          backgroundColor: color,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 12 }}>{initials}</Text>
-      </View>
-    );
-  };
-
-  // Custom icon renderer with lock overlay
-  const lockedIcon = (iconName, color, size) => (
-    <View>
-      <Ionicons name={iconName} size={size} color={color} />
-      {isLocked && (
-        <MaterialIcons name="lock" size={size * 0.6} color="#f97316" style={{ position: "absolute", top: 0, right: 0 }} />
-      )}
-    </View>
-  );
-
-  /**
-   * When locked, we prevent the default navigation and show an alert.
-   * We also spread `props` and keep `props.style` so the layout doesn't shift.
-   */
-  const renderLockedTabBarButton = (props) => {
-    return (
-      <Pressable
-        {...props}
-        style={[props.style, styles.button]}
-        onPress={(e) => {
-          e.preventDefault();
-          Alert.alert(
-            "Upgrade Subscription",
-            "This feature is not available on your current plan. Please upgrade your subscription."
-          );
-        }}
-      >
-        {props.children}
-      </Pressable>
-    );
-  };
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: isLightTheme ? "#ffffff" : "#0f172a",
-          borderTopColor: isLightTheme ? "#ffffff" : "#0f172a",
+    if (!currentToken) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/presence`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
         },
-        tabBarActiveTintColor: "#f97316",
-        tabBarInactiveTintColor: "#6B7280",
-      }}
-    >
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+        body: JSON.stringify({
+          presenceStatus: status,
+          lastActiveAt: new Date().toISOString(),
+        }),
+      });
+      const resData = await response.json();
+      if (response.ok) {
+        setPresence(status, new Date().toISOString());
+      }
+    } catch (error) {
+      console.error("Error updating user presence:", error);
+    }
+  };
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "background") {
+        updateUserPresence("away");
+      } else if (nextAppState === "active") {
+        updateUserPresence("available");
+      }
+      setAppState(nextAppState);
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const handleUserActivity = (active) => {
+    if (active) {
+      updateUserPresence("available");
+    } else {
+      updateUserPresence("away");
+    }
+  };
+
+  const inactivityTimeout = 5000;
+  return (
+    <UserInactivity timeForInactivity={inactivityTimeout} onAction={handleUserActivity} style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          tabBarStyle: {
+            backgroundColor: isLightTheme ? "#ffffff" : "#0f172a",
+            borderTopColor: isLightTheme ? "#ffffff" : "#0f172a",
+          },
+          tabBarActiveTintColor: "#f97316",
+          tabBarInactiveTintColor: "#6B7280",
         }}
-      />
-      <Tabs.Screen
-        name="(leaves)"
-        options={{
-          title: "Leaves",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => lockedIcon("calendar-outline", color, size),
-          tabBarButton: isLocked ? renderLockedTabBarButton : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="payroll"
-        options={{
-          title: "Payroll",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => lockedIcon("cash-outline", color, size),
-          tabBarButton: isLocked ? renderLockedTabBarButton : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="(shifts)"
-        options={{
-          title: "Timekeeping",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="(settings)"
-        options={{
-          title: "Settings",
-          headerShown: false,
-          tabBarIcon: AvatarIcon,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="(leaves)"
+          options={{
+            title: "Leaves",
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="payroll"
+          options={{
+            title: "Payroll",
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="(shifts)"
+          options={{
+            title: "Timekeeping",
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="(settings)"
+          options={{
+            title: "Settings",
+            headerShown: false,
+            tabBarIcon: AvatarIcon,
+          }}
+        />
+      </Tabs>
+    </UserInactivity>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
 
 export default TabsLayout;

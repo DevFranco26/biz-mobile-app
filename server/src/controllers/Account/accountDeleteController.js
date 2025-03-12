@@ -1,5 +1,6 @@
-// File: @controllers/Account/accountDeleteController.js
-const { prisma } = require("@config/database");
+// src/controllers/Account/accountDeleteController.js
+
+const { prisma } = require("@config/connection");
 
 async function deleteAccountController(req, res, next) {
   try {

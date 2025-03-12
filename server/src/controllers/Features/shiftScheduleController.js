@@ -1,5 +1,6 @@
 // File: src/controllers/Features/shiftScheduleController.js
-const { prisma } = require("@config/database");
+
+const { prisma } = require("@config/connection");
 
 /**
  * DELETE /api/features/shifts/:shiftId/user/:userId

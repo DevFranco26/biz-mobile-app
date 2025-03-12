@@ -1,10 +1,7 @@
-// File: src/controllers/Features/locationController.js
-const { prisma } = require("@config/database");
+// src/controllers/Features/locationController.js
 
-/**
- * POST /api/features/locations
- * Description: Creates a new location.
- */
+const { prisma } = require("@config/connection");
+
 const createLocation = async (req, res) => {
   try {
     const adminId = req.user?.id;

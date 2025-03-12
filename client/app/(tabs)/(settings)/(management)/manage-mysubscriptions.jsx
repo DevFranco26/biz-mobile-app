@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import useThemeStore from "../../../../store/themeStore";
-import useUserStore from "../../../../store/userStore";
+import useAuthStore from "../../../../store/useAuthStore";
 import useSubscriptionStore from "../../../../store/subscriptionStore";
 import { WEBSITE_URL } from "../../../../config/constant";
 
@@ -17,7 +17,7 @@ const MySubscriptions = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
-  const { user } = useUserStore();
+  const { user } = useAuthStore();
   const { currentSubscription, loadingCurrent, fetchCurrentSubscription } = useSubscriptionStore();
   const [token, setToken] = useState(null);
   const [refreshing, setRefreshing] = useState(false);

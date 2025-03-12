@@ -21,12 +21,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+
 import useThemeStore from "../../../../store/themeStore";
-import useUserStore from "../../../../store/userStore";
+import useAuthStore from "../../../../store/useAuthStore";
 import useUsersStore from "../../../../store/usersStore";
 import useLocationsStore from "../../../../store/locationsStore";
 import useSubscriptionStore from "../../../../store/subscriptionStore";
 import useCompanyStore from "../../../../store/companyStore";
+
 import { API_BASE_URL } from "../../../../config/constant";
 
 // Utility Functions
@@ -106,7 +108,7 @@ const Employees = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
-  const { user } = useUserStore();
+  const { user } = useAuthStore();
   const { currentSubscription } = useSubscriptionStore();
   const { users, loading, fetchUsers } = useUsersStore();
   const { locations, fetchLocations } = useLocationsStore();
@@ -550,7 +552,13 @@ const Employees = () => {
                     Role <Text className="text-red-500">*</Text>
                   </Text>
                   <RadioButton label="admin" value="admin" selected={editRole === "admin"} onPress={setEditRole} isLightTheme={isLightTheme} />
-                  <RadioButton label="supervisor" value="supervisor" selected={editRole === "supervisor"} onPress={setEditRole} isLightTheme={isLightTheme} />
+                  <RadioButton
+                    label="supervisor"
+                    value="supervisor"
+                    selected={editRole === "supervisor"}
+                    onPress={setEditRole}
+                    isLightTheme={isLightTheme}
+                  />
                   <RadioButton label="User" value="user" selected={editRole === "user"} onPress={setEditRole} isLightTheme={isLightTheme} />
 
                   {/* Email Input */}

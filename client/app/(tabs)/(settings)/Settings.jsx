@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 
 import useThemeStore from "../../../store/themeStore";
-import useUserStore from "../../../store/userStore";
+import useAuthStore from "../../../store/useAuthStore";
 import useCompanyStore from "../../../store/companyStore";
 import useSubscriptionStore from "../../../store/subscriptionStore";
 
@@ -19,7 +19,7 @@ const Settings = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
 
-  const { user } = useUserStore();
+  const { user } = useAuthStore();
   const { getCompanyName, fetchCompanyById } = useCompanyStore();
   const { currentSubscription, loadingCurrent, fetchCurrentSubscription } = useSubscriptionStore();
 
@@ -166,7 +166,13 @@ const Settings = () => {
 
                 {renderFeature(Ionicons, "reader-outline", "Subscribers", "Track all companies’ subscriptions.", "./superadmin-subscriptions")}
 
-                {renderFeature(Ionicons, "settings-outline", "Subscription Plans", "Create or update subscription plans.", "./superadmin-subscription-plans")}
+                {renderFeature(
+                  Ionicons,
+                  "settings-outline",
+                  "Subscription Plans",
+                  "Create or update subscription plans.",
+                  "./superadmin-subscription-plans"
+                )}
               </View>
             )}
 
@@ -225,7 +231,9 @@ const Settings = () => {
             {userRole !== "supervisor" && (
               <>
                 <View className="my-2">
-                  <Text className={`text-xl font-bold mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Company: {userCompanyName} Payroll</Text>
+                  <Text className={`text-xl font-bold mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
+                    Company: {userCompanyName} Payroll
+                  </Text>
                   {renderFeature(
                     MaterialIcons,
                     "attach-money",
@@ -233,7 +241,13 @@ const Settings = () => {
                     "Configure cutoff cycles, currency, and overtime rates.",
                     "./payroll-payroll-settings"
                   )}
-                  {renderFeature(Ionicons, "cash-outline", "Employee Payrate Settings", "Set or update pay rates for users.", "./payroll-payrate-settings")}
+                  {renderFeature(
+                    Ionicons,
+                    "cash-outline",
+                    "Employee Payrate Settings",
+                    "Set or update pay rates for users.",
+                    "./payroll-payrate-settings"
+                  )}
                   {renderFeature(Ionicons, "document-text-outline", "Payroll Records", "View & manage all payroll records.", "./payroll-payroll-records")}
                   {renderFeature(Ionicons, "calculator-outline", "Generate Payroll", "Generate payroll for a user/period.", "./payroll-generate-payroll")}
                 </View>

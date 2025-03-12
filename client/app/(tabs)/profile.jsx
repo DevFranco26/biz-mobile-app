@@ -1,669 +1,913 @@
+// app/(tabs)/profile.jsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  Image,
-  Pressable,
-  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
   Alert,
   Modal,
-  TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Animated,
+  PanResponder,
+  Dimensions,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-  RefreshControl,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import useThemeStore from "../../store/themeStore";
-import useUserStore from "../../store/userStore";
-import useCompanyStore from "../../store/companyStore";
-import useDepartmentStore from "../../store/departmentStore";
+import useAuthStore from "../../store/useAuthStore";
+import usePresenceStore from "../../store/presenceStore";
 import { API_BASE_URL } from "../../config/constant";
-import "nativewind";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/vector-icons";
+
+const { height } = Dimensions.get("window");
+
+const formatAwayDuration = (lastActiveAt, status) => {
+  if (status !== "away" || !lastActiveAt) return "";
+  const lastActive = new Date(lastActiveAt);
+  const now = new Date();
+  const diffMs = now - lastActive;
+  const diffMinutes = diffMs / 60000;
+  if (diffMinutes < 60) {
+    return `Away for ${Math.floor(diffMinutes)} minutes`;
+  }
+  const diffHours = diffMinutes / 60;
+  if (diffHours < 24) {
+    return `Away for ${Math.floor(diffHours)} hours`;
+  }
+  return `Last active at ${lastActive.toLocaleString()}`;
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "available":
+      return "#0d9488";
+    case "away":
+      return "#f59e0b";
+    case "offline":
+      return "#94a3b8";
+    default:
+      return "#94a3b8";
+  }
+};
 
 const Profile = () => {
-  const { theme } = useThemeStore();
-  const { user, clearUser, setUser } = useUserStore();
-  const { getCompanyName } = useCompanyStore();
-  const { fetchDepartmentById, getDepartmentName } = useDepartmentStore();
-  const router = useRouter();
-  const isLightTheme = theme === "light";
-  const accentColor = "#f97316";
+  const { token, logout } = useAuthStore();
+  const { presenceStatus, lastActiveAt } = usePresenceStore();
 
-  // Use safe defaults if user is null
-  const initialPresence = user && user.presenceStatus ? user.presenceStatus : "offline";
-  const [presenceStatus, setPresenceStatus] = useState(initialPresence);
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
-  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isPassModalVisible, setIsPassModalVisible] = useState(false);
+  const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [passUpdating, setPassUpdating] = useState(false);
+  const [passError, setPassError] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
 
-  // Local state for profile edits (using safe defaults)
-  const [editFirstName, setEditFirstName] = useState(user && user.firstName ? user.firstName : "");
-  const [editMiddleName, setEditMiddleName] = useState(user && user.middleName ? user.middleName : "");
-  const [editLastName, setEditLastName] = useState(user && user.lastName ? user.lastName : "");
-  const [editPhone, setEditPhone] = useState(user && user.phone ? user.phone : "");
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
-  // Ref for presence dropdown positioning
-  const iconRef = useRef(null);
-  const [iconLayout, setIconLayout] = useState({ x: 0, y: 0 });
+  // Modal animations
+  const editModalAnim = useRef(new Animated.Value(height)).current;
+  const passModalAnim = useRef(new Animated.Value(height)).current;
+  const signOutModalAnim = useRef(new Animated.Value(height)).current;
+  const modalBgAnim = useRef(new Animated.Value(0)).current;
 
-  // Colors for presence and corresponding icons
-  const presenceColors = {
-    active: "#10b981",
-    away: "#f97316",
-    offline: "#64748b",
-  };
-  const presenceIcon =
-    user && user.presenceStatus
-      ? {
-          active: "checkmark-circle",
-          away: "time",
-          offline: "close-circle",
-        }[user.presenceStatus] || "close-circle"
-      : "close-circle";
+  // Pan responder for edit modal
+  const editPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          editModalAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // Close the modal if dragged down enough
+          closeEditModal();
+        } else {
+          // Snap back to original position
+          Animated.spring(editModalAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
-  // Helper: safely get initials from a name string
-  const getInitials = (name = "") => {
-    if (!name) return "";
-    const nameArray = name.trim().split(" ");
-    if (nameArray.length === 0) return "";
-    if (nameArray.length === 1) {
-      return nameArray[0][0].toUpperCase();
-    }
-    return (nameArray[0][0] + nameArray[nameArray.length - 1][0]).toUpperCase();
-  };
+  // Pan responder for password modal
+  const passPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          passModalAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // Close the modal if dragged down enough
+          closePassModal();
+        } else {
+          // Snap back to original position
+          Animated.spring(passModalAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
-  // Helper: capitalize first letter of an email
-  const capitalizeFirst = (email = "") => {
-    if (!email) return "";
-    const [first, ...rest] = email.split("");
-    return `${first.toUpperCase()}${rest.join("")}`;
-  };
-
-  // Update presence status on backend
-  const updatePresenceStatus = async (newStatus) => {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/signin");
-      return;
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/users/me/presence`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ presenceStatus: newStatus }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data.data);
-        setPresenceStatus(data.data.presenceStatus);
-      } else {
-        Alert.alert("Error", data.message || "Failed to update presence status.");
-        setPresenceStatus(user && user.presenceStatus ? user.presenceStatus : "offline");
-      }
-    } catch (error) {
-      console.error("Update presence error:", error);
-      Alert.alert("Error", "An unexpected error occurred while updating your presence status.");
-      setPresenceStatus(user && user.presenceStatus ? user.presenceStatus : "offline");
-    }
-  };
-
-  const handleStatusSelect = (status) => {
-    updatePresenceStatus(status);
-    setIsDropdownVisible(false);
-  };
-
-  const measureIconPosition = () => {
-    if (iconRef.current) {
-      iconRef.current.measureInWindow((x, y, width, height) => {
-        setIconLayout({ x, y: y + height + 6 });
-      });
-    }
-  };
+  // Pan responder for sign out modal
+  const signOutPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          signOutModalAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // Close the modal if dragged down enough
+          closeSignOutModal();
+        } else {
+          // Snap back to original position
+          Animated.spring(signOutModalAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
-    setTimeout(() => {
-      measureIconPosition();
-    }, 300);
-  }, [isDropdownVisible, presenceStatus]);
+    // Initial animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-  // Periodically refresh user data every 60 seconds
-  useEffect(() => {
-    let intervalId;
-    const startInterval = async () => {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) return;
-      intervalId = setInterval(async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/auth/user`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.user) {
-              setUser(data.user);
-              setPresenceStatus(data.user.presenceStatus || "offline");
-              setEditFirstName(data.user.firstName || "");
-              setEditMiddleName(data.user.middleName || "");
-              setEditLastName(data.user.lastName || "");
-              setEditPhone(data.user.phone || "");
-            }
-          }
-        } catch (err) {
-          console.error("Error fetching user data periodically:", err);
-        }
-      }, 60000);
-    };
-    startInterval();
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [setUser]);
+    fetchProfile();
+  }, []);
 
-  // Manual refresh handler
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      setRefreshing(false);
-      return;
+  const openEditModal = () => {
+    if (profile && profile.user && profile.profile) {
+      setUsername(profile.user.username || "");
+      setEmail(profile.user.email || "");
+      setFirstName(profile.profile.firstName || "");
+      setLastName(profile.profile.lastName || "");
+      setPhoneNumber(profile.profile.phoneNumber || "");
     }
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.user) {
-          setUser(data.user);
-          setPresenceStatus(data.user.presenceStatus || "offline");
-          setEditFirstName(data.user.firstName || "");
-          setEditMiddleName(data.user.middleName || "");
-          setEditLastName(data.user.lastName || "");
-          setEditPhone(data.user.phone || "");
-        }
-      }
-    } catch (err) {
-      console.error("Error refreshing profile:", err);
-    } finally {
-      setRefreshing(false);
-    }
+    setIsEditModalVisible(true);
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(editModalAnim, {
+        toValue: 0,
+        tension: 70,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
-  // Updated Logout function for Scenario 2
-  // We do NOT delete saved credentials on logout
-  const confirmLogout = () => {
-    Alert.alert(
-      "Confirm Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Yes", onPress: () => logout() },
-      ],
-      { cancelable: false }
-    );
+  const closeEditModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(editModalAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsEditModalVisible(false);
+    });
   };
 
-  const logout = async () => {
-    setIsLoggingOut(true);
-    try {
-      const token = await SecureStore.getItemAsync("token");
-      const response = await fetch(`${API_BASE_URL}/auth/sign-out`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        // Only delete token and user data.
-        await SecureStore.deleteItemAsync("token");
-        await SecureStore.deleteItemAsync("user");
-        // Do not delete savedEmail or savedPassword so biometric sign‑in can use them.
-        clearUser();
-        router.replace("(auth)/signin");
-        Alert.alert("Success", "You have been logged out successfully");
-      } else {
-        Alert.alert("Error", "Failed to log out, please try again.");
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-      Alert.alert("Error", "An error occurred while logging out.");
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  // Handlers for editing profile and changing password (unchanged)
-  const handleOpenEditProfile = () => {
-    setEditFirstName(user && user.firstName ? user.firstName : "");
-    setEditMiddleName(user && user.middleName ? user.middleName : "");
-    setEditLastName(user && user.lastName ? user.lastName : "");
-    setEditPhone(user && user.phone ? user.phone : "");
-    setEditProfileModalVisible(true);
-  };
-
-  const handleSaveProfileEdits = async () => {
-    setIsSavingProfile(true);
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/signin");
-      setIsSavingProfile(false);
-      return;
-    }
-    try {
-      const payload = {
-        firstName: editFirstName,
-        middleName: editMiddleName,
-        lastName: editLastName,
-        phone: editPhone,
-      };
-      const response = await fetch(`${API_BASE_URL}/auth/user`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data.data);
-        setPresenceStatus(data.data.presenceStatus || "offline");
-        setEditProfileModalVisible(false);
-        Alert.alert("Success", "Profile updated successfully.");
-      } else {
-        Alert.alert("Error", data.message || "Failed to update profile.");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert("Error", "An unexpected error occurred.");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  const handleOpenChangePassword = () => {
+  const openPassModal = () => {
     setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    setChangePasswordModalVisible(true);
+    setPassError("");
+    setIsPassModalVisible(true);
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(passModalAnim, {
+        toValue: 0,
+        tension: 70,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
-  const handleChangePassword = async () => {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/signin");
-      return;
-    }
+  const closePassModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(passModalAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsPassModalVisible(false);
+    });
+  };
+
+  const openSignOutModal = () => {
+    setIsSignOutModalVisible(true);
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(signOutModalAnim, {
+        toValue: 0,
+        tension: 70,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeSignOutModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(signOutModalAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsSignOutModalVisible(false);
+    });
+  };
+
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const fetchProfile = async () => {
+    setLoading(true);
     try {
-      const payload = { oldPassword, newPassword, confirmPassword };
-      const response = await fetch(`${API_BASE_URL}/users/me/password`, {
+      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      if (!currentToken) {
+        Alert.alert("Session expired", "Please sign in again.");
+        router.replace("(auth)/signin");
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
+        headers: { Authorization: `Bearer ${currentToken}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setProfile(data.data);
+      } else {
+        Alert.alert("Error", data.message || "Failed to fetch profile.");
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      Alert.alert("Error", "An unexpected error occurred while fetching your profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePresenceToOffline = async () => {
+    let currentToken = token || (await SecureStore.getItemAsync("token"));
+    if (!currentToken) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/presence`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify({
+          presenceStatus: "offline",
+          lastActiveAt: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      console.error("Error updating presence to offline:", error);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    animateButtonPress();
+    setUpdating(true);
+    setUpdateError("");
+    try {
+      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      if (!currentToken) {
+        Alert.alert("Session expired", "Please sign in again.");
+        router.replace("(auth)/signin");
+        return;
+      }
+      const payload = { username, email, firstName, lastName, phoneNumber };
+      const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
         },
         body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (response.ok) {
-        setChangePasswordModalVisible(false);
-        Alert.alert("Success", "Password changed successfully.");
+        Alert.alert("Success", "Profile updated successfully.", [
+          {
+            text: "OK",
+            onPress: () => {
+              closeEditModal();
+              fetchProfile();
+            },
+          },
+        ]);
       } else {
-        Alert.alert("Error", data.message || "Failed to change password.");
+        setUpdateError(data.message || "Failed to update profile.");
       }
     } catch (error) {
-      console.error("Change Password Error:", error);
-      Alert.alert("Error", "An unexpected error occurred.");
+      console.error("Error updating profile:", error);
+      setUpdateError("An unexpected error occurred while updating profile.");
+    } finally {
+      setUpdating(false);
     }
   };
 
+  const handleChangePassword = async () => {
+    animateButtonPress();
+    setPassUpdating(true);
+    setPassError("");
+    try {
+      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      if (!currentToken) {
+        Alert.alert("Session expired", "Please sign in again.");
+        router.replace("(auth)/signin");
+        return;
+      }
+      const payload = { oldPassword, newPassword, confirmPassword };
+      const response = await fetch(`${API_BASE_URL}/api/account/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert("Success", "Password changed successfully.", [
+          {
+            text: "OK",
+            onPress: async () => {
+              await SecureStore.deleteItemAsync("token");
+              await logout();
+              router.replace("(auth)/signin");
+            },
+          },
+        ]);
+      } else {
+        setPassError(data.message || "Failed to change password.");
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      setPassError("An unexpected error occurred while changing password.");
+    } finally {
+      setPassUpdating(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await updatePresenceToOffline();
+      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      const response = await fetch(`${API_BASE_URL}/api/account/sign-out`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+      if (response.ok) {
+        await logout();
+        router.replace("(auth)/signin");
+      } else {
+        const data = await response.json();
+        Alert.alert("Error", data.message || "Failed to sign out.");
+      }
+    } catch (error) {
+      console.error("Sign-out error:", error);
+      Alert.alert("Error", "An error occurred during sign out.");
+    } finally {
+      setSigningOut(false);
+      closeSignOutModal();
+    }
+  };
+
+  const getInitials = () => {
+    if (!profile || !profile.profile) return "?";
+    const first = profile.profile.firstName ? profile.profile.firstName.charAt(0) : "";
+    const last = profile.profile.lastName ? profile.profile.lastName.charAt(0) : "";
+    return (first + last).toUpperCase();
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#f97316" />
+          <Text className="mt-3 text-slate-600 font-medium">Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
-      <ScrollView contentContainerStyle={{ padding: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-        <View className={`rounded-xl p-6 mb-6 flex-row items-center relative ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
-          {user && user.profileImage ? (
-            <Image source={{ uri: user.profileImage }} className="w-20 h-20 rounded-full" />
-          ) : (
-            <View className="w-20 h-20 rounded-full justify-center items-center bg-orange-500">
-              <Text className="text-white text-2xl font-bold tracking-widest">{getInitials(user ? `${user.firstName} ${user.lastName}` : "")}</Text>
-            </View>
-          )}
-          <View className="absolute top-2.5 right-2.5 flex-row items-center space-x-1">
-            <Pressable
-              ref={iconRef}
-              onPress={() => {
-                setIsDropdownVisible(true);
-                measureIconPosition();
-              }}
-              accessibilityLabel="Change Presence Status"
-              className="flex-row items-center"
-            >
-              <Ionicons name={presenceIcon} size={24} color={presenceColors[presenceStatus]} />
-              <Text className={`px-1 text-base capitalize ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>{presenceStatus}</Text>
-            </Pressable>
-          </View>
-          <View className="ml-4">
-            <Text className={`text-2xl font-bold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
-              {user ? `${user.firstName} ${user.lastName}` : "Guest"}
-            </Text>
-            <Text className={`${isLightTheme ? "text-slate-600" : "text-slate-300"}`}>
-              {user && user.position ? user.position : getCompanyName(user ? user.companyId : "") || "Unknown"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Contact Information Section */}
-        <View className={`rounded-lg p-6 mb-6 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
-          <Text className={`text-xl font-semibold mb-4 ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Contact Information</Text>
-          <View className="flex-row items-center mb-4">
-            <Ionicons name="mail-outline" size={20} color={accentColor} className="mr-3" />
-            <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              <Text className="font-semibold">Email:</Text> {user && user.email ? capitalizeFirst(user.email) : "N/A"}
-            </Text>
-          </View>
-          <View className="flex-row items-center mb-4">
-            <Ionicons name="id-card-outline" size={20} color={accentColor} className="mr-3" />
-            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              <Text className="font-semibold">Company:</Text> {user && user.companyId ? getCompanyName(user.companyId) || "Unknown" : "Unknown"}
-            </Text>
-          </View>
-          <View className="flex-row items-center mb-4">
-            <AntDesign name="team" size={20} color={accentColor} className="mr-3" />
-            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              <Text className="font-semibold capitalize">Department:</Text>{" "}
-              {user && user.departmentId ? getDepartmentName(user.departmentId) || "Unknown" : "Unknown"}
-            </Text>
-          </View>
-          <View className="flex-row items-center mb-4">
-            <Ionicons name="briefcase-outline" size={20} color={accentColor} className="mr-3" />
-            <Text className={`text-base capitalize ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              <Text className="font-semibold">Role:</Text> {user ? user.role : "N/A"}
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Ionicons name="call-outline" size={20} color={accentColor} className="mr-3" />
-            <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>
-              <Text className="font-semibold">Phone:</Text> {user && user.phone ? user.phone : "N/A"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Account Settings Section */}
-        <View className={`rounded-lg p-6 ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
-          <Text className={`text-xl font-semibold mb-6 ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Account Settings</Text>
-          <Pressable className={`p-4 rounded-lg mb-4 ${isLightTheme ? "bg-white" : "bg-slate-700"}`} onPress={handleOpenChangePassword}>
-            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>Change Password</Text>
-          </Pressable>
-          <Pressable className={`p-4 rounded-lg mb-4 ${isLightTheme ? "bg-white" : "bg-slate-700"}`} onPress={handleOpenEditProfile}>
-            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>Edit Profile</Text>
-          </Pressable>
-          <Pressable className={`p-4 rounded-lg ${isLightTheme ? "bg-white" : "bg-slate-700"}`} onPress={confirmLogout} disabled={isLoggingOut}>
-            <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-100"} font-medium text-center`}>Logout</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-
-      {/* Dropdown Modal for Presence Status */}
-      <Modal visible={isDropdownVisible} transparent={true} animationType="fade" onRequestClose={() => setIsDropdownVisible(false)}>
-        <TouchableOpacity className="flex-1" activeOpacity={1} onPressOut={() => setIsDropdownVisible(false)}>
-          <View
-            className={`absolute rounded-2xl shadow-md p-2 ${isLightTheme ? "bg-slate-200" : "bg-slate-800"}`}
-            style={{ width: 85, top: iconLayout.y, left: iconLayout.x - 7 }}
-          >
-            <TouchableOpacity onPress={() => handleStatusSelect("active")} className="flex-row items-center mb-2">
-              <Ionicons name="checkmark-circle" size={20} color={presenceColors.active} style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 16, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Active</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleStatusSelect("away")} className="flex-row items-center mb-2">
-              <Ionicons name="time" size={20} color={presenceColors.away} style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 16, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Away</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleStatusSelect("offline")} className="flex-row items-center">
-              <Ionicons name="close-circle" size={20} color={presenceColors.offline} style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 16, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Offline</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Edit Profile Modal */}
-      <Modal visible={editProfileModalVisible} transparent={true} animationType="none" onRequestClose={() => setEditProfileModalVisible(false)}>
-        <TouchableWithoutFeedback onPress={() => setEditProfileModalVisible(false)}>
-          <View className={`flex-1 justify-center items-center ${isLightTheme ? "bg-slate-950/70" : "bg-slate-950/70"}`}>
-            <TouchableWithoutFeedback>
-              <View className={`w-11/12 p-6 rounded-2xl shadow-md ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
-                <View className="mb-2">
-                  <Text className={`text-xl font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Edit Profile</Text>
-                </View>
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}>
-                  <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>First Name</Text>
-                    <TextInput
-                      style={{
-                        width: "100%",
-                        padding: 12,
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        color: isLightTheme ? "#1f2937" : "#f1f5f9",
-                        fontSize: 14,
-                      }}
-                      value={editFirstName}
-                      onChangeText={setEditFirstName}
-                      placeholder="e.g., John"
-                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    />
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Middle Name</Text>
-                    <TextInput
-                      style={{
-                        width: "100%",
-                        padding: 12,
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        color: isLightTheme ? "#1f2937" : "#f1f5f9",
-                        fontSize: 14,
-                      }}
-                      value={editMiddleName}
-                      onChangeText={setEditMiddleName}
-                      placeholder="e.g., A."
-                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    />
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Last Name</Text>
-                    <TextInput
-                      style={{
-                        width: "100%",
-                        padding: 12,
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        color: isLightTheme ? "#1f2937" : "#f1f5f9",
-                        fontSize: 14,
-                      }}
-                      value={editLastName}
-                      onChangeText={setEditLastName}
-                      placeholder="e.g., Doe"
-                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    />
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Phone</Text>
-                    <TextInput
-                      style={{
-                        width: "100%",
-                        padding: 12,
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        color: isLightTheme ? "#1f2937" : "#f1f5f9",
-                        fontSize: 14,
-                      }}
-                      value={editPhone}
-                      onChangeText={setEditPhone}
-                      placeholder="e.g., +1 234 567 890"
-                      keyboardType="phone-pad"
-                      placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    />
-                    <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 16 }}>
-                      <Pressable onPress={() => setEditProfileModalVisible(false)} style={{ padding: 12, marginRight: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Cancel</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={handleSaveProfileEdits}
-                        style={{ backgroundColor: "#f97316", padding: 12, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
-                        disabled={isSavingProfile}
-                      >
-                        {isSavingProfile && <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />}
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: "#FFFFFF" }}>Save</Text>
-                      </Pressable>
-                    </View>
-                  </ScrollView>
-                </KeyboardAvoidingView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Change Password Modal */}
-      <Modal visible={changePasswordModalVisible} transparent={true} animationType="none" onRequestClose={() => setChangePasswordModalVisible(false)}>
-        <TouchableWithoutFeedback onPress={() => setChangePasswordModalVisible(false)}>
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" }}>
-            <TouchableWithoutFeedback>
-              <View
+    <SafeAreaView className="flex-1 bg-white">
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="px-5 py-6">
+            {/* Header */}
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-2xl font-bold text-slate-800">My Profile</Text>
+              <TouchableOpacity
+                onPress={fetchProfile}
+                className="w-10 h-10 rounded-full bg-white border border-slate-200 items-center justify-center"
                 style={{
-                  width: "90%",
-                  padding: 24,
-                  backgroundColor: isLightTheme ? "#FFFFFF" : "#1e293b",
-                  borderRadius: 12,
                   shadowColor: "#000",
-                  shadowOpacity: 0.25,
-                  shadowRadius: 4,
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 2,
                 }}
               >
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 20, fontWeight: "600", color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Change Password</Text>
-                </View>
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}>
-                  <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Old Password</Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        height: 48,
-                      }}
-                    >
-                      <TextInput
-                        style={{ flex: 1, paddingHorizontal: 12, fontSize: 14, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}
-                        value={oldPassword}
-                        onChangeText={setOldPassword}
-                        placeholder="Enter old password"
-                        secureTextEntry={!showOldPassword}
-                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                      />
-                      <Pressable onPress={() => setShowOldPassword(!showOldPassword)} style={{ paddingRight: 12 }}>
-                        <Ionicons name={showOldPassword ? "eye-off" : "eye"} size={20} color={isLightTheme ? "#374151" : "#9ca3af"} />
-                      </Pressable>
-                    </View>
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>New Password</Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        height: 48,
-                      }}
-                    >
-                      <TextInput
-                        style={{ flex: 1, paddingHorizontal: 12, fontSize: 14, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}
-                        value={newPassword}
-                        onChangeText={setNewPassword}
-                        placeholder="Enter new password"
-                        secureTextEntry={!showNewPassword}
-                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                      />
-                      <Pressable onPress={() => setShowNewPassword(!showNewPassword)} style={{ paddingRight: 12 }}>
-                        <Ionicons name={showNewPassword ? "eye-off" : "eye"} size={20} color={isLightTheme ? "#374151" : "#9ca3af"} />
-                      </Pressable>
-                    </View>
-                    <Text style={{ fontSize: 14, marginBottom: 4, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Confirm New Password</Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                        borderRadius: 8,
-                        backgroundColor: isLightTheme ? "#f1f5f9" : "#1e293b",
-                        height: 48,
-                      }}
-                    >
-                      <TextInput
-                        style={{ flex: 1, paddingHorizontal: 12, fontSize: 14, color: isLightTheme ? "#1f2937" : "#f1f5f9" }}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        placeholder="Confirm new password"
-                        secureTextEntry={!showConfirmPassword}
-                        placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                      />
-                      <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={{ paddingRight: 12 }}>
-                        <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={isLightTheme ? "#374151" : "#9ca3af"} />
-                      </Pressable>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 16 }}>
-                      <Pressable onPress={() => setChangePasswordModalVisible(false)} style={{ padding: 12, marginRight: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: isLightTheme ? "#1f2937" : "#f1f5f9" }}>Cancel</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={handleChangePassword}
-                        style={{ backgroundColor: "#f97316", padding: 12, borderRadius: 8, flexDirection: "row", alignItems: "center" }}
-                      >
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: "#FFFFFF" }}>Save</Text>
-                      </Pressable>
-                    </View>
-                  </ScrollView>
-                </KeyboardAvoidingView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {isLoggingOut && (
-        <Modal visible={isLoggingOut} transparent={true} animationType="fade" onRequestClose={() => {}}>
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: "#FFFFFF", padding: 16, borderRadius: 8, flexDirection: "row", alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#f97316" style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 18, fontWeight: "600", color: "#1f2937" }}>Logging Out...</Text>
+                <Feather name="refresh-cw" size={18} color="#f97316" />
+              </TouchableOpacity>
             </View>
+
+            {profile && profile.user && profile.profile ? (
+              <>
+                {/* Profile Card */}
+                <View
+                  className="bg-white rounded-2xl border border-slate-200 p-5 mb-6"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4.65,
+                    elevation: 6,
+                  }}
+                >
+                  <View className="flex-row items-center mb-4">
+                    <View className="w-[70px] h-[70px] rounded-full bg-orange-500 items-center justify-center mr-4">
+                      <Text className="text-white text-2xl font-bold">{getInitials()}</Text>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-xl font-bold text-slate-800">
+                        {profile.profile.firstName} {profile.profile.lastName}
+                      </Text>
+                      <Text className="text-slate-600 text-base">@{profile.user.username}</Text>
+
+                      <View className="flex-row items-center mt-2">
+                        <View
+                          className={`px-3 py-1 rounded-full flex-row items-center ${
+                            presenceStatus === "available" ? "bg-teal-500/20" : "bg-orange-500/20"
+                          }`}
+                        >
+                          <View className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getStatusColor(presenceStatus) }} />
+                          <Text className={`${presenceStatus === "available" ? "text-teal-500" : "text-orange-500"} text-xs font-bold`}>
+                            {presenceStatus ? presenceStatus.toUpperCase() : "Offline"}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {presenceStatus === "away" && lastActiveAt && (
+                    <Text className="text-slate-600 text-sm italic mb-3">{formatAwayDuration(lastActiveAt, presenceStatus)}</Text>
+                  )}
+
+                  <View className="h-px bg-slate-100 my-4" />
+
+                  {/* Contact Info */}
+                  <View>
+                    <View className="flex-row items-center mb-4">
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <MaterialCommunityIcons name="email-outline" size={20} color="#f97316" />
+                      </View>
+                      <View>
+                        <Text className="text-slate-600 text-xs font-medium mb-1">Email</Text>
+                        <Text className="text-slate-800 font-medium">{profile.user.email}</Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center mb-4">
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <MaterialCommunityIcons name="phone-outline" size={20} color="#f97316" />
+                      </View>
+                      <View>
+                        <Text className="text-slate-600 text-xs font-medium mb-1">Phone</Text>
+                        <Text className="text-slate-800 font-medium">{profile.profile.phoneNumber || "Not provided"}</Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center">
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <FontAwesome5 name="building" size={18} color="#f97316" />
+                      </View>
+                      <View>
+                        <Text className="text-slate-600 text-xs font-medium mb-1">Company</Text>
+                        <Text className="text-slate-800 font-medium">
+                          {profile.company && profile.company.name ? profile.company.name : "Not assigned"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View className="mt-4">
+                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                    <TouchableOpacity
+                      onPress={openEditModal}
+                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
+                      style={{
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <Feather name="edit-2" size={18} color="#f97316" />
+                      </View>
+                      <Text className="text-slate-800 font-bold text-base flex-1">Edit Profile</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                    <TouchableOpacity
+                      onPress={openPassModal}
+                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
+                      style={{
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <Feather name="lock" size={18} color="#f97316" />
+                      </View>
+                      <Text className="text-slate-800 font-bold text-base flex-1">Change Password</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                    <TouchableOpacity
+                      onPress={openSignOutModal}
+                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4"
+                      style={{
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                        <Feather name="log-out" size={18} color="#f97316" />
+                      </View>
+                      <Text className="text-slate-800 font-bold text-base flex-1">Sign Out</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                </View>
+              </>
+            ) : (
+              <View className="items-center justify-center py-10">
+                <Feather name="user-x" size={60} color="#d1d5db" />
+                <Text className="text-slate-800 text-lg font-bold mt-4">No profile data available</Text>
+                <Text className="text-slate-600 text-center mt-2">We couldn't load your profile information</Text>
+                <TouchableOpacity onPress={fetchProfile} className="bg-orange-500 py-3 px-6 rounded-xl mt-6" activeOpacity={0.8}>
+                  <Text className="text-white font-bold">Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        </Modal>
+        </ScrollView>
+      </Animated.View>
+
+      {/* Edit Profile Modal */}
+      {isEditModalVisible && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeEditModal} />
+          </Animated.View>
+
+          <Animated.View
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            style={{
+              transform: [{ translateY: editModalAnim }],
+              maxHeight: "80%",
+              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+            }}
+          >
+            <View className="items-center py-3" {...editPanResponder.panHandlers}>
+              <View className="w-10 h-1 bg-slate-200 rounded-full" />
+            </View>
+
+            <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
+              <Text className="text-lg font-bold text-slate-800">Edit Profile</Text>
+              <TouchableOpacity onPress={closeEditModal}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="px-5 py-4">
+              {updateError ? (
+                <View className="p-4 bg-red-50 border border-red-200 rounded-xl mb-5">
+                  <Text className="text-red-600 font-medium">{updateError}</Text>
+                </View>
+              ) : null}
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Username</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput className="flex-1 text-slate-800" value={username} onChangeText={setUsername} placeholderTextColor="#9ca3af" />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Email</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="email-outline" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput
+                  className="flex-1 text-slate-800"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">First Name</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput className="flex-1 text-slate-800" value={firstName} onChangeText={setFirstName} placeholderTextColor="#9ca3af" />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Last Name</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput className="flex-1 text-slate-800" value={lastName} onChangeText={setLastName} placeholderTextColor="#9ca3af" />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Phone Number</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="phone-outline" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput
+                  className="flex-1 text-slate-800"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View className="flex-row justify-end mt-4">
+                {updating ? (
+                  <ActivityIndicator size="small" color="#f97316" />
+                ) : (
+                  <View className="flex-row">
+                    <TouchableOpacity onPress={closeEditModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
+                      <Text className="text-slate-800 font-semibold">Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleUpdateProfile} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
+                      <Text className="text-white font-semibold">Save Changes</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Change Password Modal */}
+      {isPassModalVisible && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closePassModal} />
+          </Animated.View>
+
+          <Animated.View
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            style={{
+              transform: [{ translateY: passModalAnim }],
+              maxHeight: "80%",
+              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+            }}
+          >
+            <View className="items-center py-3" {...passPanResponder.panHandlers}>
+              <View className="w-10 h-1 bg-slate-200 rounded-full" />
+            </View>
+
+            <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
+              <Text className="text-lg font-bold text-slate-800">Change Password</Text>
+              <TouchableOpacity onPress={closePassModal}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="px-5 py-4">
+              {passError ? (
+                <View className="p-4 bg-red-50 border border-red-200 rounded-xl mb-5">
+                  <Text className="text-red-600 font-medium">{passError}</Text>
+                </View>
+              ) : null}
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Current Password</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput
+                  secureTextEntry
+                  className="flex-1 text-slate-800"
+                  value={oldPassword}
+                  onChangeText={setOldPassword}
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">New Password</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput
+                  secureTextEntry
+                  className="flex-1 text-slate-800"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Confirm New Password</Text>
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+                <TextInput
+                  secureTextEntry
+                  className="flex-1 text-slate-800"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View className="flex-row justify-end mt-4">
+                {passUpdating ? (
+                  <ActivityIndicator size="small" color="#f97316" />
+                ) : (
+                  <View className="flex-row">
+                    <TouchableOpacity onPress={closePassModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
+                      <Text className="text-slate-800 font-semibold">Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleChangePassword} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
+                      <Text className="text-white font-semibold">Update Password</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {isSignOutModalVisible && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeSignOutModal} />
+          </Animated.View>
+
+          <Animated.View
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            style={{
+              transform: [{ translateY: signOutModalAnim }],
+              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+            }}
+          >
+            <View className="items-center py-3" {...signOutPanResponder.panHandlers}>
+              <View className="w-10 h-1 bg-slate-200 rounded-full" />
+            </View>
+
+            <View className="px-5 py-4 items-center">
+              <View className="w-16 h-16 rounded-full bg-orange-50 items-center justify-center mb-4">
+                <Feather name="log-out" size={28} color="#f97316" />
+              </View>
+
+              <Text className="text-xl font-bold text-slate-800 mb-2">Sign Out</Text>
+              <Text className="text-slate-600 text-center mb-6">Are you sure you want to sign out of your account?</Text>
+
+              <View className="w-full">
+                {signingOut ? (
+                  <View className="items-center py-4">
+                    <ActivityIndicator size="large" color="#f97316" />
+                    <Text className="text-slate-600 mt-3">Signing out...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <TouchableOpacity onPress={handleSignOut} className="bg-orange-500 py-3.5 rounded-xl w-full items-center mb-3" activeOpacity={0.8}>
+                      <Text className="text-white font-bold text-base">Yes, Sign Out</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={closeSignOutModal}
+                      className="py-3.5 rounded-xl w-full items-center border border-slate-200"
+                      activeOpacity={0.8}
+                    >
+                      <Text className="text-slate-800 font-bold text-base">Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+          </Animated.View>
+        </View>
       )}
     </SafeAreaView>
   );

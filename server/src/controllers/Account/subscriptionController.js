@@ -1,13 +1,9 @@
-// File: src/controllers/Account/subscriptionController.js
-const { prisma } = require("@config/database");
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("@config/env");
+// src/controllers/Account/subscriptionController.js
 
-/**
- * GET /api/subscriptions/current
- * Retrieves the current active subscription for the user's company.
- * (This endpoint still expects req.user to be set externally.)
- */
+const { prisma } = require("@config/connection");
+const { JWT_SECRET } = require("@config/env");
+const jwt = require("jsonwebtoken");
+
 const getCurrentSubscription = async (req, res) => {
   try {
     const companyId = req.user.companyId;
@@ -31,14 +27,6 @@ const getCurrentSubscription = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/subscriptions/upgrade
- * Upgrades the subscription by deactivating current active subscriptions for the company
- * and creating a new subscription with the new plan.
- *
- * This endpoint does NOT rely on an external auth middleware.
- * It extracts and decodes the token from the Authorization header.
- */
 const upgradeSubscription = async (req, res) => {
   try {
     // Extract and verify the token.
@@ -106,10 +94,6 @@ const upgradeSubscription = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/subscriptions/cancel
- * Cancels the current active subscription by setting its active flag to false.
- */
 const cancelCurrentSubscription = async (req, res) => {
   try {
     // This endpoint can use req.user if available.

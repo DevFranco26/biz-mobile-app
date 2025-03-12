@@ -21,7 +21,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useThemeStore from "../../../../store/themeStore";
-import useUserStore from "../../../../store/userStore";
+import useAuthStore from "../../../../store/useAuthStore";
 import useSubscriptionPlansStore from "../../../../store/subscriptionPlansStore";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
@@ -194,7 +194,9 @@ const SubscriptionPlans = () => {
             keyExtractor={(item) => String(item.id)}
             renderItem={renderPlanItem}
             contentContainerStyle={{ paddingHorizontal: 16 }}
-            ListEmptyComponent={<Text className={`text-center mt-4 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>No subscription plans found.</Text>}
+            ListEmptyComponent={
+              <Text className={`text-center mt-4 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>No subscription plans found.</Text>
+            }
             onRefresh={onRefresh}
             refreshing={refreshing}
           />
@@ -278,7 +280,12 @@ const SubscriptionPlans = () => {
                   </View>
                   <View className="flex-row items-center mb-2">
                     <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-300"} mr-1 text-sm`}>Leaves</Text>
-                    <Switch value={leaves} onValueChange={setLeaves} trackColor={{ true: "slate", false: "slate" }} thumbColor={leaves ? "orange" : "slate"} />
+                    <Switch
+                      value={leaves}
+                      onValueChange={setLeaves}
+                      trackColor={{ true: "slate", false: "slate" }}
+                      thumbColor={leaves ? "orange" : "slate"}
+                    />
                   </View>
                   <View className="flex-row items-center mb-2">
                     <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-300"} mr-1 text-sm`}>Punch Offline</Text>
@@ -320,7 +327,9 @@ const SubscriptionPlans = () => {
                   </View>
                   <View className="flex-row items-center mt-2">
                     <Ionicons name="people-outline" size={16} color={isLightTheme ? "#1e293b" : "#cbd5e1"} />
-                    <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>Range of Users: {selectedPlan.rangeOfUsers}</Text>
+                    <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>
+                      Range of Users: {selectedPlan.rangeOfUsers}
+                    </Text>
                   </View>
                   <View className="flex-row items-center mt-2">
                     <Ionicons name="cash-outline" size={16} color={isLightTheme ? "#1e293b" : "#cbd5e1"} />

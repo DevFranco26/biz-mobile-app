@@ -1,13 +1,12 @@
+// src/controllers/Account/accountSigninController.js
+
+const { prisma } = require("@config/connection");
+const { JWT_SECRET } = require("@config/env");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { prisma } = require("@config/database");
-const { JWT_SECRET } = require("@config/env");
 
-/**
- * GET /api/account/get-user-email?email=...
- * Checks if the provided email exists and returns user info.
- */
 const getUserEmail = async (req, res) => {
+  console.log("## Check User Email and Retrieved Company");
   try {
     const { email } = req.query;
     if (!email) {
@@ -28,6 +27,7 @@ const getUserEmail = async (req, res) => {
       companyId: user.companyId,
       companyName: user.company ? user.company.name : null,
     }));
+    console.log("## Success");
     return res.status(200).json({ message: "Users found.", data: result });
   } catch (error) {
     console.error("Error in getUserEmail:", error);
@@ -115,6 +115,7 @@ const getUserProfile = async (req, res) => {
  * Authenticates a user and returns a JWT.
  */
 const signIn = async (req, res) => {
+  console.log("## Signin Start");
   try {
     const { email, password, companyId } = req.query;
     if (!email || !password || !companyId) {
@@ -141,6 +142,7 @@ const signIn = async (req, res) => {
     }
     const tokenPayload = { userId: user.id, companyId: user.companyId };
     const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "30d" });
+    console.log("## Success");
     return res.status(200).json({ message: "Sign-in successful.", data: { token } });
   } catch (error) {
     console.error("Error in signIn:", error);
@@ -156,9 +158,131 @@ const signOut = (req, res) => {
   return res.status(200).json({ message: "Signed out successfully." });
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    // req.user is set by the auth middleware.
+    const { id: userId, companyId } = req.user;
+    let { username, email, firstName, lastName, phoneNumber } = req.body;
+
+    // Validate required fields.
+    if (!username || !email) {
+      return res.status(400).json({ message: "Username and email are required." });
+    }
+
+    // Normalize username and email.
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Validate username format: only alphanumeric characters allowed.
+    if (!/^[a-z0-9]+$/i.test(normalizedUsername)) {
+      return res.status(400).json({ message: "Username must be alphanumeric." });
+    }
+
+    // Check for duplicate username (case-insensitive), excluding the current user.
+    const duplicateUsername = await prisma.user.findFirst({
+      where: {
+        username: { equals: normalizedUsername, mode: "insensitive" },
+        NOT: { id: userId },
+      },
+    });
+    if (duplicateUsername) {
+      return res.status(400).json({ message: "Username is already taken." });
+    }
+
+    // Check for duplicate email within the same company (email is stored in lowercase).
+    const duplicateEmail = await prisma.user.findFirst({
+      where: {
+        companyId,
+        email: normalizedEmail,
+        NOT: { id: userId },
+      },
+    });
+    if (duplicateEmail) {
+      return res.status(400).json({ message: "Email already exists within the company." });
+    }
+
+    // Update the User record with normalized values.
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        username: normalizedUsername,
+        email: normalizedEmail,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Update (or create if missing) the UserProfile record.
+    const updatedProfile = await prisma.userProfile.upsert({
+      where: { userId },
+      update: {
+        firstName,
+        lastName,
+        phoneNumber,
+        updatedAt: new Date(),
+        email: normalizedEmail,
+        username: normalizedUsername,
+      },
+      create: {
+        userId,
+        firstName,
+        lastName,
+        phoneNumber,
+        email: normalizedEmail,
+        username: normalizedUsername,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      data: { user: updatedUser, profile: updatedProfile },
+    });
+  } catch (error) {
+    console.error("Error in updateProfile:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+/**
+ * PUT /api/account/change-password
+ * Changes the user's password.
+ * Expected payload: { oldPassword, newPassword, confirmPassword }
+ */
+const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "All password fields are required." });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "New password and confirmation do not match." });
+    }
+    const { id: userId } = req.user;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Old password is incorrect." });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword, updatedAt: new Date() },
+    });
+    return res.status(200).json({ message: "Password changed successfully." });
+  } catch (error) {
+    console.error("Error in changePassword:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   getUserEmail,
-  getUserProfile,
   signIn,
+  getUserProfile,
+  updateProfile,
+  changePassword,
   signOut,
 };

@@ -5,7 +5,6 @@ import { View, Text, ActivityIndicator, Alert, Pressable, RefreshControl, Scroll
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useThemeStore from "../../../../store/themeStore";
-import useUserStore from "../../../../store/userStore";
 import useSubscriptionStore from "../../../../store/subscriptionStore";
 import useCompanyStore from "../../../../store/companyStore";
 import * as SecureStore from "expo-secure-store";
@@ -16,10 +15,8 @@ const Subscriptions = () => {
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
   const accentColor = isLightTheme ? "#c2410c" : "#f97316";
-  const { user } = useUserStore();
   const { allSubscriptions, loadingAll, fetchAllSubscriptions } = useSubscriptionStore();
   const { fetchCompanyUserCount, companyUserCounts } = useCompanyStore();
-
   const [token, setToken] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 

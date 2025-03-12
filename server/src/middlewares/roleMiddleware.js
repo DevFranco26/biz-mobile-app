@@ -1,5 +1,6 @@
-// File: src/middlewares/roleMiddleware.js
-const { prisma } = require("@config/database");
+// src/middlewares/roleMiddleware.js
+
+const { prisma } = require("@config/connection");
 
 function authorizeRoles(...allowedRoles) {
   return async (req, res, next) => {

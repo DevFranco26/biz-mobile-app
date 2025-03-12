@@ -1,9 +1,5 @@
-// File: src/middlewares/errorHandler.js
-/**
- * Global Error Handler
- * ---------------------
- * Catches unhandled errors and returns a JSON response.
- */
+// src/middlewares/errorHandler.js
+
 function errorHandler(err, req, res, next) {
   console.error("Unhandled Error:", err);
   const status = err.status || 500;

@@ -1,7 +1,7 @@
-// File: src/routes/Features/timeLogRoutes.js
+// src/routes/Features/timeLogRoutes.js
+
 const express = require("express");
 const router = express.Router();
-const bodyParser = require("body-parser");
 const authenticate = require("@middlewares/authMiddleware");
 const {
   timeIn,
@@ -13,20 +13,12 @@ const {
   lunchBreakToggle,
 } = require("@controllers/Features/timeLogController");
 
-// All routes require authentication
-router.use(authenticate);
-
-// Record time in and out
-router.post("/time-in", timeIn);
-router.post("/time-out", timeOut);
-
-// Toggle coffee and lunch breaks
-router.post("/coffee-break", coffeeBreakToggle);
-router.post("/lunch-break", lunchBreakToggle);
-
-// Fetch logs
-router.get("/monthly", getMonthlyLogs);
-router.get("/range", getRangeLogs);
-router.get("/employee/:employeeId", getUserTimeLog);
+router.post("/time-in", authenticate, timeIn);
+router.post("/time-out", authenticate, timeOut);
+router.post("/coffee-break", authenticate, coffeeBreakToggle);
+router.post("/lunch-break", authenticate, lunchBreakToggle);
+router.get("/monthly", authenticate, getMonthlyLogs);
+router.get("/range", authenticate, getRangeLogs);
+router.get("/employee/:employeeId", authenticate, getUserTimeLog);
 
 module.exports = router;

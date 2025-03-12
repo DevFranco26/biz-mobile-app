@@ -2,12 +2,12 @@
 
 import React, { useEffect } from "react";
 import { ActivityIndicator, View, Text, Pressable } from "react-native";
-import useUserStore from "../../../store/userStore";
+import useAuthStore from "../../../store/useAuthStore";
 import { useRouter } from "expo-router";
 import Settings from "./settings";
 
 const SettingsIndex = () => {
-  const { user, loading, error, loadUser } = useUserStore();
+  const { user, loading, error, loadUser } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {

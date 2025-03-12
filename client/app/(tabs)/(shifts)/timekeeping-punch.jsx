@@ -12,13 +12,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import NetInfo from "@react-native-community/netinfo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useUserStore from "../../../store/userStore";
+import useAuthStore from "../../../store/useAuthStore";
 import useThemeStore from "../../../store/themeStore";
 import useSubscriptionStore from "../../../store/subscriptionStore";
 import * as LocalAuthentication from "expo-local-authentication";
 
 const Punch = () => {
-  const { user } = useUserStore();
+  const { user } = useAuthStore();
   const { theme } = useThemeStore();
   const isLightTheme = theme === "light";
   const insets = useSafeAreaInsets();

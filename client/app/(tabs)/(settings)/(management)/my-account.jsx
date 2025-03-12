@@ -6,13 +6,13 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
 import useThemeStore from "../../../../store/themeStore";
-import useUserStore from "../../../../store/userStore";
+import useAuthStore from "../../../../store/useAuthStore";
 import { API_BASE_URL } from "../../../../config/constant";
 
 const MyAccount = () => {
   const router = useRouter();
   const { theme } = useThemeStore();
-  const { user, clearUser } = useUserStore(); // Fix: Use correct function
+  const { user, clearUser } = useAuthStore(); // Fix: Use correct function
   const isLightTheme = theme === "light";
 
   const [token, setToken] = useState(null);

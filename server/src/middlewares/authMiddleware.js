@@ -1,11 +1,7 @@
-// File: src/middlewares/authMiddleware.js
-/**
- * Auth Middleware
- * ----------------
- * Verifies the JWT token from the Authorization header and attaches the authenticated user's data to req.user.
- */
+// src/middlewares/authMiddleware.js
+
 const jwt = require("jsonwebtoken");
-const { prisma } = require("@config/database");
+const { prisma } = require("@config/connection");
 const { JWT_SECRET } = require("@config/env");
 
 async function authenticateToken(req, res, next) {

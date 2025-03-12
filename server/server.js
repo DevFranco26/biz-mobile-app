@@ -1,11 +1,11 @@
-// File: server.js
+// server.js
 
 require("module-alias/register");
 const dotenv = require("dotenv");
 dotenv.config();
 
 const app = require("./app.js");
-const { connect } = require("./src/config/database.js");
+const { connect } = require("@config/connection");
 const router = require("@routes/index.js");
 const errorHandler = require("@middlewares/errorHandler");
 

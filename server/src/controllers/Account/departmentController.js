@@ -1,10 +1,7 @@
-const { prisma } = require("@config/database");
+// src/controllers/Account/departmentController.js
 
-/**
- * POST /api/departments/create
- * Creates a new department.
- * Validates: trims and lowercases the name and checks duplicates.
- */
+const { prisma } = require("@config/connection");
+
 const createDepartment = async (req, res) => {
   try {
     let { name, supervisorId } = req.body;

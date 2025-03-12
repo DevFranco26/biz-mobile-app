@@ -1,10 +1,7 @@
-// File: src/controllers/Features/payrollController.js
-const { prisma } = require("@config/database");
+// src/controllers/Features/payrollController.js
 
-/**
- * GET /api/features/payroll/my-records
- * Description: Retrieves payroll records for the authenticated user.
- */
+const { prisma } = require("@config/connection");
+
 const getMyPayrollRecords = async (req, res) => {
   try {
     const records = await prisma.payrollRecords.findMany({
@@ -18,10 +15,6 @@ const getMyPayrollRecords = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/payroll/all-records
- * Description: Retrieves all payroll records for the authenticated user's company.
- */
 const getAllPayrollRecords = async (req, res) => {
   try {
     const records = await prisma.payrollRecords.findMany({
@@ -36,10 +29,6 @@ const getAllPayrollRecords = async (req, res) => {
   }
 };
 
-/**
- * POST /api/features/payroll/pay-rate/:userId
- * Description: Creates or updates a user's pay rate.
- */
 const createOrUpdatePayRate = async (req, res) => {
   try {
     const userId = Number(req.params.userId);
@@ -69,10 +58,6 @@ const createOrUpdatePayRate = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/features/payroll/settings
- * Description: Updates payroll settings for the company.
- */
 const updatePayrollSettings = async (req, res) => {
   try {
     const companyId = req.user.companyId;
@@ -104,10 +89,6 @@ const updatePayrollSettings = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/payroll/settings
- * Description: Retrieves payroll settings for the authenticated user's company.
- */
 const getPayrollSettings = async (req, res) => {
   try {
     const settings = await prisma.payrollSettings.findUnique({ where: { companyId: req.user.companyId } });
@@ -121,10 +102,6 @@ const getPayrollSettings = async (req, res) => {
   }
 };
 
-/**
- * POST /api/features/payroll/calculate
- * Description: Calculates payroll for a user over a specified date range.
- */
 const calculatePayrollForUser = async (req, res) => {
   try {
     const { userId, startDate, endDate } = req.body;
@@ -206,10 +183,6 @@ const calculatePayrollForUser = async (req, res) => {
   }
 };
 
-/**
- * GET /api/features/payroll/pdf/:recordId
- * Description: Retrieves a payroll record for PDF generation.
- */
 const generatePayrollPDF = async (req, res) => {
   try {
     const recordId = Number(req.params.recordId);

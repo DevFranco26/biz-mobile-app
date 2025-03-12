@@ -9,6 +9,9 @@
     "seed": "node prisma/seed.js",
     "migrate": "npx prisma migrate dev --name update-payment-model"
   },
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

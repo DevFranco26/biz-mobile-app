@@ -16,14 +16,13 @@ import {
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import useThemeStore from "../../../store/themeStore";
-import useUserStore from "../../../store/userStore";
 import axios from "axios";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, startOfDay, endOfDay } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import DropDownPicker from "react-native-dropdown-picker";
 import { API_BASE_URL } from "../../../config/constant";
-import { formatTime, formatTotalDuration } from "../../../utils/timeUtils";
+import { formatTotalDuration } from "../../../utils/timeUtils";
 
 function decimalHoursToHHMM(decimalVal) {
   if (!decimalVal && decimalVal !== 0) return "0h 00m";

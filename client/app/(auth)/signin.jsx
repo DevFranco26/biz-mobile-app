@@ -1,395 +1,538 @@
-// File: app/(auth)/signin.jsx
-
-"use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
-  Pressable,
-  Alert,
+  ActivityIndicator,
+  Switch,
+  TouchableOpacity,
+  Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-  ActivityIndicator,
-  Linking,
   Image,
-  Animated,
-  StatusBar,
+  StyleSheet,
   SafeAreaView,
-  Switch,
+  Dimensions,
 } from "react-native";
-import { Formik } from "formik";
-import * as Yup from "yup";
-import * as SecureStore from "expo-secure-store";
-import useThemeStore from "../../store/themeStore";
-import useUserStore from "../../store/userStore";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { API_BASE_URL, VERSION, WEBSITE_URL } from "../../config/constant";
+import useAuthStore from "../../store/useAuthStore";
+import { API_BASE_URL, VERSION } from "../../config/constant";
 import * as LocalAuthentication from "expo-local-authentication";
-import { useFocusEffect } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 
-// Validation schema with more helpful error messages
-const SigninSchema = Yup.object().shape({
-  email: Yup.string().email("Please enter a valid email address").required("Email address is required"),
-  password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
-});
+const { width } = Dimensions.get("window");
 
-export default function Login() {
-  const { theme } = useThemeStore();
-  const { setUser } = useUserStore();
-  const isLightTheme = theme === "light";
+export default function SignIn() {
   const router = useRouter();
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const { login } = useAuthStore();
+
+  const [step, setStep] = useState(1);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [users, setUsers] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [savePassword, setSavePassword] = useState(false);
 
-  // Animation values for the main content
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(50))[0];
+  // For biometric authentication
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [savedToken, setSavedToken] = useState(null);
 
-  // Animation value for the logo section
-  const logoOpacity = useRef(new Animated.Value(1)).current;
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const descriptionOpacity = useRef(new Animated.Value(1)).current;
+  const formAnim = useRef(new Animated.Value(0)).current;
+  const formSlideAnim = useRef(new Animated.Value(30)).current;
 
-  // Load saved credentials (if the user has opted in) to prefill the form
-  const [savedCredentials, setSavedCredentials] = useState({ email: "", password: "" });
+  // Button animation
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Error animation
+  const errorAnim = useRef(new Animated.Value(0)).current;
+  const errorShake = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    const loadSavedCredentials = async () => {
-      const savedEmail = await SecureStore.getItemAsync("savedEmail");
-      const savedPassword = await SecureStore.getItemAsync("savedPassword");
-      if (savedEmail && savedPassword) {
-        setSavedCredentials({ email: savedEmail, password: savedPassword });
-      }
-    };
-    loadSavedCredentials();
-  }, []);
+    // Initial animations
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(formAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(formSlideAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
-  // Check if biometric authentication is available
-  useEffect(() => {
     const checkBiometric = async () => {
       try {
-        const hasBiometricHardware = await LocalAuthentication.hasHardwareAsync();
-        const isBiometricEnrolled = await LocalAuthentication.isEnrolledAsync();
-        setBiometricAvailable(hasBiometricHardware && isBiometricEnrolled);
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (hasHardware && isEnrolled) {
+          setBiometricAvailable(true);
+        }
       } catch (error) {
-        console.log("Biometric check error:", error);
-        setBiometricAvailable(false);
+        console.error("Error checking biometrics:", error);
       }
+    };
+
+    const getToken = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      setSavedToken(token);
     };
 
     checkBiometric();
+    getToken();
 
-    // Keyboard listeners with animations for the logo only
+    // Keyboard listeners
     const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
       setKeyboardVisible(true);
-      Animated.timing(logoOpacity, {
+      // Only animate description out
+      Animated.timing(descriptionOpacity, {
         toValue: 0,
-        duration: 250,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     });
-
     const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
       setKeyboardVisible(false);
-      Animated.timing(logoOpacity, {
+      // Animate description in
+      Animated.timing(descriptionOpacity, {
         toValue: 1,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     });
 
-    // Entrance animation for the whole form
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
+    // Clean up listeners
     return () => {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, []);
+  }, [fadeAnim, descriptionOpacity, formAnim, formSlideAnim]);
 
-  // Reset form when screen is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      return () => {
-        setIsLoading(false);
-      };
-    }, [])
-  );
-
-  const handleBiometricAuth = async (handleSubmit, values) => {
-    try {
-      const biometricResult = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Authenticate to sign in",
-        fallbackEnabled: true,
-        fallbackTitle: "Use Password",
-        cancelLabel: "Cancel",
-        disableDeviceFallback: false,
-      });
-
-      if (biometricResult.success) {
-        // Use saved credentials if available; otherwise, use the current form values.
-        const credentials = savedCredentials.email && savedCredentials.password ? savedCredentials : values;
-        handleSignin(credentials);
-      }
-    } catch (error) {
-      Alert.alert("Authentication Error", "There was a problem with biometric authentication. Please try again or use your password.", [{ text: "OK" }]);
-    }
-  };
-
-  const handleSignin = async (values) => {
-    setIsLoading(true);
-    const { email, password } = values;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/sign-in`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.token && data.user) {
-          // Success animation
-          Animated.sequence([
-            Animated.timing(fadeAnim, {
-              toValue: 0.5,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(fadeAnim, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-          ]).start();
-
-          await SecureStore.setItemAsync("token", data.token);
-          await SecureStore.setItemAsync("user", JSON.stringify(data.user));
-
-          // Save credentials if the switch is toggled
-          if (savePassword) {
-            await SecureStore.setItemAsync("savedEmail", email);
-            await SecureStore.setItemAsync("savedPassword", password);
-          }
-
-          setUser(data.user);
-          router.replace("(tabs)/profile");
-        } else {
-          Alert.alert("Sign In Error", "Missing authentication data. Please try again.", [{ text: "OK" }]);
-        }
-      } else {
-        // Error animation and feedback
+  // Error animation
+  useEffect(() => {
+    if (error) {
+      // Shake animation for error
+      Animated.sequence([
+        Animated.timing(errorAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
         Animated.sequence([
-          Animated.timing(slideAnim, {
-            toValue: -10,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
+          Animated.timing(errorShake, {
             toValue: 10,
             duration: 100,
             useNativeDriver: true,
           }),
-          Animated.timing(slideAnim, {
-            toValue: -5,
+          Animated.timing(errorShake, {
+            toValue: -10,
             duration: 100,
             useNativeDriver: true,
           }),
-          Animated.timing(slideAnim, {
-            toValue: 5,
+          Animated.timing(errorShake, {
+            toValue: 10,
             duration: 100,
             useNativeDriver: true,
           }),
-          Animated.timing(slideAnim, {
+          Animated.timing(errorShake, {
             toValue: 0,
             duration: 100,
             useNativeDriver: true,
           }),
-        ]).start();
+        ]),
+      ]).start();
+    } else {
+      // Hide error
+      Animated.timing(errorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [error, errorAnim, errorShake]);
 
-        Alert.alert("Sign In Failed", data.message || "Invalid email or password. Please check your credentials and try again.", [{ text: "OK" }]);
-      }
-    } catch (error) {
-      Alert.alert("Connection Error", "Unable to connect to the server. Please check your internet connection and try again.", [{ text: "OK" }]);
-    } finally {
-      setIsLoading(false);
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleBiometricSignIn = async () => {
+    if (!savedToken) {
+      setError("No saved credentials. Please sign in using email first.");
+      return;
+    }
+
+    animateButtonPress();
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Sign in to BizBuddy",
+      fallbackLabel: "Enter Passcode",
+      disableDeviceFallback: false,
+    });
+
+    if (result.success) {
+      await login(savedToken, true);
+      router.replace("(tabs)/profile");
+    } else {
+      setError("Biometric authentication failed. Please try again.");
     }
   };
 
-  const handleOpenWebsite = () => {
-    Linking.openURL(WEBSITE_URL);
+  const handleEmailSubmit = async () => {
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    animateButtonPress();
+
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/account/get-user-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Email not found.");
+        setLoading(false);
+        return;
+      }
+
+      setUsers(data.data);
+      setStep(2);
+    } catch (err) {
+      console.error("Email submit error:", err);
+      setError("Network error, please try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleSignInWithPassword = async () => {
+    if (!password || !selectedCompanyId) {
+      setError("Please select a company and enter your password.");
+      return;
+    }
+
+    animateButtonPress();
+
+    setLoading(true);
+    setError(null);
+    try {
+      const signInRes = await fetch(
+        `${API_BASE_URL}/api/account/sign-in?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&companyId=${selectedCompanyId}`
+      );
+      const signInData = await signInRes.json();
+      if (!signInRes.ok) {
+        setError(signInData.message || "Invalid credentials.");
+        setLoading(false);
+        return;
+      }
+      const token = signInData.data.token;
+      console.log("Received token:", token);
+
+      await login(token, rememberMe);
+      if (rememberMe) {
+        setSavedToken(token);
+      }
+      router.replace("(tabs)/profile");
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      setError("Something went wrong.");
+    }
+    setLoading(false);
+  };
+
+  const goBackToEmail = () => {
+    setStep(1);
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
-      <StatusBar barStyle={isLightTheme ? "dark-content" : "light-content"} backgroundColor={isLightTheme ? "#ffffff" : "#0f172a"} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className={`flex-1 justify-center items-center px-6 ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
-            <View className="w-full max-w-md">
-              {/* Logo Section */}
-              <Animated.View className={`items-center ${keyboardVisible ? "h-0 mb-0 overflow-hidden" : "h-auto mb-10"}`} style={{ opacity: logoOpacity }}>
-                <View className="flex-row items-center justify-center">
-                  <Image source={require("../../assets/images/icon.png")} className="w-12 h-12 mb-3" resizeMode="contain" />
-                  <Text className="text-5xl font-extrabold text-orange-500">BizBuddy</Text>
-                </View>
-                <Text className={`text-sm mt-2 ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>{VERSION}</Text>
-                <Text className={`text-sm mt-1 ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>Your business management companion</Text>
-              </Animated.View>
+          <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+              <View className="flex-1 justify-center items-center px-5 py-20">
+                {/* Logo/Header - Always visible */}
+                <View className="items-center mb-6">
+                  <View className="flex-row justify-center items-center">
+                    <Image source={require("../../assets/images/icon.png")} style={{ width: 50, height: 50 }} resizeMode="contain" className="mr-3" />
+                    <Text className="text-6xl text-orange-500 font-extrabold">BizBuddy</Text>
+                  </View>
 
-              <Formik
-                initialValues={{ email: savedCredentials.email || "", password: savedCredentials.password || "" }}
-                validationSchema={SigninSchema}
-                onSubmit={handleSignin}
-              >
-                {({ values, handleChange, handleBlur, handleSubmit, errors, touched }) => (
-                  <Animated.View className="w-full" style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-                    {/* Email Field */}
-                    <View className="mb-5 w-full">
-                      <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Email</Text>
-                      <View
-                        className={`flex-row items-center rounded-xl overflow-hidden border h-[52px] ${
-                          touched.email && errors.email ? "border-red-500" : isLightTheme ? "border-slate-100" : "border-slate-800"
-                        }`}
-                      >
-                        <View className={`p-3 h-full justify-center ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
-                          <Ionicons name="mail-outline" size={22} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-                        </View>
-                        <TextInput
-                          className={`flex-1 p-3.5 h-full ${isLightTheme ? "bg-slate-50 text-slate-800" : "bg-slate-800 text-slate-100"}`}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          autoCorrect={false}
-                          value={values.email}
-                          onChangeText={handleChange("email")}
-                          onBlur={handleBlur("email")}
-                          placeholder="Enter your email"
-                          placeholderTextColor={isLightTheme ? "#94a3b8" : "#64748b"}
-                          accessibilityLabel="Email input field"
-                        />
-                      </View>
-                      {touched.email && errors.email && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.email}</Text>}
-                    </View>
-
-                    {/* Password Field */}
-                    <View className="mb-6 w-full">
-                      <Text className={`text-base font-medium mb-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Password</Text>
-                      <View
-                        className={`flex-row items-center rounded-xl overflow-hidden border h-[52px] ${
-                          touched.password && errors.password ? "border-red-500" : isLightTheme ? "border-slate-100" : "border-slate-800"
-                        }`}
-                      >
-                        <View className={`p-3 h-full justify-center ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}>
-                          <Ionicons name="lock-closed-outline" size={22} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-                        </View>
-                        <TextInput
-                          className={`flex-1 p-3.5 h-full ${isLightTheme ? "bg-slate-50 text-slate-800" : "bg-slate-800 text-slate-100"}`}
-                          secureTextEntry={!passwordVisible}
-                          value={values.password}
-                          onChangeText={handleChange("password")}
-                          onBlur={handleBlur("password")}
-                          placeholder="Enter your password"
-                          placeholderTextColor={isLightTheme ? "#94a3b8" : "#64748b"}
-                          accessibilityLabel="Password input field"
-                        />
-                        <Pressable
-                          onPress={() => setPasswordVisible(!passwordVisible)}
-                          className={`h-full px-4 py-4 ${isLightTheme ? "bg-slate-50" : "bg-slate-800"}`}
-                          accessibilityLabel={passwordVisible ? "Hide password" : "Show password"}
-                          accessibilityRole="button"
-                        >
-                          <Ionicons name={passwordVisible ? "eye-off-outline" : "eye-outline"} size={22} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-                        </Pressable>
-                      </View>
-                      {touched.password && errors.password && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.password}</Text>}
-                    </View>
-
-                    {/* Save Password Switch */}
-                    <View className="flex-row items-center justify-between mb-6">
-                      <Text className={`text-base ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>Save Password</Text>
-                      <Switch
-                        trackColor={{
-                          false: isLightTheme ? "#cbd5e1" : "#475569",
-                          true: "#f97316",
-                        }}
-                        thumbColor={isLightTheme ? "#ffffff" : "#e2e8f0"}
-                        ios_backgroundColor={isLightTheme ? "#cbd5e1" : "#475569"}
-                        onValueChange={setSavePassword}
-                        value={savePassword}
-                        accessibilityLabel="Save password toggle"
-                        accessibilityRole="switch"
-                      />
-                    </View>
-
-                    {/* Sign In Button */}
-                    <Pressable
-                      className={`w-full py-4 rounded-xl flex-row justify-center items-center ${isLoading ? "bg-orange-400/70" : "bg-orange-500"}`}
-                      onPress={handleSubmit}
-                      disabled={isLoading}
-                      accessibilityLabel="Sign in button"
-                      accessibilityRole="button"
-                      style={{
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 3 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 4,
-                        elevation: 6,
-                      }}
-                    >
-                      {isLoading ? <ActivityIndicator color="#ffffff" size="small" /> : <Ionicons name="log-in-outline" size={20} color="#ffffff" />}
-                      <Text className="text-white ml-2 font-semibold text-base">Sign In</Text>
-                    </Pressable>
-
-                    {/* Biometric Authentication Button */}
-                    {biometricAvailable && (
-                      <Pressable
-                        className={`w-full py-4 mt-3 rounded-xl flex-row justify-center items-center border ${
-                          isLightTheme ? "border-slate-200" : "border-slate-700"
-                        }`}
-                        onPress={() => handleBiometricAuth(handleSubmit, values)}
-                        disabled={isLoading}
-                        accessibilityLabel="Sign in with biometrics"
-                        accessibilityRole="button"
-                      >
-                        <Ionicons name="finger-print-outline" size={20} color={isLightTheme ? "#1e293b" : "#e2e8f0"} />
-                        <Text className={`ml-2 font-medium text-base ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>Sign In with Biometrics</Text>
-                      </Pressable>
-                    )}
-
-                    {/* Link to website */}
-                    <Pressable onPress={handleOpenWebsite} className="mt-6 self-center p-2" accessibilityLabel="Visit website" accessibilityRole="link">
-                      <Text className={`text-sm text-center ${isLightTheme ? "text-blue-600" : "text-blue-400"}`}>Need help? Visit our website</Text>
-                    </Pressable>
+                  {/* Only the description and version fade out */}
+                  <Animated.View style={{ opacity: descriptionOpacity, alignItems: "center" }}>
+                    <Text className="text-xs mt-2 text-slate-600">{VERSION}</Text>
+                    <Text className="text-slate-600 text-center text-sm mt-1">Your business companion</Text>
                   </Animated.View>
-                )}
-              </Formik>
-            </View>
-          </View>
+                </View>
+
+                {/* Main Form Container */}
+                <Animated.View
+                  style={{
+                    opacity: formAnim,
+                    transform: [{ translateY: formSlideAnim }],
+                    width: "100%",
+                    maxWidth: 400,
+                  }}
+                  className="p-2"
+                >
+                  {/* Step 1: Email Input */}
+                  {step === 1 && (
+                    <View>
+                      <View className="mb-7">
+                        <Text className="mb-3 font-medium text-slate-600">Email</Text>
+                        <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-4 mb-2">
+                          <MaterialCommunityIcons name="email-outline" size={20} color="#f97316" style={{ marginRight: 10 }} />
+                          <TextInput
+                            placeholder="Enter your email"
+                            className="flex-1 text-slate-800"
+                            onChangeText={setEmail}
+                            value={email}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            placeholderTextColor="#9ca3af"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Error Message for Step 1 */}
+                      <Animated.View
+                        style={{
+                          opacity: errorAnim,
+                          transform: [{ translateX: errorShake }],
+                          marginBottom: error ? 20 : 0,
+                        }}
+                      >
+                        {error && (
+                          <View className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <Text className="text-red-600">{error}</Text>
+                          </View>
+                        )}
+                      </Animated.View>
+
+                      {/* Continue Button */}
+                      <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                        <TouchableOpacity
+                          onPress={handleEmailSubmit}
+                          disabled={loading}
+                          className="bg-orange-500 py-4 rounded-xl mt-2"
+                          style={styles.buttonShadow}
+                          activeOpacity={0.8}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <View className="flex-row items-center justify-center">
+                              <Text className="text-white text-center font-semibold text-base mr-2">Continue</Text>
+                              <Ionicons name="arrow-forward" size={18} color="#fff" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+
+                      {/* Biometric button - Moved below Continue button */}
+                      {biometricAvailable && savedToken && (
+                        <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 16 }}>
+                          <TouchableOpacity
+                            onPress={handleBiometricSignIn}
+                            className="flex-row items-center justify-center py-4 px-5 rounded-xl border border-slate-200"
+                            style={styles.buttonShadow}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name="finger-print-outline" size={22} color="#f97316" style={{ marginRight: 8 }} />
+                            <Text className="font-medium text-slate-800">Sign in with biometrics</Text>
+                          </TouchableOpacity>
+                        </Animated.View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Step 2: Company Selection and Password */}
+                  {step === 2 && (
+                    <View>
+                      <View className="flex-row items-center mb-7">
+                        <TouchableOpacity onPress={goBackToEmail} className="mr-4">
+                          <View className="w-10 h-10 rounded-full border border-slate-200 items-center justify-center">
+                            <Ionicons name="arrow-back" size={18} color="#f97316" />
+                          </View>
+                        </TouchableOpacity>
+                        <Text className="text-xl font-bold text-slate-800">Select your company</Text>
+                      </View>
+
+                      <View className="mb-7">
+                        {users.map((user) => (
+                          <TouchableOpacity
+                            key={user.companyId}
+                            onPress={() => setSelectedCompanyId(user.companyId)}
+                            className={`p-4 mb-4 rounded-xl border ${
+                              selectedCompanyId === user.companyId ? "border-orange-500" : "border-slate-200"
+                            } bg-white`}
+                            style={[styles.cardShadow, selectedCompanyId === user.companyId && styles.selectedCardShadow]}
+                            activeOpacity={0.7}
+                          >
+                            <View className="flex-row items-center">
+                              <View
+                                className={`w-12 h-12 rounded-full ${
+                                  selectedCompanyId === user.companyId ? "bg-orange-50" : "bg-slate-100"
+                                } items-center justify-center mr-4`}
+                              >
+                                <FontAwesome5 name="building" size={18} color={selectedCompanyId === user.companyId ? "#f97316" : "#64748b"} />
+                              </View>
+                              <View className="flex-1">
+                                <Text className="font-semibold text-base text-slate-800">{user.companyName}</Text>
+                                <View className="flex-row items-center mt-2">
+                                  <View className={`px-3 py-1 rounded-full ${selectedCompanyId === user.companyId ? "bg-orange-50" : "bg-slate-100"}`}>
+                                    <Text className={`text-xs ${selectedCompanyId === user.companyId ? "text-orange-800" : "text-slate-600"} font-medium`}>
+                                      {user.role}
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                              {selectedCompanyId === user.companyId && (
+                                <View className="w-8 h-8 rounded-full bg-orange-500 items-center justify-center">
+                                  <Ionicons name="checkmark" size={16} color="#fff" />
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+
+                      <View className="mb-7">
+                        <Text className="mb-3 font-medium text-slate-600">Password</Text>
+                        <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-4">
+                          <MaterialCommunityIcons name="lock-outline" size={20} color="#f97316" style={{ marginRight: 10 }} />
+                          <TextInput
+                            secureTextEntry={!showPassword}
+                            placeholder="Enter password"
+                            className="flex-1 text-slate-800"
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholderTextColor="#9ca3af"
+                          />
+                          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                            <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#64748b" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Remember Me switch */}
+                      <View className="flex-row items-center mb-7">
+                        <Switch
+                          value={rememberMe}
+                          onValueChange={setRememberMe}
+                          trackColor={{ false: "#d1d5db", true: "#fdba74" }}
+                          thumbColor={rememberMe ? "#f97316" : "#ffffff"}
+                          ios_backgroundColor="#d1d5db"
+                        />
+                        <Text className="ml-3 text-slate-600">Remember Me</Text>
+                      </View>
+
+                      {/* Error Message for Step 2 */}
+                      <Animated.View
+                        style={{
+                          opacity: errorAnim,
+                          transform: [{ translateX: errorShake }],
+                          marginBottom: error ? 20 : 0,
+                        }}
+                      >
+                        {error && (
+                          <View className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <Text className="text-red-600">{error}</Text>
+                          </View>
+                        )}
+                      </Animated.View>
+
+                      {/* Sign In Button */}
+                      <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                        <TouchableOpacity
+                          onPress={handleSignInWithPassword}
+                          disabled={loading}
+                          className="bg-orange-500 py-4 rounded-xl mt-2"
+                          style={styles.buttonShadow}
+                          activeOpacity={0.8}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <View className="flex-row items-center justify-center">
+                              <Ionicons name="log-in-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                              <Text className="text-white text-center font-semibold text-base">Sign In</Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+                    </View>
+                  )}
+                </Animated.View>
+              </View>
+            </ScrollView>
+          </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  buttonShadow: {
+    shadowColor: "#f97316",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardShadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2.22,
+    elevation: 3,
+  },
+  selectedCardShadow: {
+    shadowColor: "#f97316",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+});
