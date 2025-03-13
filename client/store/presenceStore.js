@@ -1,3 +1,5 @@
+// store/presenceStore.js
+
 import { create } from "zustand";
 
 const usePresenceStore = create((set) => ({

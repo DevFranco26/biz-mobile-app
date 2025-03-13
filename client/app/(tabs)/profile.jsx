@@ -1,12 +1,13 @@
+"use client";
+
 // app/(tabs)/profile.jsx
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
   TextInput,
   ScrollView,
   StyleSheet,
@@ -82,7 +83,14 @@ const Profile = () => {
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Individual button animations for better control
+  const editButtonScale = useRef(new Animated.Value(1)).current;
+  const passButtonScale = useRef(new Animated.Value(1)).current;
+  const signOutButtonScale = useRef(new Animated.Value(1)).current;
+  const saveButtonScale = useRef(new Animated.Value(1)).current;
+  const updatePassButtonScale = useRef(new Animated.Value(1)).current;
+  const confirmSignOutButtonScale = useRef(new Animated.Value(1)).current;
 
   // Modal animations
   const editModalAnim = useRef(new Animated.Value(height)).current;
@@ -293,16 +301,21 @@ const Profile = () => {
     });
   };
 
-  const animateButtonPress = () => {
+  // Enhanced button animation with better bounce
+  const animateButtonPress = (buttonRef) => {
+    // Create a sequence for more natural bounce
     Animated.sequence([
-      Animated.timing(buttonScale, {
-        toValue: 0.95,
-        duration: 100,
+      // First quickly shrink
+      Animated.timing(buttonRef, {
+        toValue: 0.92,
+        duration: 70,
         useNativeDriver: true,
       }),
-      Animated.timing(buttonScale, {
+      // Then bounce back with spring for natural feel
+      Animated.spring(buttonRef, {
         toValue: 1,
-        duration: 100,
+        friction: 3, // Lower friction = more bounce
+        tension: 40, // Lower tension = softer spring
         useNativeDriver: true,
       }),
     ]).start();
@@ -311,7 +324,7 @@ const Profile = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      const currentToken = token || (await SecureStore.getItemAsync("token"));
       if (!currentToken) {
         Alert.alert("Session expired", "Please sign in again.");
         router.replace("(auth)/signin");
@@ -335,7 +348,7 @@ const Profile = () => {
   };
 
   const updatePresenceToOffline = async () => {
-    let currentToken = token || (await SecureStore.getItemAsync("token"));
+    const currentToken = token || (await SecureStore.getItemAsync("token"));
     if (!currentToken) return;
     try {
       await fetch(`${API_BASE_URL}/api/presence`, {
@@ -355,11 +368,11 @@ const Profile = () => {
   };
 
   const handleUpdateProfile = async () => {
-    animateButtonPress();
+    animateButtonPress(saveButtonScale);
     setUpdating(true);
     setUpdateError("");
     try {
-      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      const currentToken = token || (await SecureStore.getItemAsync("token"));
       if (!currentToken) {
         Alert.alert("Session expired", "Please sign in again.");
         router.replace("(auth)/signin");
@@ -397,11 +410,11 @@ const Profile = () => {
   };
 
   const handleChangePassword = async () => {
-    animateButtonPress();
+    animateButtonPress(updatePassButtonScale);
     setPassUpdating(true);
     setPassError("");
     try {
-      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      const currentToken = token || (await SecureStore.getItemAsync("token"));
       if (!currentToken) {
         Alert.alert("Session expired", "Please sign in again.");
         router.replace("(auth)/signin");
@@ -440,10 +453,11 @@ const Profile = () => {
   };
 
   const handleSignOut = async () => {
+    animateButtonPress(confirmSignOutButtonScale);
     setSigningOut(true);
     try {
       await updatePresenceToOffline();
-      let currentToken = token || (await SecureStore.getItemAsync("token"));
+      const currentToken = token || (await SecureStore.getItemAsync("token"));
       const response = await fetch(`${API_BASE_URL}/api/account/sign-out`, {
         method: "POST",
         headers: {
@@ -596,9 +610,12 @@ const Profile = () => {
 
                 {/* Action Buttons */}
                 <View className="mt-4">
-                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <Animated.View style={{ transform: [{ scale: editButtonScale }] }}>
                     <TouchableOpacity
-                      onPress={openEditModal}
+                      onPress={() => {
+                        animateButtonPress(editButtonScale);
+                        setTimeout(openEditModal, 100);
+                      }}
                       className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
                       style={{
                         shadowColor: "#000",
@@ -617,9 +634,12 @@ const Profile = () => {
                     </TouchableOpacity>
                   </Animated.View>
 
-                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <Animated.View style={{ transform: [{ scale: passButtonScale }] }}>
                     <TouchableOpacity
-                      onPress={openPassModal}
+                      onPress={() => {
+                        animateButtonPress(passButtonScale);
+                        setTimeout(openPassModal, 100);
+                      }}
                       className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
                       style={{
                         shadowColor: "#000",
@@ -638,9 +658,12 @@ const Profile = () => {
                     </TouchableOpacity>
                   </Animated.View>
 
-                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <Animated.View style={{ transform: [{ scale: signOutButtonScale }] }}>
                     <TouchableOpacity
-                      onPress={openSignOutModal}
+                      onPress={() => {
+                        animateButtonPress(signOutButtonScale);
+                        setTimeout(openSignOutModal, 100);
+                      }}
                       className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4"
                       style={{
                         shadowColor: "#000",
@@ -758,9 +781,11 @@ const Profile = () => {
                     <TouchableOpacity onPress={closeEditModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
                       <Text className="text-slate-800 font-semibold">Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleUpdateProfile} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
-                      <Text className="text-white font-semibold">Save Changes</Text>
-                    </TouchableOpacity>
+                    <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
+                      <TouchableOpacity onPress={handleUpdateProfile} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
+                        <Text className="text-white font-semibold">Save Changes</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
                 )}
               </View>
@@ -846,9 +871,11 @@ const Profile = () => {
                     <TouchableOpacity onPress={closePassModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
                       <Text className="text-slate-800 font-semibold">Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleChangePassword} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
-                      <Text className="text-white font-semibold">Update Password</Text>
-                    </TouchableOpacity>
+                    <Animated.View style={{ transform: [{ scale: updatePassButtonScale }] }}>
+                      <TouchableOpacity onPress={handleChangePassword} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
+                        <Text className="text-white font-semibold">Update Password</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
                 )}
               </View>
@@ -891,9 +918,11 @@ const Profile = () => {
                   </View>
                 ) : (
                   <>
-                    <TouchableOpacity onPress={handleSignOut} className="bg-orange-500 py-3.5 rounded-xl w-full items-center mb-3" activeOpacity={0.8}>
-                      <Text className="text-white font-bold text-base">Yes, Sign Out</Text>
-                    </TouchableOpacity>
+                    <Animated.View style={{ transform: [{ scale: confirmSignOutButtonScale }] }}>
+                      <TouchableOpacity onPress={handleSignOut} className="bg-orange-500 py-3.5 rounded-xl w-full items-center mb-3" activeOpacity={0.8}>
+                        <Text className="text-white font-bold text-base">Yes, Sign Out</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
 
                     <TouchableOpacity
                       onPress={closeSignOutModal}

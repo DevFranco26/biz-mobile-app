@@ -1,8 +1,8 @@
 // src/controllers/Account/subscriptionController.js
-
 const { prisma } = require("@config/connection");
 const { JWT_SECRET } = require("@config/env");
 const jwt = require("jsonwebtoken");
+const { getIO } = require("@config/socket");
 
 const getCurrentSubscription = async (req, res) => {
   try {
@@ -29,7 +29,6 @@ const getCurrentSubscription = async (req, res) => {
 
 const upgradeSubscription = async (req, res) => {
   try {
-    // Extract and verify the token.
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ message: "Access token missing." });
@@ -62,7 +61,7 @@ const upgradeSubscription = async (req, res) => {
     }
 
     // Deactivate all active subscriptions for the company.
-    const deactivationResult = await prisma.subscription.updateMany({
+    await prisma.subscription.updateMany({
       where: { companyId, active: true },
       data: { active: false, endDate: new Date() },
     });
@@ -84,6 +83,10 @@ const upgradeSubscription = async (req, res) => {
       include: { plan: true },
     });
 
+    // Emit the subscription update event via Socket.IO.
+    const io = getIO();
+    io.emit("subscriptionUpdated", { subscription: newSubscription });
+
     return res.status(201).json({
       message: "Subscription upgraded successfully.",
       data: newSubscription,
@@ -96,7 +99,6 @@ const upgradeSubscription = async (req, res) => {
 
 const cancelCurrentSubscription = async (req, res) => {
   try {
-    // This endpoint can use req.user if available.
     const companyId = req.user.companyId;
     if (!companyId) {
       return res.status(400).json({ message: "No company associated with user." });

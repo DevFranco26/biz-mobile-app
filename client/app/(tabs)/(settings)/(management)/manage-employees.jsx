@@ -1,413 +1,337 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+// File: client/components/Employees.jsx
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
   Alert,
-  Pressable,
-  Modal,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   RefreshControl,
-  Switch,
   ScrollView,
+  Animated,
+  PanResponder,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-
-import useThemeStore from "../../../../store/themeStore";
-import useAuthStore from "../../../../store/useAuthStore";
-import useUsersStore from "../../../../store/usersStore";
-import useLocationsStore from "../../../../store/locationsStore";
-import useSubscriptionStore from "../../../../store/subscriptionStore";
-import useCompanyStore from "../../../../store/companyStore";
-
+import DropDownPicker from "react-native-dropdown-picker";
 import { API_BASE_URL } from "../../../../config/constant";
 
-// Utility Functions
-const getMaxUsersFromRange = (rangeOfUsers) => {
-  if (!rangeOfUsers || typeof rangeOfUsers !== "string") {
-    return 999999;
-  }
-  if (rangeOfUsers.includes("+")) {
-    return 999999;
-  }
-  if (rangeOfUsers.includes("-")) {
-    const parts = rangeOfUsers.split("-");
-    if (parts.length === 2) {
-      const maxPart = parts[1].trim();
-      const parsedMax = parseInt(maxPart, 10);
-      return isNaN(parsedMax) ? 999999 : parsedMax;
-    }
-  }
-  const singleVal = parseInt(rangeOfUsers, 10);
-  return isNaN(singleVal) ? 999999 : singleVal;
-};
+// Get screen dimensions for modal sizing
+const { height } = Dimensions.get("window");
 
-const capitalizeFirstLetter = (string) => {
-  if (!string) return "";
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
-
-const getRoleColor = (role) => {
-  switch (role.toLowerCase()) {
-    case "admin":
-      return "#ef4444";
-    case "supervisor":
-      return "#10b981";
-    case "user":
-    default:
-      return "#3b82f6";
-  }
-};
-
-const getRoleIcon = (role) => {
-  switch (role.toLowerCase()) {
-    case "admin":
-      return "shield-checkmark-outline";
-    case "supervisor":
-      return "briefcase-outline";
-    case "user":
-    default:
-      return "person-outline";
-  }
-};
-
-const getPresenceIconInfo = (presenceStatus) => {
-  switch (presenceStatus) {
-    case "active":
-      return { icon: "ellipse", color: "#10b981" };
-    case "away":
-      return { icon: "ellipse", color: "#f97316" };
-    case "offline":
-    default:
-      return { icon: "ellipse-outline", color: "#d1d5db" };
-  }
-};
-
-// Custom Radio Button Component with nativewind
-const RadioButton = ({ label, value, selected, onPress, isLightTheme }) => {
-  return (
-    <TouchableOpacity className="flex-row items-center mb-3" onPress={() => onPress(value)}>
-      <View className={`h-5 w-5 rounded-full border-2 mr-2 flex items-center justify-center ${selected ? "border-orange-500" : "border-slate-400"}`}>
-        {selected && <View className={`h-2.5 w-2.5 rounded-full ${selected ? "bg-orange-500" : ""}`} />}
-      </View>
-      <Text className={`${isLightTheme ? "text-slate-800" : "text-slate-300"} text-base`}>{label}</Text>
-    </TouchableOpacity>
-  );
+// Define consistent colors
+const COLORS = {
+  primary: "#f97316", // orange-500
+  primaryLight: "#ffedd5", // orange-50
+  primaryDark: "#c2410c", // orange-700
+  text: "#1e293b", // slate-800
+  textSecondary: "#64748b", // slate-500
+  textLight: "#94a3b8", // slate-400
+  border: "#e2e8f0", // slate-200
+  white: "#ffffff",
+  background: "#ffffff",
+  error: "#ef4444", // red-500
+  success: "#10b981", // emerald-500
+  card: "#f1f5f9", // slate-100
 };
 
 const Employees = () => {
   const router = useRouter();
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === "light";
-  const { user } = useAuthStore();
-  const { currentSubscription } = useSubscriptionStore();
-  const { users, loading, fetchUsers } = useUsersStore();
-  const { locations, fetchLocations } = useLocationsStore();
-  const { companyUserCounts, fetchCompanyUserCount } = useCompanyStore();
-  const [userSettingsByUserId, setUserSettingsByUserId] = useState({});
-  const [editUserModalVisible, setEditUserModalVisible] = useState(false);
-  const [userSettingsModalVisible, setUserSettingsModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [token, setToken] = useState(null);
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editMiddleName, setEditMiddleName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editRole, setEditRole] = useState("user"); // Default role
-  const [editEmail, setEditEmail] = useState("");
-  const [editPassword, setEditPassword] = useState("");
-  const [editStatus, setEditStatus] = useState(false);
-  const [restrictionEnabled, setRestrictionEnabled] = useState(false);
-  const [selectedLocationId, setSelectedLocationId] = useState(null);
-  const [userSettingsLoading, setUserSettingsLoading] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [locationItems, setLocationItems] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [companyDepartments, setCompanyDepartments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+  // Modal state for Create/Edit Employee
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  // Form state for employee fields
+  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("employee");
+  const [departmentId, setDepartmentId] = useState("");
+
+  // Dropdown state for role selection
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [roleItems, setRoleItems] = useState([
+    { label: "Employee", value: "employee" },
+    { label: "Supervisor", value: "supervisor" },
+    { label: "Admin", value: "admin" },
+  ]);
+
+  // Dropdown state for department selection
+  const [deptOpen, setDeptOpen] = useState(false);
+  const [deptItems, setDeptItems] = useState([]);
+
+  // Animation values
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(20)).current;
+  const buttonScale = React.useRef(new Animated.Value(1)).current;
+  const modalY = React.useRef(new Animated.Value(Platform.OS === "ios" ? 700 : 500)).current;
+  const modalBgAnim = useRef(new Animated.Value(0)).current;
+  const deleteButtonScale = useRef(new Animated.Value(1)).current;
+  const cancelButtonScale = useRef(new Animated.Value(1)).current;
+
+  // Password validation function: at least 1 uppercase, 1 number, 1 symbol, min 6 characters
+  const validatePassword = (pwd) => {
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/;
+    return regex.test(pwd);
+  };
+
+  // Add PanResponder for the edit modal
+  const modalPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to vertical gestures
+        return Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Allow dragging down to close or up to expand
+        if (gestureState.dy > 0) {
+          // Dragging down - follow finger
+          modalY.setValue(gestureState.dy);
+        } else if (gestureState.dy < 0) {
+          // Dragging up - expand modal (limit how far it can go up)
+          const newPosition = Math.max(gestureState.dy, -300); // Limit upward movement
+          modalY.setValue(newPosition);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // If dragged down more than 100, close the modal
+          closeModal();
+        } else if (gestureState.dy < -50) {
+          // If dragged up more than 50, expand to full screen
+          Animated.spring(modalY, {
+            toValue: -300, // Expanded position
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }).start();
+        } else {
+          // Otherwise snap back to original position
+          Animated.spring(modalY, {
+            toValue: 0,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
+    // Initial animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     const initialize = async () => {
       const storedToken = await SecureStore.getItemAsync("token");
-      if (storedToken) {
-        setToken(storedToken);
-        await fetchUsers(storedToken);
-        await fetchLocations(storedToken);
-        if (user?.companyId) {
-          await fetchCompanyUserCount(storedToken, user.companyId);
-        }
-      } else {
+      if (!storedToken) {
         Alert.alert("Authentication Error", "Please sign in again.");
-        router.replace("(auth)/login-user");
+        router.replace("(auth)/signin");
+        return;
       }
+      setToken(storedToken);
+      await fetchEmployees(storedToken);
+      await fetchCompanyDepartments(storedToken);
     };
     initialize();
-  }, [user?.companyId]);
+  }, []);
 
-  useEffect(() => {
-    const fetchSettingsIfNeeded = async () => {
-      if (token && users.length > 0) {
-        await fetchAllUserSettings(token);
-      }
-    };
-    fetchSettingsIfNeeded();
-  }, [users, token]);
-
-  useEffect(() => {
-    if (locations.length > 0) {
-      const formattedLocations = locations.map((loc) => ({
-        label: loc.label,
-        value: loc.id,
-      }));
-      setLocationItems(formattedLocations);
-    } else {
-      setLocationItems([]);
-    }
-  }, [locations]);
-
-  const onRefresh = async () => {
-    if (token) {
-      setRefreshing(true);
-      await fetchUsers(token);
-      await fetchLocations(token);
-      if (user?.companyId) {
-        await fetchCompanyUserCount(token, user.companyId);
-      }
-      await fetchAllUserSettings(token);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchAllUserSettings = async (authToken) => {
-    if (!authToken) return;
-    const results = {};
-    for (let u of users) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${u.id}`, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
-        const data = await res.json();
-        if (res.ok && data.data && data.data.length > 0) {
-          const setting = data.data[0];
-          results[u.id] = {
-            restrictionEnabled: setting.restrictionEnabled,
-            locationLabel: setting.location?.label || "-",
-          };
-        } else {
-          results[u.id] = {
-            restrictionEnabled: false,
-            locationLabel: "-",
-          };
-        }
-      } catch (err) {
-        console.error("Error fetching user settings:", err);
-        results[u.id] = { restrictionEnabled: false, locationLabel: "-" };
-      }
-    }
-    setUserSettingsByUserId(results);
-  };
-
-  const handleEditUser = (userObj) => {
-    setSelectedUser(userObj);
-    setEditFirstName(userObj.firstName || "");
-    setEditMiddleName(userObj.middleName || "");
-    setEditLastName(userObj.lastName || "");
-    setEditPhone(userObj.phone || "");
-    setEditRole(userObj.role.toLowerCase()); // Ensure role is in lowercase
-    setEditEmail(userObj.email || "");
-    setEditPassword("");
-    setEditStatus(userObj.status || false);
-    setEditUserModalVisible(true);
-  };
-
-  const handleAddUser = () => {
-    const rangeStr = currentSubscription?.plan?.rangeOfUsers || "";
-    const maxUsers = getMaxUsersFromRange(rangeStr);
-    const userCount = companyUserCounts[user?.companyId] || 0;
-    if (userCount >= maxUsers) {
-      Alert.alert(
-        "User Limit Reached",
-        `Your current subscription plan only allows up to ${maxUsers} users.\n\n` +
-          `You already have ${userCount} user(s) in your company.\n\n` +
-          `Please upgrade your subscription to add more users.`
-      );
-      return;
-    }
-    setSelectedUser(null);
-    setEditFirstName("");
-    setEditMiddleName("");
-    setEditLastName("");
-    setEditPhone("");
-    setEditRole("user");
-    setEditEmail("");
-    setEditPassword("");
-    setEditStatus(false);
-    setEditUserModalVisible(true);
-  };
-
-  const handleSaveUserEdits = async () => {
-    console.log("Current editRole:", editRole); // Debugging statement
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
-      return;
-    }
-    if (!editEmail || !editFirstName || !editLastName || !editPhone || !editRole) {
-      Alert.alert("Validation Error", "Please fill in all required fields marked with *.");
-      return;
-    }
-    if (!selectedUser && !editPassword) {
-      Alert.alert("Validation Error", "Password is required for new users.");
-      return;
-    }
-
-    const payload = {
-      email: editEmail,
-      role: editRole, // Ensure role is sent
-      firstName: editFirstName,
-      middleName: editMiddleName,
-      lastName: editLastName,
-      phone: editPhone,
-      status: editStatus,
-    };
-    if (editPassword) {
-      payload.password = editPassword;
-    }
-
+  const fetchEmployees = async (authToken) => {
+    setLoading(true);
     try {
-      let res, data;
-      if (selectedUser) {
-        res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        data = await res.json();
-      } else {
-        res = await fetch(`${API_BASE_URL}/users`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        data = await res.json();
-      }
-      if (res.ok) {
-        Alert.alert("Success", selectedUser ? "User updated successfully." : "User created successfully.");
-        setEditUserModalVisible(false);
-        await fetchUsers(token);
-        if (user?.companyId) {
-          await fetchCompanyUserCount(token, user.companyId);
-        }
-        await fetchAllUserSettings(token);
-      } else {
-        Alert.alert("Error", data.message || "Failed to save user.");
-      }
-    } catch (err) {
-      console.error("Error saving user:", err);
-      Alert.alert("Error", "An unexpected error occurred.");
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
-      return;
-    }
-    Alert.alert("Confirm Deletion", "Are you sure you want to delete this user?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (res.ok) {
-              Alert.alert("Success", "User deleted successfully.");
-              await fetchUsers(token);
-              if (user?.companyId) {
-                await fetchCompanyUserCount(token, user.companyId);
-              }
-              await fetchAllUserSettings(token);
-            } else {
-              Alert.alert("Error", data.message || "Failed to delete user.");
-            }
-          } catch (err) {
-            console.error("Error deleting user:", err);
-            Alert.alert("Error", "An unexpected error occurred.");
-          }
-        },
-      },
-    ]);
-  };
-
-  const openUserSettingsModal = async (userObj) => {
-    setUserSettingsLoading(true);
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/all?userId=${userObj.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_BASE_URL}/api/employee`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       const data = await res.json();
-      if (res.ok && data.data && data.data.length > 0) {
-        const setting = data.data[0];
-        setRestrictionEnabled(setting.restrictionEnabled);
-        setSelectedLocationId(setting.locationId);
+      if (res.ok && data.data) {
+        setEmployees(data.data);
       } else {
-        setRestrictionEnabled(false);
-        setSelectedLocationId(null);
+        Alert.alert("Error", data.error || "Failed to fetch employees.");
       }
-    } catch (err) {
-      console.error("Error fetching user settings:", err);
-      Alert.alert("Error", "Could not load user settings.");
-      setRestrictionEnabled(false);
-      setSelectedLocationId(null);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      Alert.alert("Error", "An unexpected error occurred while fetching employees.");
     }
-    setUserSettingsLoading(false);
-    setSelectedUser(userObj);
-    setUserSettingsModalVisible(true);
+    setLoading(false);
   };
 
-  const handleSaveUserSettings = async () => {
-    if (!selectedUser) return;
-    if (!token) {
-      Alert.alert("Authentication Error", "Please sign in again.");
-      router.replace("(auth)/login-user");
-      return;
-    }
-    if (restrictionEnabled && !selectedLocationId) {
-      Alert.alert("Validation Error", "Please select a location if restriction is enabled.");
-      return;
-    }
-    const payload = {
-      userId: selectedUser.id,
-      restrictionEnabled,
-      locationId: restrictionEnabled ? selectedLocationId : null,
-    };
+  const fetchCompanyDepartments = async (authToken) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/usersettings/assign`, {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/api/departments`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        setCompanyDepartments(data.data);
+        const items = data.data.map((dept) => ({
+          label: dept.name,
+          value: dept.id,
+        }));
+        setDeptItems(items);
+      } else {
+        Alert.alert("Error", data.error || "Failed to fetch departments.");
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      Alert.alert("Error", "An unexpected error occurred while fetching departments.");
+    }
+    setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    if (!token) return;
+    setRefreshing(true);
+    await fetchEmployees(token);
+    await fetchCompanyDepartments(token);
+    setRefreshing(false);
+  };
+
+  const animateButtonPress = (scale) => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 0.95,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const openEditModal = (employee) => {
+    if (employee) {
+      setSelectedEmployee(employee);
+      setUsername(employee.username || "");
+      setFirstName(employee.profile.firstName || "");
+      setLastName(employee.profile.lastName || "");
+      setEmail(employee.email || "");
+      setRole(employee.role || "employee");
+      setDepartmentId(employee.department ? employee.department.id : "");
+      setPassword(""); // leave blank to keep current password
+    } else {
+      setSelectedEmployee(null);
+      setUsername("");
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setRole("employee");
+      setDepartmentId("");
+      setPassword("");
+    }
+
+    setShowDeleteConfirmation(false);
+
+    // Reset position before animation
+    modalY.setValue(Platform.OS === "ios" ? 700 : 500);
+    setEditModalVisible(true);
+
+    // Animate modal sliding up and background fading in
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modalY, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalY, {
+        toValue: Platform.OS === "ios" ? 700 : 500,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setEditModalVisible(false);
+      setShowDeleteConfirmation(false);
+    });
+  };
+
+  const handleSaveEmployee = async () => {
+    // Basic validations
+    if (!username.trim() || !email.trim() || !firstName.trim() || !lastName.trim()) {
+      Alert.alert("Validation Error", "Username, Email, First Name, and Last Name are required.");
+      return;
+    }
+    // If creating a new employee or changing password, validate it
+    if (!selectedEmployee || password) {
+      if (!validatePassword(password)) {
+        Alert.alert(
+          "Validation Error",
+          "Password must be at least 6 characters long and include at least one uppercase letter, one number, and one symbol."
+        );
+        return;
+      }
+    }
+    if (!token) return;
+    try {
+      let url, method;
+      const payload = {
+        username: username.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role,
+        departmentId: departmentId || null,
+      };
+      if (password) {
+        payload.password = password;
+      }
+      if (!selectedEmployee) {
+        url = `${API_BASE_URL}/api/employee`;
+        method = "POST";
+      } else {
+        url = `${API_BASE_URL}/api/employee/${selectedEmployee.id}`;
+        method = "PUT";
+      }
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -416,340 +340,382 @@ const Employees = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        Alert.alert("Success", restrictionEnabled ? "User settings updated successfully." : "User settings disabled successfully.");
-        setUserSettingsModalVisible(false);
-        await fetchAllUserSettings(token);
+        Alert.alert("Success", selectedEmployee ? "Employee updated successfully." : "Employee created successfully.");
+        closeModal();
+        fetchEmployees(token);
       } else {
-        Alert.alert("Error", data.message || "Failed to update user settings.");
+        Alert.alert("Error", data.error || "Failed to save employee.");
       }
-    } catch (err) {
-      console.error("Error updating user settings:", err);
+    } catch (error) {
+      console.error("Error saving employee:", error);
       Alert.alert("Error", "An unexpected error occurred.");
     }
   };
 
-  // Updated handleUserAction to remove 'Location Restriction'
-  const handleUserAction = (userObj) => {
-    Alert.alert("User Actions", `Choose an action for "${userObj.firstName} ${userObj.lastName}".`, [
-      { text: "Edit", onPress: () => handleEditUser(userObj) },
-      { text: "Delete", onPress: () => handleDeleteUser(userObj.id) },
-      { text: "Cancel", style: "cancel" },
-    ]);
+  const handleDeleteEmployee = async () => {
+    if (!selectedEmployee || !token) return;
+
+    try {
+      setDeleting(true);
+      const res = await fetch(`${API_BASE_URL}/api/employee/${selectedEmployee.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        Alert.alert("Success", data.message || "Employee deleted successfully.");
+        fetchEmployees(token);
+      } else {
+        Alert.alert("Error", data.error || "Failed to delete employee.");
+      }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      Alert.alert("Error", "An unexpected error occurred.");
+    } finally {
+      setDeleting(false);
+      closeModal();
+    }
   };
 
-  //
-  const renderItem = ({ item }) => {
-    const userSettings = userSettingsByUserId[item.id];
-    const restrictionText = userSettings?.restrictionEnabled ? userSettings.locationLabel : null;
-    const { icon: presenceIcon, color: presenceColor } = getPresenceIconInfo(item.presenceStatus);
-    const presenceTooltip = item.presenceTooltip;
-    const isOnline = item.status;
+  const renderEmployee = ({ item }) => {
+    const fullName = `${item.profile.firstName || ""} ${item.profile.lastName || ""}`.trim();
     return (
-      <View className={`p-3 mb-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? "bg-slate-50" : "bg-slate-800"}`}>
-        <View className="flex-row items-center flex-1">
-          <Ionicons name="person-circle" size={50} color={isLightTheme ? "#4b5563" : "#d1d5db"} />
-          <View className="ml-3 flex-1">
-            {/* Removed Location Name and Icon below the role */}
-            <View className="flex-row items-center">
-              <Text className={`text-lg font-semibold ${isLightTheme ? "text-slate-800" : "text-slate-300"} capitalize`}>
-                {item.firstName} {item.middleName ? `${item.middleName} ` : ""}
-                {item.lastName}
-              </Text>
-              <Ionicons name={presenceIcon} size={12} color={presenceColor} className="ml-1" />
+      <View className="p-4 mb-3 rounded-lg flex-row justify-between items-center bg-slate-100">
+        <View className="flex-1">
+          <Text className="text-base font-semibold text-slate-800">
+            {fullName} <Text className="text-slate-500">({item.username})</Text>
+          </Text>
+          <Text className="text-sm text-slate-600">{item.email}</Text>
+          <View className="flex-row items-center mt-1">
+            <View className="bg-orange-50 rounded-full px-2 py-0.5 mr-2">
+              <Text className="text-xs text-orange-700 font-medium">{item.role}</Text>
             </View>
-            {presenceTooltip && <Text className={`text-xs mt-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{presenceTooltip}</Text>}
-            <View className="flex-row items-center mt-1">
-              <Ionicons name="mail-outline" size={16} color={isLightTheme ? "#4b5563" : "#d1d5db"} className="mr-1" />
-              <Text className={` ${isLightTheme ? "text-slate-700" : "text-slate-300"} text-sm`}>{capitalizeFirstLetter(item.email)}</Text>
-            </View>
-            <View className="flex-row items-center mt-1">
-              <Ionicons name={getRoleIcon(item.role)} size={16} color={getRoleColor(item.role)} className="mr-1" />
-              <Text className={` ${isLightTheme ? "text-slate-700" : "text-slate-300"} text-sm`}>{capitalizeFirstLetter(item.role)}</Text>
-            </View>
-            {/* Removed the previous location restriction below the role */}
-            <View className="flex-row items-center mt-1">
-              <Ionicons name={isOnline ? "checkmark-circle" : "close-circle"} size={16} color={isOnline ? "#10b981" : "#d1d5db"} className="mr-1" />
-              <Text className={` ${isLightTheme ? "text-slate-700" : "text-slate-300"} text-sm`}>{isOnline ? "Punched In" : "Punched Out"}</Text>
-            </View>
+            {item.department && <Text className="text-xs text-slate-500">Dept: {item.department.name}</Text>}
           </View>
         </View>
-        {/* Updated Location Icon Pressable with Location Name Above */}
-        <View className="flex-row items-center">
-          <View className="flex-col items-center ">
-            {restrictionEnabled && restrictionText && <Text className="text-xs text-orange-500 mb-1">{restrictionText}</Text>}
-            <Pressable onPress={() => openUserSettingsModal(item)} className="p-1">
-              <Ionicons name="location-outline" size={20} color={userSettings?.restrictionEnabled ? "#f97316" : isLightTheme ? "#1f2937" : "#f9fafb"} />
-            </Pressable>
-          </View>
-          <Pressable onPress={() => handleUserAction(item)} className="p-1">
-            <Ionicons name="ellipsis-vertical" size={24} color={isLightTheme ? "#1f2937" : "#f9fafb"} />
-          </Pressable>
+        <View className="flex-row">
+          <TouchableOpacity onPress={() => openEditModal(item)} className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center mr-2">
+            <Feather name="edit-2" size={16} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
       </View>
     );
   };
 
-  const userCount = companyUserCounts[user?.companyId] || 0;
-  const planRange = currentSubscription?.plan?.rangeOfUsers || "";
-  const planMaxUsers = getMaxUsersFromRange(planRange);
-
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`} edges={["top"]}>
-      {/* Header */}
-      <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="mr-2">
-          <Ionicons name="chevron-back-outline" size={24} color={isLightTheme ? "#333333" : "#ffffff"} />
-        </Pressable>
-        <Text className={`text-lg font-bold ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Employees</Text>
-      </View>
+    <SafeAreaView className="flex-1 bg-white">
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }}
+      >
+        {/* Header */}
+        <View className="px-4 py-3 flex-row items-center border-b border-slate-200">
+          <TouchableOpacity onPress={() => router.back()} className="mr-3">
+            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold text-slate-800">Settings</Text>
+        </View>
 
-      {/* Users Count and Add Button */}
-      <View className="flex-row justify-between items-center px-4 mb-4">
-        <Text className={`text-xl font-bold ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-          {`Users (${userCount} of ${planMaxUsers === 999999 ? "∞" : planMaxUsers})`}
-        </Text>
-        <Pressable onPress={handleAddUser} className={`p-2 rounded-full ${isLightTheme ? "bg-white" : "bg-slate-900"}`}>
-          <Ionicons name="add" size={24} color={isLightTheme ? "#1e293b" : "#cbd5e1"} />
-        </Pressable>
-      </View>
-
-      {/* Users List */}
-      {loading ? (
-        <ActivityIndicator size="large" color="#475569" className="mt-12" />
-      ) : (
-        <FlatList
-          data={users}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#475569"]} tintColor={isLightTheme ? "#475569" : "#f9fafb"} />
-          }
-          ListEmptyComponent={
-            <Text className={`text-center mt-12 text-lg ${isLightTheme ? "text-slate-600" : "text-slate-300"}`}>No users found in your company.</Text>
-          }
-        />
-      )}
-
-      {/* Edit/Add User Modal */}
-      <Modal visible={editUserModalVisible} animationType="fade" transparent={true} onRequestClose={() => setEditUserModalVisible(false)}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-center items-center bg-slate-950/70">
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "position"}
-              className="w-11/12"
-              keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 40}
+        {/* Title and Add Button */}
+        <View className="px-4 py-4 flex-row justify-between items-center">
+          <Text className="text-2xl font-bold text-slate-800">Employee List</Text>
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity
+              onPress={() => {
+                animateButtonPress(buttonScale);
+                setTimeout(() => openEditModal(null), 100);
+              }}
+              className="w-10 h-10 rounded-full bg-orange-500 items-center justify-center shadow-sm"
             >
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <View className={`p-6 rounded-3xl ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
-                  {/* Modal Title */}
-                  <Text className={`text-xl font-bold mb-4 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    {selectedUser ? "Edit User" : "Add User"}
-                  </Text>
+              <Ionicons name="add" size={24} color="white" />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
-                  {/* Role Selection */}
-                  <Text className={`text-sm font-medium mb-2 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    Role <Text className="text-red-500">*</Text>
-                  </Text>
-                  <RadioButton label="admin" value="admin" selected={editRole === "admin"} onPress={setEditRole} isLightTheme={isLightTheme} />
-                  <RadioButton
-                    label="supervisor"
-                    value="supervisor"
-                    selected={editRole === "supervisor"}
-                    onPress={setEditRole}
-                    isLightTheme={isLightTheme}
-                  />
-                  <RadioButton label="User" value="user" selected={editRole === "user"} onPress={setEditRole} isLightTheme={isLightTheme} />
+        {/* Employee List */}
+        {loading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text className="mt-4 text-slate-500">Loading employees...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={employees}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderEmployee}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
+            ListEmptyComponent={
+              <View className="flex-1 justify-center items-center py-16">
+                <Ionicons name="people-outline" size={48} color={COLORS.textLight} />
+                <Text className="mt-4 text-slate-500 text-center">No employees found.</Text>
+                <Text className="text-slate-400 text-center">Add your first employee by tapping the + button.</Text>
+              </View>
+            }
+          />
+        )}
 
-                  {/* Email Input */}
-                  <Text className={`text-sm font-medium mt-4 mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    Email <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editEmail}
-                    onChangeText={setEditEmail}
-                    placeholder="e.g., user@example.com"
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
+        {/* Create/Edit Employee Modal */}
+        {editModalVisible && (
+          <View className="absolute inset-0">
+            <Animated.View className="absolute inset-0 bg-black/50" style={{ opacity: modalBgAnim }} onTouchEnd={closeModal} />
+            <Animated.View
+              style={{
+                transform: [{ translateY: modalY }],
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: "white",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                minHeight: height * 0.4, // Set minimum height to 40% of screen
+                maxHeight: height * 0.75, // Set maximum height to 75% of screen
+                paddingBottom: Platform.OS === "ios" ? 30 : 20,
+              }}
+            >
+              <View className="items-center py-3" {...modalPanResponder.panHandlers}>
+                <View className="w-10 h-1 bg-slate-200 rounded-full" />
+              </View>
 
-                  {/* Password Input */}
-                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    {selectedUser ? "New Password (leave blank to keep current)" : "Password"}
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editPassword}
-                    onChangeText={setEditPassword}
-                    placeholder={selectedUser ? "Enter new password" : "Enter password"}
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    secureTextEntry
-                  />
+              <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
+                <Text className="text-lg font-bold text-slate-800">{selectedEmployee ? "Edit Employee" : "Add Employee"}</Text>
+                <TouchableOpacity onPress={closeModal}>
+                  <Ionicons name="close" size={24} color="#64748b" />
+                </TouchableOpacity>
+              </View>
 
-                  {/* First Name Input */}
-                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    First Name <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editFirstName}
-                    onChangeText={setEditFirstName}
-                    placeholder="e.g., John"
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                  />
+              {!showDeleteConfirmation ? (
+                <ScrollView className="px-5 py-4">
+                  {/* Form Fields */}
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">
+                      Username <Text className="text-red-500">*</Text>
+                    </Text>
+                    <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
+                      <Feather name="user" size={18} color="#9ca3af" />
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-800"
+                        value={username}
+                        onChangeText={setUsername}
+                        placeholder="Enter username"
+                        placeholderTextColor="#9CA3AF"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
 
-                  {/* Middle Name Input */}
-                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>Middle Name</Text>
-                  <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editMiddleName}
-                    onChangeText={setEditMiddleName}
-                    placeholder="e.g., A."
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                  />
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">
+                      First Name <Text className="text-red-500">*</Text>
+                    </Text>
+                    <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
+                      <Feather name="user" size={18} color="#9ca3af" />
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-800"
+                        value={firstName}
+                        onChangeText={setFirstName}
+                        placeholder="Enter first name"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
 
-                  {/* Last Name Input */}
-                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    Last Name <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-4 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editLastName}
-                    onChangeText={setEditLastName}
-                    placeholder="e.g., Doe"
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                  />
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">
+                      Last Name <Text className="text-red-500">*</Text>
+                    </Text>
+                    <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
+                      <Feather name="user" size={18} color="#9ca3af" />
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-800"
+                        value={lastName}
+                        onChangeText={setLastName}
+                        placeholder="Enter last name"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
 
-                  {/* Phone Input */}
-                  <Text className={`text-sm font-medium mb-1 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                    Phone <Text className="text-red-500">*</Text>
-                  </Text>
-                  <TextInput
-                    className={`w-full p-3 mb-6 rounded-lg border ${
-                      isLightTheme ? "border-slate-100 bg-slate-100 text-slate-800" : "border-slate-700 bg-slate-700 text-slate-300"
-                    }`}
-                    value={editPhone}
-                    onChangeText={setEditPhone}
-                    placeholder="e.g., +1 234 567 890"
-                    placeholderTextColor={isLightTheme ? "#9ca3af" : "#6b7280"}
-                    keyboardType="phone-pad"
-                  />
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">
+                      Email <Text className="text-red-500">*</Text>
+                    </Text>
+                    <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
+                      <MaterialCommunityIcons name="email-outline" size={18} color="#9ca3af" />
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-800"
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Enter email address"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
 
-                  {/* Modal Actions */}
-                  <View className="flex-row justify-end">
-                    <TouchableOpacity onPress={() => setEditUserModalVisible(false)} className="mr-4">
-                      <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-600" : "text-slate-300"} my-auto`}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleSaveUserEdits} className="bg-orange-500 py-3 px-6 rounded-lg">
-                      <Text className="text-white text-base font-semibold">Save</Text>
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">
+                      {selectedEmployee ? "New Password (optional)" : "Password"}
+                      {!selectedEmployee && <Text className="text-red-500"> *</Text>}
+                    </Text>
+                    <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
+                      <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" />
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-800"
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder={selectedEmployee ? "Leave blank to keep current" : "Enter password"}
+                        placeholderTextColor="#9CA3AF"
+                        secureTextEntry
+                      />
+                    </View>
+                    <Text className="text-xs text-slate-500 mt-1">Must contain at least 6 characters with 1 uppercase, 1 number, and 1 symbol.</Text>
+                  </View>
+
+                  {/* Fix for the VirtualizedList error - use listMode="SCROLLVIEW" */}
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">Role</Text>
+                    <DropDownPicker
+                      open={roleOpen}
+                      value={role}
+                      items={roleItems}
+                      setOpen={setRoleOpen}
+                      setValue={setRole}
+                      setItems={setRoleItems}
+                      placeholder="Select Role"
+                      style={{
+                        backgroundColor: "#F8FAFC",
+                        borderColor: "#E2E8F0",
+                        minHeight: 48,
+                        borderRadius: 12,
+                      }}
+                      dropDownContainerStyle={{
+                        backgroundColor: "#F8FAFC",
+                        borderColor: "#E2E8F0",
+                        borderRadius: 12,
+                      }}
+                      textStyle={{
+                        fontSize: 14,
+                        color: "#1E293B",
+                      }}
+                      placeholderStyle={{
+                        color: "#9CA3AF",
+                      }}
+                      zIndex={3000}
+                      zIndexInverse={1000}
+                      listMode="SCROLLVIEW"
+                      scrollViewProps={{
+                        nestedScrollEnabled: true,
+                      }}
+                    />
+                  </View>
+
+                  <View className="mb-6">
+                    <Text className="text-sm font-semibold text-slate-600 mb-2">Department</Text>
+                    <DropDownPicker
+                      open={deptOpen}
+                      value={departmentId}
+                      items={deptItems}
+                      setOpen={setDeptOpen}
+                      setValue={setDepartmentId}
+                      setItems={setDeptItems}
+                      placeholder="Select Department"
+                      style={{
+                        backgroundColor: "#F8FAFC",
+                        borderColor: "#E2E8F0",
+                        minHeight: 48,
+                        borderRadius: 12,
+                      }}
+                      dropDownContainerStyle={{
+                        backgroundColor: "#F8FAFC",
+                        borderColor: "#E2E8F0",
+                        borderRadius: 12,
+                      }}
+                      textStyle={{
+                        fontSize: 14,
+                        color: "#1E293B",
+                      }}
+                      placeholderStyle={{
+                        color: "#9CA3AF",
+                      }}
+                      zIndex={2000}
+                      zIndexInverse={2000}
+                      listMode="SCROLLVIEW"
+                      scrollViewProps={{
+                        nestedScrollEnabled: true,
+                      }}
+                    />
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View className="flex-row justify-around mt-4 ">
+                    {selectedEmployee && (
+                      <TouchableOpacity onPress={() => setShowDeleteConfirmation(true)} className="bg-neutral-400 py-3.5 px-8 rounded-xl ">
+                        <Text className="text-white font-bold text-base">Delete Employee</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={handleSaveEmployee} className="bg-orange-500 py-3.5 px-8 rounded-xl">
+                      <Text className="text-white font-bold text-base">Save Employee</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                </ScrollView>
+              ) : (
+                <View className="px-5 py-4 items-center">
+                  <View className="w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4">
+                    <Feather name="trash-2" size={28} color={COLORS.error} />
+                  </View>
 
-      {/* User Settings Modal */}
-      <Modal visible={userSettingsModalVisible} animationType="fade" transparent={true} onRequestClose={() => setUserSettingsModalVisible(false)}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 justify-center items-center bg-slate-950/70">
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "position"}
-              className="w-11/12"
-              keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 40}
-            >
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <View className={`p-6 rounded-3xl ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
-                  {/* Modal Title */}
-                  <Text className={`text-2xl font-bold mb-4 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>User Location Restriction</Text>
+                  <Text className="text-xl font-bold text-slate-800 mb-2">Delete Employee</Text>
+                  <Text className="text-slate-600 text-center mb-2">Are you sure you want to delete this employee?</Text>
+                  <Text className="text-slate-500 text-center mb-6">
+                    {selectedEmployee?.profile.firstName} {selectedEmployee?.profile.lastName}
+                  </Text>
 
-                  {/* Loading Indicator */}
-                  {userSettingsLoading ? (
-                    <ActivityIndicator size="large" color="#10b981" className="mt-6" />
-                  ) : (
-                    <>
-                      {/* Restriction Toggle */}
-                      <View className="flex-row items-center justify-between mb-4">
-                        <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                          Restrict user {selectedUser?.firstName} {selectedUser?.lastName} to a location?
-                        </Text>
-                        <Switch
-                          value={restrictionEnabled}
-                          onValueChange={setRestrictionEnabled}
-                          trackColor={{ true: "#f1f5f9", false: "#f1f5f9" }}
-                          thumbColor={restrictionEnabled ? (isLightTheme ? "#f97316" : "#f97316") : isLightTheme ? "#f97316" : "#f97316"}
-                        />
+                  <View className="w-full">
+                    {deleting ? (
+                      <View className="items-center py-4">
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                        <Text className="text-slate-600 mt-3">Deleting employee...</Text>
                       </View>
+                    ) : (
+                      <>
+                        <Animated.View style={{ transform: [{ scale: deleteButtonScale }] }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              animateButtonPress(deleteButtonScale);
+                              setTimeout(() => handleDeleteEmployee(), 100);
+                            }}
+                            className="bg-red-500 py-3.5 rounded-xl w-full items-center mb-3"
+                          >
+                            <Text className="text-white font-bold text-base">Yes, Delete Employee</Text>
+                          </TouchableOpacity>
+                        </Animated.View>
 
-                      {/* Location Selection (Conditional) */}
-                      {restrictionEnabled && (
-                        <>
-                          <Text className={`text-base mb-2 ${isLightTheme ? "text-slate-800" : "text-slate-300"}`}>
-                            Select a Location <Text className="text-red-500">*</Text>
-                          </Text>
-                          <View className={` rounded-lg mb-4 ${isLightTheme ? "bg-slate-100" : "bg-slate-700"} z-40`}>
-                            {/* Custom Picker */}
-                            <TouchableOpacity
-                              onPress={() => setLocationOpen(!locationOpen)}
-                              className={`p-3 rounded-lg flex-row justify-between items-center ${isLightTheme ? "bg-slate-100" : "bg-slate-700"}`}
-                            >
-                              <Text className={`text-base ${selectedLocationId ? "text-slate-800" : "text-slate-500"}`}>
-                                {selectedLocationId ? locations.find((loc) => loc.id === selectedLocationId)?.label : "Select Location"}
-                              </Text>
-                              <Ionicons name="chevron-down" size={20} color="#6b7280" />
-                            </TouchableOpacity>
-                            {/* Dropdown Options */}
-                            {locationOpen && (
-                              <View className={`rounded-lg mt-1 ${isLightTheme ? "bg-slate-100" : "bg-slate-700"}`}>
-                                {locations.map((loc) => (
-                                  <TouchableOpacity
-                                    key={loc.id}
-                                    onPress={() => {
-                                      setSelectedLocationId(loc.id);
-                                      setLocationOpen(false);
-                                    }}
-                                    className="p-3 rounded-lg"
-                                  >
-                                    <Text className="text-base text-slate-800">{loc.label}</Text>
-                                  </TouchableOpacity>
-                                ))}
-                              </View>
-                            )}
-                          </View>
-                        </>
-                      )}
-
-                      {/* Modal Actions */}
-                      <View className="flex-row justify-end">
-                        <TouchableOpacity onPress={() => setUserSettingsModalVisible(false)} className="mr-4">
-                          <Text className={`text-base font-semibold ${isLightTheme ? "text-slate-600" : "text-slate-300"} my-auto`}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={handleSaveUserSettings} className="bg-orange-500 py-3 px-6 rounded-lg">
-                          <Text className="text-white text-base font-semibold">Save</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </>
-                  )}
+                        <Animated.View style={{ transform: [{ scale: cancelButtonScale }] }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              animateButtonPress(cancelButtonScale);
+                              setTimeout(() => setShowDeleteConfirmation(false), 100);
+                            }}
+                            className="py-3.5 rounded-xl w-full items-center border border-slate-200"
+                          >
+                            <Text className="text-slate-800 font-bold text-base">Cancel</Text>
+                          </TouchableOpacity>
+                        </Animated.View>
+                      </>
+                    )}
+                  </View>
                 </View>
-              </ScrollView>
-            </KeyboardAvoidingView>
+              )}
+            </Animated.View>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 };

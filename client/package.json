@@ -38,6 +38,7 @@
     "expo-status-bar": "^2.0.1",
     "formik": "^2.4.6",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.479.0",
     "nativewind": "^4.1.23",
     "radio-buttons-react-native": "^1.0.4",
     "react": "18.3.1",
@@ -51,6 +52,7 @@
     "react-native-user-inactivity": "^1.2.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
+    "socket.io-client": "^4.8.1",
     "tailwindcss": "^3.4.15",
     "yup": "^1.4.0",
     "zustand": "^4.4.0"

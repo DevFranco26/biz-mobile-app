@@ -211,13 +211,7 @@ const assignUsersToDepartment = async (req, res) => {
       where: { id: { in: validUserIds }, companyId },
       data: { departmentId },
     });
-    let updatedDepartment = await prisma.department.findFirst({ where: { id: departmentId, companyId } });
-    if (!updatedDepartment.supervisorId && validUsers.length > 0) {
-      updatedDepartment = await prisma.department.update({
-        where: { id: departmentId },
-        data: { supervisorId: validUsers[0].id },
-      });
-    }
+    // Removed auto‑assignment of supervisor to avoid interfering with regular member assignment.
     return res.status(200).json({ data: { assignedUserIds: validUserIds }, message: "Users assigned successfully." });
   } catch (error) {
     console.error("Error in assignUsersToDepartment:", error);
