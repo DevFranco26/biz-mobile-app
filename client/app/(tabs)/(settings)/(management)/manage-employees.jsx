@@ -1,6 +1,7 @@
+// app/(tabs)/(settings)/(management)/manage-employees.jsx
+
 "use client";
 
-// File: client/components/Employees.jsx
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,

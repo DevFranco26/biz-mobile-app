@@ -1,4 +1,4 @@
-// File: client/components/Departments.jsx
+// app/(tabs)(settings)/(management)/Departments.jsx
 import { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -482,7 +482,7 @@ const Departments = () => {
           <TouchableOpacity onPress={() => router.back()} className="mr-3">
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          <Text className="text-xl font-bold text-slate-800">Departments</Text>
+          <Text className="text-xl font-bold text-slate-800">Settings</Text>
         </View>
 
         {/* Title and Add Button */}

@@ -4,21 +4,14 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Slot } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useThemeStore from "../../../../store/themeStore";
 
 const AdminLayout = () => {
   const insets = useSafeAreaInsets();
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === "light";
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: isLightTheme ? "#ffffff" : "#0f172a",
-        },
-      ]}
+      className=" flex-1
+    bg-white"
     >
       <Slot />
     </View>

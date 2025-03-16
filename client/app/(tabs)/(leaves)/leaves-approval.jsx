@@ -1,611 +1,561 @@
-// File: app/(tabs)/(leaves)/leaves-approval.jsx
+// app/(tabs)/(leaves)/leaves-approval.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
   FlatList,
-  Pressable,
   ActivityIndicator,
-  Modal,
-  TouchableOpacity,
-  Alert,
+  StyleSheet,
   RefreshControl,
-  StatusBar,
-  Platform,
+  Alert as RNAlert,
+  Animated,
+  PanResponder,
   Dimensions,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import useThemeStore from "../../../store/themeStore";
-import useLeaveStore from "../../../store/leaveStore";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
-import { Ionicons, MaterialIcons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
-import useUsersStore from "../../../store/usersStore";
+import { API_BASE_URL } from "../../../config/constant";
+import { Ionicons } from "@expo/vector-icons";
 
-const ApprovalLeaves = () => {
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === "light";
-  const router = useRouter();
-  const { userLeaves, fetchUserLeaves, loadingUserLeaves, errorUserLeaves } = useLeaveStore();
-  const { fetchUserById } = useUsersStore();
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [filterType, setFilterType] = useState("ALL");
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedFilterOption, setSelectedFilterOption] = useState(null);
+const { height } = Dimensions.get("window");
+
+// Define all component functions outside of the main component
+const LeaveStatusBadge = ({ status }) => {
+  let bgColor, textColor, icon;
+
+  switch (status.toLowerCase()) {
+    case "approved":
+      bgColor = "bg-green-100";
+      textColor = "text-green-800";
+      icon = "checkmark-circle";
+      break;
+    case "rejected":
+      bgColor = "bg-red-100";
+      textColor = "text-red-800";
+      icon = "close-circle";
+      break;
+    case "pending":
+      bgColor = "bg-amber-100";
+      textColor = "text-amber-800";
+      icon = "time";
+      break;
+    default:
+      bgColor = "bg-gray-100";
+      textColor = "text-gray-800";
+      icon = "help-circle";
+  }
+
+  return (
+    <View className={`flex-row items-center rounded-full px-3 py-1 ${bgColor}`}>
+      <Ionicons name={icon} size={14} color={textColor.replace("text-", "")} style={{ marginRight: 4 }} />
+      <Text className={`text-xs font-medium ${textColor}`}>{status}</Text>
+    </View>
+  );
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const FilterOption = ({ label, isActive, onPress }) => {
+  // Button animation
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const animatePress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.92,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePress = () => {
+    animatePress();
+    setTimeout(() => onPress(), 100);
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.8} className={`px-4 py-2 rounded-full mr-2 ${isActive ? "bg-orange-500" : "bg-gray-100"}`}>
+        <Text className={`text-sm font-medium ${isActive ? "text-white" : "text-gray-700"}`}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const SortOption = ({ label, icon, onPress, isActive }) => {
+  // Button animation
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const animatePress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePress = () => {
+    animatePress();
+    setTimeout(() => onPress(), 100);
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.8} className={`flex-row items-center p-4 ${isActive ? "bg-orange-50" : ""}`}>
+        <Ionicons name={icon} size={20} color={isActive ? "#f97316" : "#6B7280"} style={{ marginRight: 12 }} />
+        <Text className={`text-base ${isActive ? "text-orange-500 font-medium" : "text-gray-700"}`}>{label}</Text>
+        {isActive && <Ionicons name="checkmark" size={20} color="#f97316" style={{ marginLeft: "auto" }} />}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// Empty list component defined outside the main component
+const EmptyListComponent = ({ activeFilter }) => (
+  <View className="flex-1 justify-center items-center py-10">
+    <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
+      <Ionicons name="calendar-outline" size={28} color="#9CA3AF" />
+    </View>
+    <Text className="text-gray-500 text-lg font-medium mb-1">No leave records</Text>
+    <Text className="text-gray-400 text-center px-10">
+      {activeFilter === "all"
+        ? "You don't have any leave records yet. Submit a leave request to get started."
+        : `No ${activeFilter} leave requests found.`}
+    </Text>
+  </View>
+);
+
+const LeavesApproval = () => {
+  const [leaves, setLeaves] = useState([]);
+  const [filteredLeaves, setFilteredLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [approverEmails, setApproverEmails] = useState({});
-  const [requesterEmails, setRequesterEmails] = useState({});
-  const windowWidth = Dimensions.get("window").width;
-  const isTablet = windowWidth >= 768;
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [sortOption, setSortOption] = useState("newest");
+  const router = useRouter();
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case "Sick Leave":
-        return "bandage-outline";
-      case "Vacation Leave":
-        return "airplane-outline";
-      case "Emergency Leave":
-        return "warning-outline";
-      case "Maternity/Paternity Leave":
-        return "woman-outline";
-      case "Casual Leave":
-        return "beer-outline";
-      default:
-        return "layers-outline";
-    }
-  };
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const sortButtonScale = useRef(new Animated.Value(1)).current;
+  const modalBgAnim = useRef(new Animated.Value(0)).current;
+  const sortModalAnim = useRef(new Animated.Value(height)).current;
 
-  // Helper function for Status icons using Ionicons
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Pending":
-        return "time-outline";
-      case "Approved":
-        return "checkmark-circle-outline";
-      case "Rejected":
-        return "close-circle-outline";
-      default:
-        return "help-circle-outline";
-    }
-  };
+  // Pan responder for sort modal
+  const sortPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          sortModalAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // Close the modal if dragged down enough
+          closeSortModal();
+        } else {
+          // Snap back to original position
+          Animated.spring(sortModalAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
-  useEffect(() => {
-    const initialize = async () => {
+  const fetchLeaves = async () => {
+    setLoading(true);
+    try {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
-        Alert.alert("Authentication Error", "You are not logged in. Please sign in again.", [
+        RNAlert.alert("Authentication Error", "You are not logged in. Please sign in again.", [
           { text: "OK", onPress: () => router.replace("(auth)/login-user") },
         ]);
         return;
       }
-      await fetchUserLeaves(token);
-    };
-    initialize();
-  }, [fetchUserLeaves, router]);
-
-  const onRefresh = useCallback(async () => {
-    const token = await SecureStore.getItemAsync("token");
-    if (token) {
-      setRefreshing(true);
-      await fetchUserLeaves(token);
+      const res = await fetch(`${API_BASE_URL}/api/leaves/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLeaves(data.data);
+        applyFiltersAndSort(data.data, activeFilter, sortOption);
+      } else {
+        RNAlert.alert("Error", data.message || "Failed to fetch leave logs.");
+      }
+    } catch (error) {
+      console.error("Error fetching leave logs:", error);
+      RNAlert.alert("Error", "An error occurred while fetching leave logs.");
+    } finally {
+      setLoading(false);
       setRefreshing(false);
     }
-  }, [fetchUserLeaves]);
+  };
 
-  useEffect(() => {
-    (async () => {
-      if (!Array.isArray(userLeaves)) return;
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) return;
-      const uniqueApproverIds = [...new Set(userLeaves.map((l) => l.approverId).filter(Boolean))];
-      for (const approverId of uniqueApproverIds) {
-        if (!approverEmails[approverId]) {
-          const userData = await fetchUserById(approverId, token);
-          if (userData?.email) {
-            setApproverEmails((prev) => ({ ...prev, [approverId]: userData.email }));
-          }
-        }
-      }
-    })();
-  }, [userLeaves, approverEmails, fetchUserById]);
+  const applyFiltersAndSort = useCallback((data, filter, sort) => {
+    // First apply filter
+    let result = [...data];
 
-  useEffect(() => {
-    (async () => {
-      if (!Array.isArray(userLeaves)) return;
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) return;
-      const uniqueRequesterIds = [...new Set(userLeaves.map((l) => l.userId).filter(Boolean))];
-      for (const userId of uniqueRequesterIds) {
-        if (!requesterEmails[userId]) {
-          const userData = await fetchUserById(userId, token);
-          if (userData?.email) {
-            setRequesterEmails((prev) => ({ ...prev, [userId]: userData.email }));
-          }
-        }
-      }
-    })();
-  }, [userLeaves, requesterEmails, fetchUserById]);
-
-  const getFilteredAndSortedLeaves = () => {
-    let filtered = Array.isArray(userLeaves) ? [...userLeaves] : [];
-
-    if (filterStatus !== "ALL") {
-      filtered = filtered.filter((leave) => leave.status === filterStatus);
-    }
-    if (filterType !== "ALL") {
-      filtered = filtered.filter((leave) => leave.type === filterType);
+    if (filter !== "all") {
+      result = result.filter((item) => item.status.toLowerCase() === filter.toLowerCase());
     }
 
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.fromDate);
-      const dateB = new Date(b.fromDate);
-      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    // Then apply sort
+    switch (sort) {
+      case "newest":
+        result.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        break;
+      case "oldest":
+        result.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        break;
+      case "type":
+        result.sort((a, b) => a.leaveType.localeCompare(b.leaveType));
+        break;
+      case "status":
+        result.sort((a, b) => a.status.localeCompare(b.status));
+        break;
+      default:
+        break;
+    }
+
+    setFilteredLeaves(result);
+  }, []);
+
+  useEffect(() => {
+    // Initial animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    fetchLeaves();
+  }, []);
+
+  useEffect(() => {
+    applyFiltersAndSort(leaves, activeFilter, sortOption);
+  }, [leaves, activeFilter, sortOption, applyFiltersAndSort]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLeaves();
+  };
+
+  const openSortModal = () => {
+    setSortModalVisible(true);
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(sortModalAnim, {
+        toValue: 0,
+        tension: 70,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeSortModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sortModalAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSortModalVisible(false);
     });
-
-    return filtered;
   };
 
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
+  const animateButtonPress = (buttonRef) => {
+    Animated.sequence([
+      Animated.timing(buttonRef, {
+        toValue: 0.92,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonRef, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Pending":
-        return isLightTheme ? "bg-yellow-100 text-yellow-800" : "bg-yellow-900/30 text-yellow-400";
-      case "Approved":
-        return isLightTheme ? "bg-green-100 text-green-800" : "bg-green-900/30 text-green-400";
-      case "Rejected":
-        return isLightTheme ? "bg-red-100 text-red-800" : "bg-red-900/30 text-red-400";
+  const getLeaveTypeIcon = (type) => {
+    switch (type.toLowerCase()) {
+      case "sick leave":
+        return "medkit";
+      case "vacation leave":
+        return "airplane";
+      case "emergency leave":
+        return "alert-circle";
+      case "maternity/paternity leave":
+        return "people";
+      case "casual leave":
+        return "cafe";
       default:
-        return isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-800/50 text-slate-400";
+        return "calendar";
     }
   };
 
-  const getStatusIconColor = (status) => {
-    switch (status) {
-      case "Pending":
-        return "#eab308";
-      case "Approved":
-        return "#22c55e";
-      case "Rejected":
-        return "#ef4444";
-      default:
-        return isLightTheme ? "#64748b" : "#94a3b8";
-    }
-  };
+  // Define renderItem outside of any hooks or conditional logic
+  const renderItem = ({ item }) => {
+    // Create a new ref for each item
+    const itemScaleAnim = new Animated.Value(1);
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "Sick Leave":
-        return isLightTheme ? "bg-blue-100" : "bg-blue-900/30";
-      case "Vacation Leave":
-        return isLightTheme ? "bg-purple-100" : "bg-purple-900/30";
-      case "Emergency Leave":
-        return isLightTheme ? "bg-red-100" : "bg-red-900/30";
-      case "Maternity/Paternity Leave":
-        return isLightTheme ? "bg-pink-100" : "bg-pink-900/30";
-      case "Casual Leave":
-        return isLightTheme ? "bg-orange-100" : "bg-orange-900/30";
-      default:
-        return isLightTheme ? "bg-slate-100" : "bg-slate-800/50";
-    }
-  };
+    const animateItemPress = () => {
+      Animated.sequence([
+        Animated.timing(itemScaleAnim, {
+          toValue: 0.97,
+          duration: 70,
+          useNativeDriver: true,
+        }),
+        Animated.spring(itemScaleAnim, {
+          toValue: 1,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
 
-  const getTypeTextColor = (type) => {
-    switch (type) {
-      case "Sick Leave":
-        return isLightTheme ? "text-blue-800" : "text-blue-400";
-      case "Vacation Leave":
-        return isLightTheme ? "text-purple-800" : "text-purple-400";
-      case "Emergency Leave":
-        return isLightTheme ? "text-red-800" : "text-red-400";
-      case "Maternity/Paternity Leave":
-        return isLightTheme ? "text-pink-800" : "text-pink-400";
-      case "Casual Leave":
-        return isLightTheme ? "text-orange-800" : "text-orange-400";
-      default:
-        return isLightTheme ? "text-slate-800" : "text-slate-400";
-    }
-  };
-
-  const getTypeIconColor = (type) => {
-    switch (type) {
-      case "Sick Leave":
-        return isLightTheme ? "#1e40af" : "#60a5fa";
-      case "Vacation Leave":
-        return isLightTheme ? "#6b21a8" : "#c084fc";
-      case "Emergency Leave":
-        return isLightTheme ? "#b91c1c" : "#f87171";
-      case "Maternity/Paternity Leave":
-        return isLightTheme ? "#9d174d" : "#f472b6";
-      case "Casual Leave":
-        return isLightTheme ? "#c2410c" : "#fb923c";
-      default:
-        return isLightTheme ? "#334155" : "#94a3b8";
-    }
-  };
-
-  const renderLeaveItem = ({ item }) => (
-    <View
-      className={`rounded-xl mb-4 overflow-hidden ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      }}
-    >
-      <View className={`px-4 py-3 flex-row justify-between items-center ${getTypeColor(item.type)}`}>
-        <View className="flex-row items-center">
-          <Ionicons name={getTypeIcon(item.type)} size={20} color={getTypeIconColor(item.type)} />
-          <Text className={`ml-2 font-bold ${getTypeTextColor(item.type)}`}>{item.type}</Text>
-        </View>
-        <View className={`px-3 py-1 rounded-full ${getStatusColor(item.status)}`}>
-          <Text className={`text-xs font-medium ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>{item.status}</Text>
-        </View>
-      </View>
-
-      <View className="p-4">
-        <View className="flex-row justify-between items-center mb-3">
-          <View className="flex-row items-center">
-            <FontAwesome5 name="calendar-alt" size={16} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-            <Text className={`ml-2 text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>
-              {new Date(item.fromDate).toLocaleDateString()} - {new Date(item.toDate).toLocaleDateString()}
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Ionicons name={getStatusIcon(item.status)} size={16} color={getStatusIconColor(item.status)} />
-            <Text className={`ml-1 text-xs ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{new Date(item.createdAt).toLocaleDateString()}</Text>
-          </View>
-        </View>
-
-        {item.userId && (
-          <View className="mb-2 flex-row items-start">
-            <FontAwesome5 name="user-alt" size={16} color={isLightTheme ? "#64748b" : "#94a3b8"} style={{ marginTop: 2 }} />
-            <View className="ml-2 flex-1">
-              <Text className={`text-xs ${isLightTheme ? "text-slate-500" : "text-slate-500"}`}>Requester</Text>
-              <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{requesterEmails[item.userId] || "Loading..."}</Text>
+    return (
+      <Animated.View style={{ transform: [{ scale: itemScaleAnim }] }}>
+        <TouchableOpacity onPress={animateItemPress} activeOpacity={0.9} className="mb-4 rounded-xl overflow-hidden bg-white" style={styles.cardShadow}>
+          <View className="p-4">
+            <View className="flex-row justify-between items-center mb-3">
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mr-3">
+                  <Ionicons name={getLeaveTypeIcon(item.leaveType)} size={20} color="#f97316" />
+                </View>
+                <Text className="text-lg font-semibold text-gray-800">{item.leaveType}</Text>
+              </View>
+              <LeaveStatusBadge status={item.status} />
             </View>
-          </View>
-        )}
 
-        {item.approverId && (
-          <View className="mb-2 flex-row items-start">
-            <FontAwesome5 name="user-check" size={16} color={isLightTheme ? "#64748b" : "#94a3b8"} style={{ marginTop: 2 }} />
-            <View className="ml-2 flex-1">
-              <Text className={`text-xs ${isLightTheme ? "text-slate-500" : "text-slate-500"}`}>Approver</Text>
-              <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{approverEmails[item.approverId] || "Loading..."}</Text>
+            <View className="bg-gray-50 rounded-lg p-3 mb-3">
+              <View className="flex-row items-center mb-2">
+                <Ionicons name="calendar-outline" size={16} color="#6B7280" className="mr-2" />
+                <Text className="text-gray-600 text-sm">
+                  {formatDate(item.startDate)} - {formatDate(item.endDate)}
+                </Text>
+              </View>
+
+              <View className="flex-row items-center">
+                <Ionicons name="time-outline" size={16} color="#6B7280" className="mr-2" />
+                <Text className="text-gray-600 text-sm">
+                  {new Date(item.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -
+                  {new Date(item.endDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              </View>
             </View>
+
+            {item.approver && item.approver.email && (
+              <View className="flex-row items-center">
+                <Ionicons name="person-outline" size={16} color="#6B7280" className="mr-2" />
+                <Text className="text-gray-600 text-sm">Approver: {item.approver.email}</Text>
+              </View>
+            )}
           </View>
-        )}
-
-        <View className="flex-row mb-2">
-          <View className="flex-1 mr-2">
-            <View className="flex-row items-center">
-              <FontAwesome5 name="calendar-plus" size={16} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-              <Text className={`ml-2 text-xs ${isLightTheme ? "text-slate-500" : "text-slate-500"}`}>From</Text>
-            </View>
-            <Text className={`text-sm mt-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{formatDateTime(item.fromDate)}</Text>
-          </View>
-
-          <View className="flex-1">
-            <View className="flex-row items-center">
-              <FontAwesome5 name="calendar-minus" size={16} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-              <Text className={`ml-2 text-xs ${isLightTheme ? "text-slate-500" : "text-slate-500"}`}>To</Text>
-            </View>
-            <Text className={`text-sm mt-1 ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{formatDateTime(item.toDate)}</Text>
-          </View>
-        </View>
-
-        {item.reason && (
-          <View className={`mt-2 p-3 rounded-lg ${isLightTheme ? "bg-slate-50" : "bg-slate-700/50"}`}>
-            <Text className={`text-xs mb-1 ${isLightTheme ? "text-slate-500" : "text-slate-500"}`}>Reason</Text>
-            <Text className={`text-sm ${isLightTheme ? "text-slate-700" : "text-slate-300"}`}>{item.reason}</Text>
-          </View>
-        )}
-
-        {item.status === "Rejected" && item.rejectionReason && (
-          <View className={`mt-2 p-3 rounded-lg ${isLightTheme ? "bg-red-50" : "bg-red-900/20"}`}>
-            <View className="flex-row items-center mb-1">
-              <AntDesign name="exclamationcircle" size={14} color="#ef4444" />
-              <Text className="text-xs ml-1 text-red-500">Rejection Reason</Text>
-            </View>
-            <Text className={`text-sm ${isLightTheme ? "text-red-700" : "text-red-300"}`}>{item.rejectionReason}</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
-
-  const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
-  };
-
-  const handleFilterOption = (option) => setSelectedFilterOption(option);
-
-  const handleStatusSelection = (status) => {
-    setFilterStatus(status);
-    setIsFilterModalVisible(false);
-    setSelectedFilterOption(null);
-  };
-
-  const handleTypeSelection = (type) => {
-    setFilterType(type);
-    setIsFilterModalVisible(false);
-    setSelectedFilterOption(null);
-  };
-
-  const removeFilter = (filterTypeToRemove) => {
-    if (filterTypeToRemove === "status") setFilterStatus("ALL");
-    else if (filterTypeToRemove === "type") setFilterType("ALL");
+        </TouchableOpacity>
+      </Animated.View>
+    );
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isLightTheme ? "bg-white" : "bg-slate-900"}`} edges={["right", "left", "bottom"]} style={{ paddingTop: 120 }}>
-      <StatusBar barStyle={isLightTheme ? "dark-content" : "light-content"} />
-
-      <View className="flex-row justify-end items-center px-4 py-2">
-        <Pressable
-          onPress={toggleSortOrder}
-          className={`mr-3 p-2 rounded-full ${isLightTheme ? "bg-white" : "bg-slate-800"}`}
-          accessibilityLabel="Sort by Date"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            elevation: 2,
-          }}
-        >
-          <MaterialIcons name={sortOrder === "desc" ? "sort-by-alpha" : "sort-by-alpha"} size={20} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-        </Pressable>
-        <Pressable
-          onPress={() => setIsFilterModalVisible(true)}
-          className={`p-2 rounded-full ${isLightTheme ? "bg-white" : "bg-slate-800"}`}
-          accessibilityLabel="Filter Options"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            elevation: 2,
-          }}
-        >
-          <Ionicons name="filter" size={20} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-        </Pressable>
-      </View>
-
-      {/* Active Filters */}
-      {(filterStatus !== "ALL" || filterType !== "ALL") && (
-        <View className="flex-row flex-wrap px-4 py-2">
-          {filterStatus !== "ALL" && (
-            <View className={`flex-row items-center px-3 py-1.5 rounded-full mr-2 mb-1 ${getStatusColor(filterStatus)}`}>
-              <Ionicons name={getStatusIcon(filterStatus)} size={14} color={getStatusIconColor(filterStatus)} style={{ marginRight: 4 }} />
-              <Text className={`text-xs mr-1 font-medium ${getStatusColor(filterStatus)}`}>{filterStatus}</Text>
-              <Pressable onPress={() => removeFilter("status")}>
-                <Ionicons name="close-circle" size={16} color={getStatusIconColor(filterStatus)} />
-              </Pressable>
-            </View>
-          )}
-          {filterType !== "ALL" && (
-            <View className={`flex-row items-center px-3 py-1.5 rounded-full mr-2 mb-1 ${getTypeColor(filterType)}`}>
-              <Ionicons name={getTypeIcon(filterType)} size={14} color={getTypeIconColor(filterType)} style={{ marginRight: 4 }} />
-              <Text className={`text-xs mr-1 font-medium ${getTypeTextColor(filterType)}`}>{filterType}</Text>
-              <Pressable onPress={() => removeFilter("type")}>
-                <Ionicons name="close-circle" size={16} color={getTypeIconColor(filterType)} />
-              </Pressable>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Filter Modal */}
-      <Modal
-        visible={isFilterModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setIsFilterModalVisible(false);
-          setSelectedFilterOption(null);
+    <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 70 }}>
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
         }}
       >
-        <TouchableOpacity
-          className="flex-1 justify-center items-center"
-          activeOpacity={1}
-          onPressOut={() => {
-            setIsFilterModalVisible(false);
-            setSelectedFilterOption(null);
-          }}
-          style={{ backgroundColor: "rgba(15, 23, 42, 0.7)" }}
-        >
-          <View
-            className={`w-11/12 max-h-3/4 rounded-2xl overflow-hidden ${isLightTheme ? "bg-white" : "bg-slate-800"}`}
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 8,
-              elevation: 5,
-              maxWidth: isTablet ? 500 : "92%",
-            }}
-          >
-            <View className={`px-5 py-4 border-b ${isLightTheme ? "border-slate-200" : "border-slate-700"}`}>
-              <View className="flex-row justify-between items-center">
-                <Text className={`text-xl font-bold ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
-                  {selectedFilterOption === "status" ? "Filter by Status" : selectedFilterOption === "type" ? "Filter by Leave Type" : "Filter Options"}
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    setIsFilterModalVisible(false);
-                    setSelectedFilterOption(null);
-                  }}
-                  className={`p-1 rounded-full ${isLightTheme ? "bg-slate-100" : "bg-slate-700"}`}
-                >
-                  <Ionicons name="close" size={22} color={isLightTheme ? "#64748b" : "#94a3b8"} />
-                </Pressable>
-              </View>
-            </View>
-
-            <View className="p-5">
-              {!selectedFilterOption && (
-                <View>
-                  <Pressable
-                    className={`flex-row items-center mb-4 p-4 rounded-xl ${isLightTheme ? "bg-slate-50" : "bg-slate-700"}`}
-                    android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                    onPress={() => handleFilterOption("status")}
-                  >
-                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isLightTheme ? "bg-blue-100" : "bg-blue-900/30"}`}>
-                      <Ionicons name="options-outline" size={20} color={isLightTheme ? "#3b82f6" : "#60a5fa"} />
-                    </View>
-                    <View>
-                      <Text className={`text-base font-medium ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Filter by Status</Text>
-                      <Text className={`text-xs ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>Pending, Approved, Rejected</Text>
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    className={`flex-row items-center p-4 rounded-xl ${isLightTheme ? "bg-slate-50" : "bg-slate-700"}`}
-                    android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                    onPress={() => handleFilterOption("type")}
-                  >
-                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isLightTheme ? "bg-purple-100" : "bg-purple-900/30"}`}>
-                      <Ionicons name="list-outline" size={20} color={isLightTheme ? "#8b5cf6" : "#a78bfa"} />
-                    </View>
-                    <View>
-                      <Text className={`text-base font-medium ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Filter by Leave Type</Text>
-                      <Text className={`text-xs ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>Sick, Vacation, Emergency, etc.</Text>
-                    </View>
-                  </Pressable>
-                </View>
-              )}
-
-              {selectedFilterOption === "status" && (
-                <View>
-                  <Pressable
-                    className={`flex-row items-center mb-3 p-3 rounded-xl ${
-                      filterStatus === "ALL" ? (isLightTheme ? "bg-slate-200" : "bg-slate-600") : isLightTheme ? "bg-slate-50" : "bg-slate-700"
-                    }`}
-                    onPress={() => handleStatusSelection("ALL")}
-                    android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                  >
-                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isLightTheme ? "bg-slate-300" : "bg-slate-600"}`}>
-                      <Ionicons name="apps-outline" size={18} color={isLightTheme ? "#475569" : "#cbd5e1"} />
-                    </View>
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>All Statuses</Text>
-                  </Pressable>
-
-                  {["Pending", "Approved", "Rejected"].map((status) => (
-                    <Pressable
-                      key={status}
-                      className={`flex-row items-center mb-3 p-3 rounded-xl ${
-                        filterStatus === status ? (isLightTheme ? "bg-slate-200" : "bg-slate-600") : isLightTheme ? "bg-slate-50" : "bg-slate-700"
-                      }`}
-                      onPress={() => handleStatusSelection(status)}
-                      android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                    >
-                      <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${getStatusColor(status)}`}>
-                        <Ionicons name={getStatusIcon(status)} size={18} color={getStatusIconColor(status)} />
-                      </View>
-                      <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{status}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-
-              {selectedFilterOption === "type" && (
-                <View>
-                  <Pressable
-                    className={`flex-row items-center mb-3 p-3 rounded-xl ${
-                      filterType === "ALL" ? (isLightTheme ? "bg-slate-200" : "bg-slate-600") : isLightTheme ? "bg-slate-50" : "bg-slate-700"
-                    }`}
-                    onPress={() => handleTypeSelection("ALL")}
-                    android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                  >
-                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isLightTheme ? "bg-slate-300" : "bg-slate-600"}`}>
-                      <Ionicons name="apps-outline" size={18} color={isLightTheme ? "#475569" : "#cbd5e1"} />
-                    </View>
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>All Leave Types</Text>
-                  </Pressable>
-
-                  {["Sick Leave", "Vacation Leave", "Emergency Leave", "Maternity/Paternity Leave", "Casual Leave"].map((type) => (
-                    <Pressable
-                      key={type}
-                      className={`flex-row items-center mb-3 p-3 rounded-xl ${
-                        filterType === type ? (isLightTheme ? "bg-slate-200" : "bg-slate-600") : isLightTheme ? "bg-slate-50" : "bg-slate-700"
-                      }`}
-                      onPress={() => handleTypeSelection(type)}
-                      android_ripple={{ color: isLightTheme ? "#e5e7eb" : "#4b5563" }}
-                    >
-                      <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${getTypeColor(type)}`}>
-                        <Ionicons name={getTypeIcon(type)} size={18} color={getTypeIconColor(type)} />
-                      </View>
-                      <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{type}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </View>
+        <View className="px-4 pb-2">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-2xl font-bold text-gray-800">Leave History</Text>
+            <Animated.View style={{ transform: [{ scale: sortButtonScale }] }}>
+              <TouchableOpacity
+                onPress={() => {
+                  animateButtonPress(sortButtonScale);
+                  setTimeout(openSortModal, 100);
+                }}
+                activeOpacity={0.8}
+                className="w-10 h-10 rounded-full bg-white border border-gray-200 items-center justify-center"
+                style={styles.buttonShadow}
+              >
+                <Ionicons name="options-outline" size={20} color="#4B5563" />
+              </TouchableOpacity>
+            </Animated.View>
           </View>
-        </TouchableOpacity>
-      </Modal>
+          <Text className="text-gray-500 mb-4">View all your leave requests and their status</Text>
 
-      {/* Main Content */}
-      <View className="flex-1 px-4 pt-2">
-        {loadingUserLeaves && !refreshing ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color={isLightTheme ? "#f97316" : "#fdba74"} />
-            <Text className={`mt-4 ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Loading leave requests...</Text>
+          {/* Filter options */}
+          <View className="flex-row mb-4">
+            <FilterOption label="All" isActive={activeFilter === "all"} onPress={() => setActiveFilter("all")} />
+            <FilterOption label="Pending" isActive={activeFilter === "pending"} onPress={() => setActiveFilter("pending")} />
+            <FilterOption label="Approved" isActive={activeFilter === "approved"} onPress={() => setActiveFilter("approved")} />
+            <FilterOption label="Rejected" isActive={activeFilter === "rejected"} onPress={() => setActiveFilter("rejected")} />
           </View>
-        ) : errorUserLeaves ? (
+        </View>
+
+        {loading ? (
           <View className="flex-1 justify-center items-center">
-            <Ionicons name="alert-circle" size={48} color="#ef4444" />
-            <Text className={`text-center mt-4 text-base ${isLightTheme ? "text-red-700" : "text-red-300"}`}>{errorUserLeaves}</Text>
-            <Pressable onPress={onRefresh} className="mt-6 py-3 px-6 rounded-full bg-orange-500">
-              <Text className="text-white font-medium">Retry</Text>
-            </Pressable>
+            <ActivityIndicator size="large" color="#f97316" />
           </View>
         ) : (
           <FlatList
-            data={getFilteredAndSortedLeaves()}
+            data={filteredLeaves}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={renderLeaveItem}
+            renderItem={renderItem}
+            contentContainerStyle={[{ paddingHorizontal: 16, paddingBottom: 20 }, filteredLeaves.length === 0 && { flex: 1 }]}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#f97316"]} tintColor="#f97316" />}
+            ListEmptyComponent={<EmptyListComponent activeFilter={activeFilter} />}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={
-              getFilteredAndSortedLeaves().length === 0
-                ? { flexGrow: 1, justifyContent: "center", alignItems: "center", paddingVertical: 20 }
-                : { paddingVertical: 12, paddingBottom: isTablet ? 40 : 20 }
-            }
-            ListEmptyComponent={
-              <View className="items-center px-6">
-                <Ionicons name="calendar-outline" size={64} color={isLightTheme ? "#cbd5e1" : "#475569"} style={{ marginBottom: 16 }} />
-                <Text className={`text-center text-base font-medium mb-2 ${isLightTheme ? "text-slate-800" : "text-slate-200"}`}>
-                  No leave requests found
-                </Text>
-                <Text className={`text-center text-sm ${isLightTheme ? "text-slate-500" : "text-slate-400"}`}>
-                  {filterStatus !== "ALL" || filterType !== "ALL"
-                    ? "Try changing your filters to see more results"
-                    : "You have not submitted any leave requests yet"}
-                </Text>
-              </View>
-            }
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[isLightTheme ? "#f97316" : "#fdba74"]}
-                tintColor={isLightTheme ? "#f97316" : "#fdba74"}
-              />
-            }
           />
         )}
-      </View>
+      </Animated.View>
+
+      {/* Sort Modal */}
+      {sortModalVisible && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeSortModal} />
+          </Animated.View>
+
+          <Animated.View
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            style={{
+              transform: [{ translateY: sortModalAnim }],
+              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+            }}
+          >
+            <View className="items-center py-3" {...sortPanResponder.panHandlers}>
+              <View className="w-10 h-1 bg-slate-200 rounded-full" />
+            </View>
+
+            <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
+              <Text className="text-lg font-bold text-slate-800">Sort By</Text>
+              <TouchableOpacity onPress={closeSortModal}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <SortOption
+              label="Newest First"
+              icon="time-outline"
+              isActive={sortOption === "newest"}
+              onPress={() => {
+                setSortOption("newest");
+                closeSortModal();
+              }}
+            />
+
+            <SortOption
+              label="Oldest First"
+              icon="calendar-outline"
+              isActive={sortOption === "oldest"}
+              onPress={() => {
+                setSortOption("oldest");
+                closeSortModal();
+              }}
+            />
+
+            <SortOption
+              label="Leave Type"
+              icon="list-outline"
+              isActive={sortOption === "type"}
+              onPress={() => {
+                setSortOption("type");
+                closeSortModal();
+              }}
+            />
+
+            <SortOption
+              label="Status"
+              icon="flag-outline"
+              isActive={sortOption === "status"}
+              onPress={() => {
+                setSortOption("status");
+                closeSortModal();
+              }}
+            />
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
-export default ApprovalLeaves;
+const styles = StyleSheet.create({
+  cardShadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  buttonShadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+});
+
+export default LeavesApproval;

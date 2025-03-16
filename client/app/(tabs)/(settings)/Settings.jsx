@@ -1,3 +1,5 @@
+// app/(tabs)/(settings)/settings.jsx
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";

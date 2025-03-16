@@ -1,30 +1,28 @@
-// File: app/(tabs)/(leaves)/leaves-request.jsx
-
-import React, { useState, useEffect } from "react";
+//  app/(tabs)/(leaves)/leaves-request.jsx
+import React, { useState, useEffect, useRef } from "react";
 import {
+  View,
   Text,
-  TextInput,
-  Pressable,
   Platform,
   KeyboardAvoidingView,
-  TouchableWithoutFeedback,
   Keyboard,
-  Modal,
   ActivityIndicator,
-  Alert,
-  View,
+  Alert as RNAlert,
+  Animated,
+  PanResponder,
+  Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import DropDownPicker from "react-native-dropdown-picker";
-import useThemeStore from "../../../store/themeStore";
-import useLeaveStore from "../../../store/leaveStore";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "../../../config/constant";
 
-// Helper function to combine date and time
+const { height } = Dimensions.get("window");
+
 const combineDateAndTime = (date, time) => {
   const combined = new Date(date);
   combined.setHours(time.getHours());
@@ -35,33 +33,17 @@ const combineDateAndTime = (date, time) => {
 };
 
 const SubmitLeaves = () => {
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === "light";
-
-  const insets = useSafeAreaInsets();
   const router = useRouter();
-
-  // Form states
   const [leaveType, setLeaveType] = useState("");
-  const [leaveReason, setLeaveReason] = useState("");
-  const [leaveFromDate, setLeaveFromDate] = useState(new Date());
-  const [leaveFromTime, setLeaveFromTime] = useState(new Date());
-  const [leaveToDate, setLeaveToDate] = useState(new Date());
-  const [leaveToTime, setLeaveToTime] = useState(new Date());
-
-  // Approver Dropdown states
+  const [leaveStartDate, setLeaveStartDate] = useState(new Date());
+  const [leaveStartTime, setLeaveStartTime] = useState(new Date());
+  const [leaveEndDate, setLeaveEndDate] = useState(new Date());
+  const [leaveEndTime, setLeaveEndTime] = useState(new Date());
   const [approverOpen, setApproverOpen] = useState(false);
   const [approverItems, setApproverItems] = useState([]);
   const [approverValue, setApproverValue] = useState("");
-
-  // Picker states
   const [currentPicker, setCurrentPicker] = useState(null);
-
-  // Temporary states for picker selections
-  const [tempDate, setTempDate] = useState(new Date());
-  const [tempTime, setTempTime] = useState(new Date());
-
-  // Leave Type Dropdown states
+  const [tempPickerValue, setTempPickerValue] = useState(new Date());
   const [openLeaveType, setOpenLeaveType] = useState(false);
   const [leaveTypeItems, setLeaveTypeItems] = useState([
     { label: "Sick Leave", value: "Sick Leave" },
@@ -70,302 +52,374 @@ const SubmitLeaves = () => {
     { label: "Maternity/Paternity Leave", value: "Maternity/Paternity Leave" },
     { label: "Casual Leave", value: "Casual Leave" },
   ]);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateTimeModalVisible, setDateTimeModalVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState("date");
+  const [pickerTitle, setPickerTitle] = useState("");
+  const [currentDateTimeField, setCurrentDateTimeField] = useState(null);
 
-  // Accessing leaveStore
-  const { approvers, fetchApprovers, submitLeave, loadingApprovers, submittingLeave, errorApprovers, errorSubmitting } = useLeaveStore();
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const submitButtonScale = useRef(new Animated.Value(1)).current;
+  const dateButtonScale = useRef(new Animated.Value(1)).current;
+  const timeButtonScale = useRef(new Animated.Value(1)).current;
+  const modalBgAnim = useRef(new Animated.Value(0)).current;
+  const dateTimeModalAnim = useRef(new Animated.Value(height)).current;
+  const confirmButtonScale = useRef(new Animated.Value(1)).current;
+
+  // Pan responder for date time modal
+  const dateTimePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          dateTimeModalAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          // Close the modal if dragged down enough
+          closeDateTimeModal();
+        } else {
+          // Snap back to original position
+          Animated.spring(dateTimeModalAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const fetchApprovers = async (token) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leaves/approvers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        const formattedApprovers = data.data.map((approver) => ({
+          label: `${approver.username} (${approver.email})`,
+          value: String(approver.id),
+        }));
+        setApproverItems(formattedApprovers);
+      } else {
+        RNAlert.alert("Error", data.message || "Failed to fetch approvers.");
+      }
+    } catch (error) {
+      console.error("Error fetching approvers:", error);
+      RNAlert.alert("Error", "An error occurred while fetching approvers.");
+    }
+  };
 
   useEffect(() => {
+    // Initial animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     const initialize = async () => {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
-        Alert.alert("Authentication Error", "You are not logged in. Please sign in again.", [
-          {
-            text: "OK",
-            onPress: () => {
-              router.replace("(auth)/login-user");
-            },
-          },
+        RNAlert.alert("Authentication Error", "You are not logged in. Please sign in again.", [
+          { text: "OK", onPress: () => router.replace("(auth)/login-user") },
         ]);
         return;
       }
-
       await fetchApprovers(token);
     };
     initialize();
-  }, [fetchApprovers, router]);
+  }, [router]);
 
-  // Update approverItems when approvers data changes
-  useEffect(() => {
-    if (approvers.length > 0) {
-      const formattedApprovers = approvers.map((approver) => ({
-        label: approver.name || `${approver.firstName} ${approver.lastName}`,
-        value: String(approver.id),
-      }));
-      setApproverItems(formattedApprovers);
-    } else {
-      setApproverItems([]);
-    }
-  }, [approvers]);
-
-  // Handle leave request submission
   const handleSubmit = async () => {
-    // Validate required fields
+    animateButtonPress(submitButtonScale);
+
     if (!leaveType || !approverValue) {
-      Alert.alert("Incomplete Form", "Please fill in all required fields, including selecting an approver.");
+      RNAlert.alert("Incomplete Form", "Please fill in all required fields, including selecting an approver.");
       return;
     }
-
-    // Combine dates and times
-    const combinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
-    const combinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
-
-    // Validate date range
-    if (combinedFromDate > combinedToDate) {
-      Alert.alert("Invalid Dates", "From Date and Time cannot be after To Date and Time.");
+    const combinedStart = combineDateAndTime(leaveStartDate, leaveStartTime);
+    const combinedEnd = combineDateAndTime(leaveEndDate, leaveEndTime);
+    if (combinedStart > combinedEnd) {
+      RNAlert.alert("Invalid Dates", "Start Date and Time cannot be after End Date and Time.");
       return;
     }
-
-    setIsSubmitting(true); // Start loading
-
+    setIsSubmitting(true);
     try {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
-        Alert.alert("Authentication Error", "Please sign in again.");
+        RNAlert.alert("Authentication Error", "Please sign in again.");
         setIsSubmitting(false);
         router.replace("(auth)/login-user");
         return;
       }
-
-      // Convert combined dates to UTC ISO strings
-      const fromDateInUTC = combinedFromDate.toISOString();
-      const toDateInUTC = combinedToDate.toISOString();
-
-      // Log the UTC dates for debugging
-      console.log("From Date UTC:", fromDateInUTC);
-      console.log("To Date UTC:", toDateInUTC);
-
-      // Prepare payload
       const payload = {
         type: leaveType,
-        reason: leaveReason.trim() === "" ? null : leaveReason,
-        fromDate: fromDateInUTC,
-        toDate: toDateInUTC,
+        fromDate: combinedStart.toISOString(),
+        toDate: combinedEnd.toISOString(),
         approverId: approverValue,
       };
-
-      console.log("Submitting Leave Payload:", payload);
-
-      // Submit leave using the leaveStore's action
-      await submitLeave(token, payload);
-
-      // Reset form fields
-      setLeaveType("");
-      setLeaveReason("");
-      setLeaveFromDate(new Date());
-      setLeaveFromTime(new Date());
-      setLeaveToDate(new Date());
-      setLeaveToTime(new Date());
-      setApproverValue("");
-
-      // Show success alert and navigate back
-      Alert.alert("Success", "Leave request submitted successfully!", [
-        {
-          text: "OK",
+      const res = await fetch(`${API_BASE_URL}/api/leaves/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      ]);
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        RNAlert.alert("Success", "Leave request submitted successfully!");
+        setLeaveType("");
+        setLeaveStartDate(new Date());
+        setLeaveStartTime(new Date());
+        setLeaveEndDate(new Date());
+        setLeaveEndTime(new Date());
+        setApproverValue("");
+      } else {
+        RNAlert.alert("Error", data.message || "Failed to submit leave request.");
+      }
     } catch (error) {
-      console.error("Submission Error:", error);
-      Alert.alert("Error", "There was an issue submitting your leave request.");
+      console.error("Error submitting leave request:", error);
+      RNAlert.alert("Error", "There was an issue submitting your leave request.");
     } finally {
-      setIsSubmitting(false); // End loading
+      setIsSubmitting(false);
     }
   };
 
-  // Render date/time picker based on platform
-  const renderPicker = () => {
+  const animateButtonPress = (buttonRef) => {
+    Animated.sequence([
+      Animated.timing(buttonRef, {
+        toValue: 0.92,
+        duration: 70,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonRef, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const openDateTimeModal = (field, mode) => {
+    setCurrentDateTimeField(field);
+    setPickerMode(mode);
+    setPickerTitle(mode === "date" ? "Select Date" : "Select Time");
+
+    // Set the initial value for the picker
+    let initialValue;
+    switch (field) {
+      case "startDate":
+        initialValue = leaveStartDate;
+        animateButtonPress(dateButtonScale);
+        break;
+      case "startTime":
+        initialValue = leaveStartTime;
+        animateButtonPress(timeButtonScale);
+        break;
+      case "endDate":
+        initialValue = leaveEndDate;
+        animateButtonPress(dateButtonScale);
+        break;
+      case "endTime":
+        initialValue = leaveEndTime;
+        animateButtonPress(timeButtonScale);
+        break;
+      default:
+        initialValue = new Date();
+    }
+
+    setTempPickerValue(initialValue);
+
+    if (Platform.OS === "ios") {
+      setDateTimeModalVisible(true);
+      Animated.parallel([
+        Animated.timing(modalBgAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(dateTimeModalAnim, {
+          toValue: 0,
+          tension: 70,
+          friction: 12,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      setCurrentPicker(field);
+    }
+  };
+
+  const closeDateTimeModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dateTimeModalAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setDateTimeModalVisible(false);
+    });
+  };
+
+  const handleDateTimeConfirm = () => {
+    animateButtonPress(confirmButtonScale);
+
+    switch (currentDateTimeField) {
+      case "startDate":
+        setLeaveStartDate(tempPickerValue);
+        break;
+      case "startTime":
+        setLeaveStartTime(tempPickerValue);
+        break;
+      case "endDate":
+        setLeaveEndDate(tempPickerValue);
+        break;
+      case "endTime":
+        setLeaveEndTime(tempPickerValue);
+        break;
+    }
+
+    setTimeout(() => {
+      closeDateTimeModal();
+    }, 100);
+  };
+
+  const renderAndroidPicker = () => {
     if (!currentPicker) return null;
 
     const isDatePicker = currentPicker.includes("Date");
-    const isFromPicker = currentPicker.startsWith("from");
+    const isStartPicker = currentPicker.startsWith("start");
 
     const onChange = (event, selectedValue) => {
-      if (Platform.OS === "android") {
-        if (event.type === "set") {
-          // User confirmed the selection
-          if (isDatePicker) {
-            if (isFromPicker) {
-              setLeaveFromDate(selectedValue || leaveFromDate);
-              // Ensure fromDate <= toDate
-              const newCombinedFromDate = combineDateAndTime(selectedValue || leaveFromDate, leaveFromTime);
-              const currentCombinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
-              if (newCombinedFromDate > currentCombinedToDate) {
-                setLeaveToDate(selectedValue || leaveFromDate);
-              }
-            } else {
-              const newToDate = selectedValue || leaveToDate;
-              const currentCombinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
-              const newCombinedToDate = combineDateAndTime(newToDate, leaveToTime);
-              if (newCombinedToDate < currentCombinedFromDate) {
-                Alert.alert("Invalid Date", "Leave 'To Date and Time' should be greater than or equal to 'From Date and Time'.");
-                return;
-              }
-              setLeaveToDate(newToDate);
-            }
+      if (event.type === "set") {
+        if (isDatePicker) {
+          if (isStartPicker) {
+            setLeaveStartDate(selectedValue || leaveStartDate);
           } else {
-            if (isFromPicker) {
-              setLeaveFromTime(selectedValue || leaveFromTime);
-            } else {
-              setLeaveToTime(selectedValue || leaveToTime);
-            }
+            setLeaveEndDate(selectedValue || leaveEndDate);
           }
-        }
-        // For Android, picker closes automatically after selection
-        setCurrentPicker(null);
-      } else {
-        // iOS handling
-        if (event.type === "set") {
-          if (isDatePicker) {
-            setTempDate(selectedValue || (isFromPicker ? leaveFromDate : leaveToDate));
+        } else {
+          if (isStartPicker) {
+            setLeaveStartTime(selectedValue || leaveStartTime);
           } else {
-            setTempTime(selectedValue || (isFromPicker ? leaveFromTime : leaveToTime));
+            setLeaveEndTime(selectedValue || leaveEndTime);
           }
         }
       }
+      setCurrentPicker(null);
     };
 
-    if (Platform.OS === "android") {
-      // For Android, render the picker without custom modal
-      return (
-        <DateTimePicker
-          value={isFromPicker ? (isDatePicker ? leaveFromDate : leaveFromTime) : isDatePicker ? leaveToDate : leaveToTime}
-          mode={isDatePicker ? "date" : "time"}
-          is24Hour={true}
-          display="default"
-          onChange={onChange}
-        />
-      );
-    } else {
-      // For iOS, render the picker inside a custom modal
-      return (
-        <Modal visible={!!currentPicker} transparent={true} animationType="fade" onRequestClose={() => setCurrentPicker(null)}>
-          <TouchableWithoutFeedback onPress={() => setCurrentPicker(null)}>
-            <View className="flex-1 justify-center items-center bg-slate-950/70 ">
-              <TouchableWithoutFeedback>
-                <View className={`w-11/12 max-w-lg p-6 rounded-lg ${isLightTheme ? "bg-white" : "bg-slate-800"}`}>
-                  <DateTimePicker
-                    value={isFromPicker ? (isDatePicker ? leaveFromDate : leaveFromTime) : isDatePicker ? leaveToDate : leaveToTime}
-                    mode={isDatePicker ? "date" : "time"}
-                    is24Hour={true}
-                    display="spinner"
-                    onChange={onChange}
-                    style={{
-                      width: "100%",
-                      backgroundColor: isLightTheme ? "#ffffff" : "#1e293b",
-                    }}
-                  />
-                  <View className="flex-row justify-between mt-4">
-                    <Pressable
-                      onPress={() => setCurrentPicker(null)}
-                      className={`p-4 rounded-lg ${isLightTheme ? "bg-slate-200" : "bg-slate-700"} flex-1 mr-2`}
-                    >
-                      <Text className={`text-center ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>Cancel</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        if (isFromPicker) {
-                          if (isDatePicker) {
-                            setLeaveFromDate(tempDate);
-                            // Ensure fromDate <= toDate
-                            const newCombinedFromDate = combineDateAndTime(tempDate, leaveFromTime);
-                            const currentCombinedToDate = combineDateAndTime(leaveToDate, leaveToTime);
-                            if (newCombinedFromDate > currentCombinedToDate) {
-                              setLeaveToDate(tempDate);
-                            }
-                          } else {
-                            setLeaveFromTime(tempTime);
-                          }
-                        } else {
-                          if (isDatePicker) {
-                            const newCombinedToDate = combineDateAndTime(tempDate, leaveToTime);
-                            const currentCombinedFromDate = combineDateAndTime(leaveFromDate, leaveFromTime);
-                            if (newCombinedToDate < currentCombinedFromDate) {
-                              Alert.alert("Invalid Date", "Leave 'To Date and Time' should be greater than or equal to 'From Date and Time'.");
-                              return;
-                            }
-                            setLeaveToDate(tempDate);
-                          } else {
-                            setLeaveToTime(tempTime);
-                          }
-                        }
-                        setCurrentPicker(null);
-                      }}
-                      className="p-4 rounded-lg bg-orange-500 flex-1 ml-2"
-                    >
-                      <Text className="text-center text-white">Confirm</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      );
-    }
+    return (
+      <DateTimePicker
+        value={isStartPicker ? (isDatePicker ? leaveStartDate : leaveStartTime) : isDatePicker ? leaveEndDate : leaveEndTime}
+        mode={isDatePicker ? "date" : "time"}
+        is24Hour={true}
+        display="default"
+        onChange={onChange}
+      />
+    );
   };
 
-  return (
-    <SafeAreaView className={`flex-1 bg-${isLightTheme ? "white" : "slate-900"} px-4 `} style={{ paddingTop: 60 }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1">
-            {/* Form Fields */}
-            <View className="space-y-4">
-              {/* Leave Type Dropdown */}
-              <View className="my-2">
-                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>
-                  Leave Type <Text className="text-red-500">*</Text>
-                </Text>
-                <DropDownPicker
-                  open={openLeaveType}
-                  value={leaveType}
-                  items={leaveTypeItems}
-                  setOpen={setOpenLeaveType}
-                  setValue={setLeaveType}
-                  setItems={setLeaveTypeItems}
-                  placeholder="Select Leave Type"
-                  textStyle={{
-                    color: isLightTheme ? "#374151" : "#9ca3af",
-                  }}
-                  className="mb-4"
-                  style={{
-                    borderColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                    backgroundColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                  }}
-                  dropDownContainerStyle={{
-                    borderColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                    backgroundColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                  }}
-                  arrowIconStyle={{
-                    tintColor: isLightTheme ? "#1e293b" : "#cbd5e1",
-                  }}
-                  tickIconStyle={{
-                    tintColor: isLightTheme ? "#1e293b" : "#cbd5e1",
-                  }}
-                  zIndex={3000}
-                  zIndexInverse={1000}
-                  placeholderStyle={{
-                    color: isLightTheme ? "#6B7280" : "#9CA3AF",
-                  }}
-                />
-              </View>
+  const FormLabel = ({ text, required = true }) => (
+    <View className="flex-row items-center mb-2">
+      <Text className="text-base font-semibold text-gray-800">{text}</Text>
+      {required && <Text className="text-red-500 ml-1">*</Text>}
+    </View>
+  );
 
-              {/* Approver Dropdown */}
-              <View className="my-2">
-                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>
-                  Approver <Text className="text-red-500">*</Text>
-                </Text>
+  const DateTimeSelector = ({ label, date, time, onDatePress, onTimePress }) => (
+    <View className="mb-5">
+      <FormLabel text={label} />
+      <View className="flex-row justify-between">
+        <Animated.View style={{ flex: 1, marginRight: 8, transform: [{ scale: dateButtonScale }] }}>
+          <TouchableOpacity className="py-3 px-4 bg-gray-100 rounded-lg flex-row justify-between items-center" onPress={onDatePress} activeOpacity={0.8}>
+            <Text className="text-gray-800">{date.toLocaleDateString()}</Text>
+            <Ionicons name="calendar-outline" size={18} color="#6B7280" />
+          </TouchableOpacity>
+        </Animated.View>
+        <Animated.View style={{ flex: 1, transform: [{ scale: timeButtonScale }] }}>
+          <TouchableOpacity className="py-3 px-4 bg-gray-100 rounded-lg flex-row justify-between items-center" onPress={onTimePress} activeOpacity={0.8}>
+            <Text className="text-gray-800">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+            <Ionicons name="time-outline" size={18} color="#6B7280" />
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 70 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+      >
+        <Animated.View
+          style={{
+            flex: 1,
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
+        >
+          <View className="px-5 mb-6">
+            <Text className="text-2xl font-bold text-gray-800 mb-1">Request Leave</Text>
+            <Text className="text-gray-500">Fill in the details to submit your leave request</Text>
+          </View>
+
+          {/* Form Container */}
+          <View className="flex-1">
+            {/* Leave Type Dropdown */}
+            <View className="px-5 mb-5">
+              <FormLabel text="Leave Type" />
+              <DropDownPicker
+                open={openLeaveType}
+                value={leaveType}
+                items={leaveTypeItems}
+                setOpen={setOpenLeaveType}
+                setValue={setLeaveType}
+                setItems={setLeaveTypeItems}
+                placeholder="Select Leave Type"
+                textStyle={{ color: "#374151" }}
+                style={{
+                  borderColor: "#F3F4F6",
+                  backgroundColor: "#F9FAFB",
+                  minHeight: 50,
+                }}
+                dropDownContainerStyle={{
+                  borderColor: "#F3F4F6",
+                  backgroundColor: "#F9FAFB",
+                }}
+                placeholderStyle={{ color: "#9CA3AF" }}
+                zIndex={3000}
+                zIndexInverse={1000}
+                disableBorderRadius={false}
+                nestedScrollEnabled={true}
+              />
+            </View>
+
+            {/* Approver Dropdown */}
+            {!openLeaveType && (
+              <View className="px-5 mb-5">
+                <FormLabel text="Approver" />
                 <DropDownPicker
                   open={approverOpen}
                   value={approverValue}
@@ -374,140 +428,126 @@ const SubmitLeaves = () => {
                   setValue={setApproverValue}
                   setItems={setApproverItems}
                   placeholder="Select Approver"
-                  textStyle={{
-                    color: isLightTheme ? "#374151" : "#9ca3af",
-                  }}
-                  className="mb-4"
+                  textStyle={{ color: "#374151" }}
                   style={{
-                    borderColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                    backgroundColor: isLightTheme ? "#f1f5f9" : "#1E293B",
+                    borderColor: "#F3F4F6",
+                    backgroundColor: "#F9FAFB",
+                    minHeight: 50,
                   }}
                   dropDownContainerStyle={{
-                    borderColor: isLightTheme ? "#f1f5f9" : "#1E293B",
-                    backgroundColor: isLightTheme ? "#f1f5f9" : "#1E293B",
+                    borderColor: "#F3F4F6",
+                    backgroundColor: "#F9FAFB",
                   }}
-                  arrowIconStyle={{
-                    tintColor: isLightTheme ? "#1e293b" : "#cbd5e1",
-                  }}
-                  tickIconStyle={{
-                    tintColor: isLightTheme ? "#1e293b" : "#cbd5e1",
-                  }}
+                  placeholderStyle={{ color: "#9CA3AF" }}
                   zIndex={2000}
                   zIndexInverse={2000}
-                  placeholderStyle={{
-                    color: isLightTheme ? "#6B7280" : "#9CA3AF",
-                  }}
-                />
-                {loadingApprovers && <ActivityIndicator size="small" color="#10B981" className="mt-2" />}
-                {errorApprovers && <Text className="text-red-500 mt-2 text-sm">{errorApprovers}</Text>}
-              </View>
-
-              {/* Leave Reason */}
-              <View className="my-2">
-                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>Reason (Optional)</Text>
-                <TextInput
-                  className={`p-4 rounded-lg mb-4 text-base ${isLightTheme ? "bg-slate-100 text-slate-800" : "bg-slate-800 text-slate-100"}`}
-                  placeholder="Enter leave reason"
-                  value={leaveReason}
-                  onChangeText={setLeaveReason}
-                  multiline
-                  numberOfLines={4}
-                  style={{
-                    textAlignVertical: "top",
-                  }}
-                  placeholderTextColor={isLightTheme ? "#6B7280" : "#9CA3AF"}
+                  disableBorderRadius={false}
+                  nestedScrollEnabled={true}
                 />
               </View>
+            )}
 
-              {/* Leave From Date & Time */}
-              <View className="">
-                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>
-                  Leave From <Text className="text-red-500">*</Text>
-                </Text>
-                <View className="flex-row space-x-4 mb-4 gap-3">
-                  {/* From Date */}
-                  <Pressable
-                    className={`flex-1 p-4 rounded-lg flex-row items-center justify-between ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-                    onPress={() => {
-                      setCurrentPicker("fromDate");
-                    }}
-                  >
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{leaveFromDate.toLocaleDateString()}</Text>
-                    <Ionicons name="calendar-outline" size={20} color={isLightTheme ? "#374151" : "#D1D5DB"} />
-                  </Pressable>
+            {/* Date Time Selectors */}
+            {!openLeaveType && !approverOpen && (
+              <View className="px-5">
+                <DateTimeSelector
+                  label="Leave Start"
+                  date={leaveStartDate}
+                  time={leaveStartTime}
+                  onDatePress={() => openDateTimeModal("startDate", "date")}
+                  onTimePress={() => openDateTimeModal("startTime", "time")}
+                />
 
-                  {/* From Time */}
-                  <Pressable
-                    className={`flex-1 p-4 rounded-lg flex-row items-center justify-between ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-                    onPress={() => {
-                      setCurrentPicker("fromTime");
-                    }}
-                  >
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
-                      {leaveFromTime.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                    <Ionicons name="time-outline" size={20} color={isLightTheme ? "#374151" : "#D1D5DB"} />
-                  </Pressable>
+                <DateTimeSelector
+                  label="Leave End"
+                  date={leaveEndDate}
+                  time={leaveEndTime}
+                  onDatePress={() => openDateTimeModal("endDate", "date")}
+                  onTimePress={() => openDateTimeModal("endTime", "time")}
+                />
+
+                {/* Submit Button */}
+                <View className="mt-6">
+                  <Animated.View style={{ transform: [{ scale: submitButtonScale }] }}>
+                    <TouchableOpacity
+                      onPress={handleSubmit}
+                      disabled={isSubmitting}
+                      className={`py-4 rounded-xl flex-row justify-center items-center ${isSubmitting ? "bg-orange-400" : "bg-orange-500"}`}
+                      activeOpacity={0.8}
+                    >
+                      {isSubmitting ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
+                      ) : (
+                        <Ionicons name="paper-plane" size={18} color="#FFFFFF" className="mr-2" />
+                      )}
+                      <Text className="text-white font-semibold text-base">{isSubmitting ? "Submitting..." : "Submit Leave Request"}</Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 </View>
               </View>
-
-              {/* Leave To Date & Time */}
-              <View className="my-2">
-                <Text className={`text-lg px-1 font-medium mb-1 ${isLightTheme ? `text-slate-800` : `text-slate-300`}`}>
-                  Leave To <Text className="text-red-500">*</Text>
-                </Text>
-                <View className="flex-row space-x-4 mb-4 gap-3">
-                  {/* To Date */}
-                  <Pressable
-                    className={`flex-1 p-4 rounded-lg flex-row items-center justify-between ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-                    onPress={() => {
-                      setCurrentPicker("toDate");
-                    }}
-                  >
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>{leaveToDate.toLocaleDateString()}</Text>
-                    <Ionicons name="calendar-outline" size={20} color={isLightTheme ? "#374151" : "#D1D5DB"} />
-                  </Pressable>
-
-                  {/* To Time */}
-                  <Pressable
-                    className={`flex-1 p-4 rounded-lg flex-row items-center justify-between ${isLightTheme ? "bg-slate-100" : "bg-slate-800"}`}
-                    onPress={() => {
-                      setCurrentPicker("toTime");
-                    }}
-                  >
-                    <Text className={`text-base ${isLightTheme ? "text-slate-800" : "text-slate-100"}`}>
-                      {leaveToTime.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                    <Ionicons name="time-outline" size={20} color={isLightTheme ? "#374151" : "#D1D5DB"} />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-
-            {/* Submit Button */}
-            <View className="mt-auto mb-4">
-              <Pressable
-                onPress={handleSubmit}
-                className={`bg-orange-500 py-4 px-5 rounded-lg w-full flex-row items-center justify-center ${isSubmitting ? "opacity-50" : "opacity-100"}`}
-                disabled={isSubmitting}
-              >
-                {isSubmitting && <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />}
-                <Text className="text-white text-center text-lg font-medium rounded-2xl">{isSubmitting ? "Submitting..." : "Submit Leave"}</Text>
-              </Pressable>
-              {errorSubmitting && <Text className="text-center text-red-500 mt-2 text-sm">{errorSubmitting}</Text>}
-            </View>
+            )}
           </View>
-        </TouchableWithoutFeedback>
+        </Animated.View>
       </KeyboardAvoidingView>
 
-      {/* Render the date/time picker */}
-      {renderPicker()}
+      {Platform.OS === "android" && renderAndroidPicker()}
+
+      {/* Date Time Modal */}
+      {dateTimeModalVisible && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+          <Animated.View
+            style={[
+              { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+              { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim },
+            ]}
+          >
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeDateTimeModal} />
+          </Animated.View>
+
+          <Animated.View
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            style={{
+              transform: [{ translateY: dateTimeModalAnim }],
+              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+            }}
+          >
+            <View className="items-center py-3" {...dateTimePanResponder.panHandlers}>
+              <View className="w-10 h-1 bg-slate-200 rounded-full" />
+            </View>
+
+            <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
+              <Text className="text-lg font-bold text-slate-800">{pickerTitle}</Text>
+              <TouchableOpacity onPress={closeDateTimeModal}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="items-center justify-center px-4 py-2">
+              <DateTimePicker
+                value={tempPickerValue}
+                mode={pickerMode}
+                is24Hour={true}
+                display="spinner"
+                onChange={(event, selectedValue) => {
+                  if (selectedValue) {
+                    setTempPickerValue(selectedValue);
+                  }
+                }}
+                textColor="#000000"
+                style={{ height: 200, alignSelf: "center" }}
+              />
+            </View>
+
+            <View className="px-4 pt-2 pb-4">
+              <Animated.View style={{ transform: [{ scale: confirmButtonScale }] }}>
+                <TouchableOpacity onPress={handleDateTimeConfirm} className="bg-orange-500 py-3.5 rounded-xl w-full items-center" activeOpacity={0.8}>
+                  <Text className="text-white font-bold text-base">Confirm</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

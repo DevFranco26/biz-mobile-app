@@ -1,3 +1,5 @@
+// app/(tabs)/(settings)/_layout.jsx
+
 import React from "react";
 import { View } from "react-native";
 import { Slot } from "expo-router";

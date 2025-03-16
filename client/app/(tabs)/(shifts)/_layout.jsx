@@ -4,12 +4,9 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useThemeStore from "../../../store/themeStore";
 
 const ShiftsTabsLayout = () => {
   const insets = useSafeAreaInsets();
-  const { theme } = useThemeStore();
-  const isLightTheme = theme === "light";
 
   // Helper function to generate tab icons using Ionicons
   const getTabBarIcon = (iconName, size = 24, accessibilityLabel = "") => {
@@ -24,8 +21,8 @@ const ShiftsTabsLayout = () => {
         tabBarShowIcon: true,
         tabBarLabelPosition: "below-icon",
         tabBarStyle: {
-          backgroundColor: isLightTheme ? "#ffffff" : "#0f172a",
-          borderBottomColor: isLightTheme ? "#e5e7eb" : "#0f172a",
+          backgroundColor: "#ffffff",
+          borderBottomColor: "#e5e7eb",
           borderTopWidth: 0,
           position: "absolute",
           top: insets.top,
@@ -36,7 +33,7 @@ const ShiftsTabsLayout = () => {
           shadowOpacity: 0,
         },
         tabBarActiveTintColor: "#f97316",
-        tabBarInactiveTintColor: isLightTheme ? "#6B7280" : "#6B7280",
+        tabBarInactiveTintColor: "#6B7280",
         tabBarLabelStyle: {
           fontSize: 12,
           textTransform: "none",
