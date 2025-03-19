@@ -1,4 +1,5 @@
-//  app/(tabs)/(leaves)/leaves-request.jsx
+// app/(tabs)/(leaves)/leaves-request.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -12,6 +13,9 @@ import {
   PanResponder,
   Dimensions,
   TouchableOpacity,
+  TextInput,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -23,6 +27,7 @@ import { API_BASE_URL } from "../../../config/constant";
 
 const { height } = Dimensions.get("window");
 
+// Utility to combine date and time into one
 const combineDateAndTime = (date, time) => {
   const combined = new Date(date);
   combined.setHours(time.getHours());
@@ -34,6 +39,10 @@ const combineDateAndTime = (date, time) => {
 
 const SubmitLeaves = () => {
   const router = useRouter();
+
+  // Additional state for the "Reason" text
+  const [leaveReason, setLeaveReason] = useState("");
+
   const [leaveType, setLeaveType] = useState("");
   const [leaveStartDate, setLeaveStartDate] = useState(new Date());
   const [leaveStartTime, setLeaveStartTime] = useState(new Date());
@@ -58,7 +67,7 @@ const SubmitLeaves = () => {
   const [pickerTitle, setPickerTitle] = useState("");
   const [currentDateTimeField, setCurrentDateTimeField] = useState(null);
 
-  // Animation values
+  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const submitButtonScale = useRef(new Animated.Value(1)).current;
@@ -79,10 +88,8 @@ const SubmitLeaves = () => {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // Close the modal if dragged down enough
           closeDateTimeModal();
         } else {
-          // Snap back to original position
           Animated.spring(dateTimeModalAnim, {
             toValue: 0,
             useNativeDriver: true,
@@ -91,27 +98,6 @@ const SubmitLeaves = () => {
       },
     })
   ).current;
-
-  const fetchApprovers = async (token) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/leaves/approvers`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok && data.data) {
-        const formattedApprovers = data.data.map((approver) => ({
-          label: `${approver.username} (${approver.email})`,
-          value: String(approver.id),
-        }));
-        setApproverItems(formattedApprovers);
-      } else {
-        RNAlert.alert("Error", data.message || "Failed to fetch approvers.");
-      }
-    } catch (error) {
-      console.error("Error fetching approvers:", error);
-      RNAlert.alert("Error", "An error occurred while fetching approvers.");
-    }
-  };
 
   useEffect(() => {
     // Initial animations
@@ -141,6 +127,27 @@ const SubmitLeaves = () => {
     initialize();
   }, [router]);
 
+  const fetchApprovers = async (token) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leaves/approvers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        const formattedApprovers = data.data.map((approver) => ({
+          label: `${approver.username} (${approver.email})`,
+          value: String(approver.id),
+        }));
+        setApproverItems(formattedApprovers);
+      } else {
+        RNAlert.alert("Error", data.message || "Failed to fetch approvers.");
+      }
+    } catch (error) {
+      console.error("Error fetching approvers:", error);
+      RNAlert.alert("Error", "An error occurred while fetching approvers.");
+    }
+  };
+
   const handleSubmit = async () => {
     animateButtonPress(submitButtonScale);
 
@@ -154,6 +161,7 @@ const SubmitLeaves = () => {
       RNAlert.alert("Invalid Dates", "Start Date and Time cannot be after End Date and Time.");
       return;
     }
+
     setIsSubmitting(true);
     try {
       const token = await SecureStore.getItemAsync("token");
@@ -163,12 +171,16 @@ const SubmitLeaves = () => {
         router.replace("(auth)/login-user");
         return;
       }
+
+      // Include leaveReason in the payload
       const payload = {
         type: leaveType,
         fromDate: combinedStart.toISOString(),
         toDate: combinedEnd.toISOString(),
         approverId: approverValue,
+        leaveReason,
       };
+
       const res = await fetch(`${API_BASE_URL}/api/leaves/submit`, {
         method: "POST",
         headers: {
@@ -180,7 +192,9 @@ const SubmitLeaves = () => {
       const data = await res.json();
       if (res.ok) {
         RNAlert.alert("Success", "Leave request submitted successfully!");
+        // Reset form
         setLeaveType("");
+        setLeaveReason("");
         setLeaveStartDate(new Date());
         setLeaveStartTime(new Date());
         setLeaveEndDate(new Date());
@@ -197,6 +211,7 @@ const SubmitLeaves = () => {
     }
   };
 
+  // Simple animation function
   const animateButtonPress = (buttonRef) => {
     Animated.sequence([
       Animated.timing(buttonRef, {
@@ -218,8 +233,7 @@ const SubmitLeaves = () => {
     setPickerMode(mode);
     setPickerTitle(mode === "date" ? "Select Date" : "Select Time");
 
-    // Set the initial value for the picker
-    let initialValue;
+    let initialValue = new Date();
     switch (field) {
       case "startDate":
         initialValue = leaveStartDate;
@@ -237,8 +251,6 @@ const SubmitLeaves = () => {
         initialValue = leaveEndTime;
         animateButtonPress(timeButtonScale);
         break;
-      default:
-        initialValue = new Date();
     }
 
     setTempPickerValue(initialValue);
@@ -259,6 +271,7 @@ const SubmitLeaves = () => {
         }),
       ]).start();
     } else {
+      // Android -> show the native picker
       setCurrentPicker(field);
     }
   };
@@ -303,9 +316,9 @@ const SubmitLeaves = () => {
     }, 100);
   };
 
+  // Android-specific date/time picker
   const renderAndroidPicker = () => {
     if (!currentPicker) return null;
-
     const isDatePicker = currentPicker.includes("Date");
     const isStartPicker = currentPicker.startsWith("start");
 
@@ -341,7 +354,7 @@ const SubmitLeaves = () => {
 
   const FormLabel = ({ text, required = true }) => (
     <View className="flex-row items-center mb-2">
-      <Text className="text-base font-semibold text-gray-800">{text}</Text>
+      <Text className="text-base font-semibold text-slate-800">{text}</Text>
       {required && <Text className="text-red-500 ml-1">*</Text>}
     </View>
   );
@@ -351,14 +364,14 @@ const SubmitLeaves = () => {
       <FormLabel text={label} />
       <View className="flex-row justify-between">
         <Animated.View style={{ flex: 1, marginRight: 8, transform: [{ scale: dateButtonScale }] }}>
-          <TouchableOpacity className="py-3 px-4 bg-gray-100 rounded-lg flex-row justify-between items-center" onPress={onDatePress} activeOpacity={0.8}>
-            <Text className="text-gray-800">{date.toLocaleDateString()}</Text>
+          <TouchableOpacity className="py-3 px-4 bg-slate-50 rounded-lg flex-row justify-between items-center" onPress={onDatePress} activeOpacity={0.8}>
+            <Text className="text-slate-800">{date.toLocaleDateString()}</Text>
             <Ionicons name="calendar-outline" size={18} color="#6B7280" />
           </TouchableOpacity>
         </Animated.View>
         <Animated.View style={{ flex: 1, transform: [{ scale: timeButtonScale }] }}>
-          <TouchableOpacity className="py-3 px-4 bg-gray-100 rounded-lg flex-row justify-between items-center" onPress={onTimePress} activeOpacity={0.8}>
-            <Text className="text-gray-800">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+          <TouchableOpacity className="py-3 px-4 bg-slate-50 rounded-lg flex-row justify-between items-center" onPress={onTimePress} activeOpacity={0.8}>
+            <Text className="text-slate-800">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
             <Ionicons name="time-outline" size={18} color="#6B7280" />
           </TouchableOpacity>
         </Animated.View>
@@ -373,52 +386,52 @@ const SubmitLeaves = () => {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
-        <Animated.View
-          style={{
-            flex: 1,
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          }}
-        >
-          <View className="px-5 mb-6">
-            <Text className="text-2xl font-bold text-gray-800 mb-1">Request Leave</Text>
-            <Text className="text-gray-500">Fill in the details to submit your leave request</Text>
-          </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }}
+            >
+              <View className="px-5 mb-6">
+                <Text className="text-2xl font-bold text-slate-800 mb-1">Request Leave</Text>
+                <Text className="text-slate-500">Fill in the details to submit your leave request</Text>
+              </View>
 
-          {/* Form Container */}
-          <View className="flex-1">
-            {/* Leave Type Dropdown */}
-            <View className="px-5 mb-5">
-              <FormLabel text="Leave Type" />
-              <DropDownPicker
-                open={openLeaveType}
-                value={leaveType}
-                items={leaveTypeItems}
-                setOpen={setOpenLeaveType}
-                setValue={setLeaveType}
-                setItems={setLeaveTypeItems}
-                placeholder="Select Leave Type"
-                textStyle={{ color: "#374151" }}
-                style={{
-                  borderColor: "#F3F4F6",
-                  backgroundColor: "#F9FAFB",
-                  minHeight: 50,
-                }}
-                dropDownContainerStyle={{
-                  borderColor: "#F3F4F6",
-                  backgroundColor: "#F9FAFB",
-                }}
-                placeholderStyle={{ color: "#9CA3AF" }}
-                zIndex={3000}
-                zIndexInverse={1000}
-                disableBorderRadius={false}
-                nestedScrollEnabled={true}
-              />
-            </View>
+              {/* Leave Type Dropdown */}
+              <View style={{ zIndex: 3000 }} className="px-5 mb-5">
+                <FormLabel text="Leave Type" />
+                <DropDownPicker
+                  open={openLeaveType}
+                  value={leaveType}
+                  items={leaveTypeItems}
+                  setOpen={setOpenLeaveType}
+                  setValue={setLeaveType}
+                  setItems={setLeaveTypeItems}
+                  placeholder="Select Leave Type"
+                  textStyle={{ color: "#374151" }}
+                  style={{
+                    borderColor: "#F9FAFB",
+                    backgroundColor: "#F9FAFB",
+                    minHeight: 50,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: "#F9FAFB",
+                    backgroundColor: "#F9FAFB",
+                  }}
+                  placeholderStyle={{ color: "#9CA3AF" }}
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                  nestedScrollEnabled={true}
+                  listMode="SCROLLVIEW"
+                  scrollViewProps={{ nestedScrollEnabled: true }}
+                  autoScroll={false}
+                />
+              </View>
 
-            {/* Approver Dropdown */}
-            {!openLeaveType && (
-              <View className="px-5 mb-5">
+              {/* Approver Dropdown */}
+              <View style={{ zIndex: 2000 }} className="px-5 mb-5">
                 <FormLabel text="Approver" />
                 <DropDownPicker
                   open={approverOpen}
@@ -430,25 +443,40 @@ const SubmitLeaves = () => {
                   placeholder="Select Approver"
                   textStyle={{ color: "#374151" }}
                   style={{
-                    borderColor: "#F3F4F6",
-                    backgroundColor: "#F9FAFB",
+                    borderColor: "#f8fafc",
+                    backgroundColor: "#f8fafc",
                     minHeight: 50,
                   }}
                   dropDownContainerStyle={{
-                    borderColor: "#F3F4F6",
+                    borderColor: "#f8fafc",
                     backgroundColor: "#F9FAFB",
                   }}
                   placeholderStyle={{ color: "#9CA3AF" }}
                   zIndex={2000}
                   zIndexInverse={2000}
-                  disableBorderRadius={false}
                   nestedScrollEnabled={true}
+                  listMode="SCROLLVIEW"
+                  scrollViewProps={{ nestedScrollEnabled: true }}
+                  autoScroll={false}
                 />
               </View>
-            )}
 
-            {/* Date Time Selectors */}
-            {!openLeaveType && !approverOpen && (
+              {/* Reason for Leave (TEXTINPUT) */}
+              <View className="px-5 mb-5">
+                <FormLabel text="Reason (optional)" required={false} />
+                <View className="bg-slate-50 rounded-lg px-3 py-3">
+                  <TextInput
+                    multiline
+                    style={{ color: "#374151", minHeight: 80 }}
+                    value={leaveReason}
+                    onChangeText={setLeaveReason}
+                    placeholder="Explain your reason (optional)"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+              </View>
+
+              {/* Date Time Selectors */}
               <View className="px-5">
                 <DateTimeSelector
                   label="Leave Start"
@@ -472,32 +500,38 @@ const SubmitLeaves = () => {
                     <TouchableOpacity
                       onPress={handleSubmit}
                       disabled={isSubmitting}
-                      className={`py-4 rounded-xl flex-row justify-center items-center ${isSubmitting ? "bg-orange-400" : "bg-orange-500"}`}
+                      className={`py-4 rounded-lg flex-row justify-center items-center ${isSubmitting ? "bg-orange-400" : "bg-orange-400"}`}
                       activeOpacity={0.8}
                     >
                       {isSubmitting ? (
                         <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
                       ) : (
-                        <Ionicons name="paper-plane" size={18} color="#FFFFFF" className="mr-2" />
+                        <Ionicons name="paper-plane" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
                       )}
                       <Text className="text-white font-semibold text-base">{isSubmitting ? "Submitting..." : "Submit Leave Request"}</Text>
                     </TouchableOpacity>
                   </Animated.View>
                 </View>
               </View>
-            )}
-          </View>
-        </Animated.View>
+            </Animated.View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
       {Platform.OS === "android" && renderAndroidPicker()}
 
-      {/* Date Time Modal */}
+      {/* iOS Date/Time Modal */}
       {dateTimeModalVisible && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
           <Animated.View
             style={[
-              { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              },
               { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim },
             ]}
           >
@@ -505,10 +539,18 @@ const SubmitLeaves = () => {
           </Animated.View>
 
           <Animated.View
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-lg"
             style={{
               transform: [{ translateY: dateTimeModalAnim }],
-              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "white",
+              borderTopLeftRadius: 10,
+              borderTopRightRadius: 10,
+              minHeight: height * 0.4,
+              maxHeight: Platform.OS === "ios" ? height * 0.4 : height * 0.5,
+              paddingBottom: Platform.OS === "ios" ? 0 : 20,
             }}
           >
             <View className="items-center py-3" {...dateTimePanResponder.panHandlers}>
@@ -517,9 +559,6 @@ const SubmitLeaves = () => {
 
             <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
               <Text className="text-lg font-bold text-slate-800">{pickerTitle}</Text>
-              <TouchableOpacity onPress={closeDateTimeModal}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
             </View>
 
             <View className="items-center justify-center px-4 py-2">
@@ -540,7 +579,7 @@ const SubmitLeaves = () => {
 
             <View className="px-4 pt-2 pb-4">
               <Animated.View style={{ transform: [{ scale: confirmButtonScale }] }}>
-                <TouchableOpacity onPress={handleDateTimeConfirm} className="bg-orange-500 py-3.5 rounded-xl w-full items-center" activeOpacity={0.8}>
+                <TouchableOpacity onPress={handleDateTimeConfirm} className="bg-orange-400 py-3.5 rounded-lg w-full items-center" activeOpacity={0.8}>
                   <Text className="text-white font-bold text-base">Confirm</Text>
                 </TouchableOpacity>
               </Animated.View>

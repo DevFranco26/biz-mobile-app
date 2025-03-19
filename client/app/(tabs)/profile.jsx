@@ -1,6 +1,7 @@
+// app/(tabs)/profile.jsx
+
 "use client";
 
-// app/(tabs)/profile.jsx
 import { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -33,11 +34,11 @@ const formatAwayDuration = (lastActiveAt, status) => {
   const diffMs = now - lastActive;
   const diffMinutes = diffMs / 60000;
   if (diffMinutes < 60) {
-    return `Away for ${Math.floor(diffMinutes)} minutes`;
+    return `${Math.floor(diffMinutes)} minutes ago`;
   }
   const diffHours = diffMinutes / 60;
   if (diffHours < 24) {
-    return `Away for ${Math.floor(diffHours)} hours`;
+    return `${Math.floor(diffHours)} hours ago`;
   }
   return `Last active at ${lastActive.toLocaleString()}`;
 };
@@ -58,14 +59,17 @@ const getStatusColor = (status) => {
 const Profile = () => {
   const { token, logout } = useAuthStore();
   const { presenceStatus, lastActiveAt } = usePresenceStore();
-
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+
+  // State for modals
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isPassModalVisible, setIsPassModalVisible] = useState(false);
   const [isSignOutModalVisible, setIsSignOutModalVisible] = useState(false);
+
+  // Form fields
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -74,17 +78,19 @@ const Profile = () => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Updating states / errors
   const [passUpdating, setPassUpdating] = useState(false);
   const [passError, setPassError] = useState("");
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState("");
   const [signingOut, setSigningOut] = useState(false);
 
-  // Animation values
+  // Basic animations for page load
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
-  // Individual button animations for better control
+  // Individual button animations
   const editButtonScale = useRef(new Animated.Value(1)).current;
   const passButtonScale = useRef(new Animated.Value(1)).current;
   const signOutButtonScale = useRef(new Animated.Value(1)).current;
@@ -92,13 +98,13 @@ const Profile = () => {
   const updatePassButtonScale = useRef(new Animated.Value(1)).current;
   const confirmSignOutButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Modal animations
+  // Modals: translation from bottom + background fade
   const editModalAnim = useRef(new Animated.Value(height)).current;
   const passModalAnim = useRef(new Animated.Value(height)).current;
   const signOutModalAnim = useRef(new Animated.Value(height)).current;
   const modalBgAnim = useRef(new Animated.Value(0)).current;
 
-  // Pan responder for edit modal
+  // PanResponder for each modal
   const editPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -109,10 +115,8 @@ const Profile = () => {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // Close the modal if dragged down enough
           closeEditModal();
         } else {
-          // Snap back to original position
           Animated.spring(editModalAnim, {
             toValue: 0,
             useNativeDriver: true,
@@ -122,7 +126,6 @@ const Profile = () => {
     })
   ).current;
 
-  // Pan responder for password modal
   const passPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -133,10 +136,8 @@ const Profile = () => {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // Close the modal if dragged down enough
           closePassModal();
         } else {
-          // Snap back to original position
           Animated.spring(passModalAnim, {
             toValue: 0,
             useNativeDriver: true,
@@ -146,7 +147,6 @@ const Profile = () => {
     })
   ).current;
 
-  // Pan responder for sign out modal
   const signOutPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -157,10 +157,8 @@ const Profile = () => {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // Close the modal if dragged down enough
           closeSignOutModal();
         } else {
-          // Snap back to original position
           Animated.spring(signOutModalAnim, {
             toValue: 0,
             useNativeDriver: true,
@@ -171,7 +169,6 @@ const Profile = () => {
   ).current;
 
   useEffect(() => {
-    // Initial animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -184,18 +181,19 @@ const Profile = () => {
         useNativeDriver: true,
       }),
     ]).start();
-
     fetchProfile();
   }, []);
 
   const openEditModal = () => {
-    if (profile && profile.user && profile.profile) {
+    // Prefill data
+    if (profile?.user && profile?.profile) {
       setUsername(profile.user.username || "");
       setEmail(profile.user.email || "");
       setFirstName(profile.profile.firstName || "");
       setLastName(profile.profile.lastName || "");
       setPhoneNumber(profile.profile.phoneNumber || "");
     }
+
     setIsEditModalVisible(true);
     Animated.parallel([
       Animated.timing(modalBgAnim, {
@@ -235,6 +233,7 @@ const Profile = () => {
     setConfirmPassword("");
     setPassError("");
     setIsPassModalVisible(true);
+
     Animated.parallel([
       Animated.timing(modalBgAnim, {
         toValue: 1,
@@ -303,19 +302,16 @@ const Profile = () => {
 
   // Enhanced button animation with better bounce
   const animateButtonPress = (buttonRef) => {
-    // Create a sequence for more natural bounce
     Animated.sequence([
-      // First quickly shrink
       Animated.timing(buttonRef, {
         toValue: 0.92,
         duration: 70,
         useNativeDriver: true,
       }),
-      // Then bounce back with spring for natural feel
       Animated.spring(buttonRef, {
         toValue: 1,
-        friction: 3, // Lower friction = more bounce
-        tension: 40, // Lower tension = softer spring
+        friction: 3,
+        tension: 40,
         useNativeDriver: true,
       }),
     ]).start();
@@ -512,10 +508,10 @@ const Profile = () => {
           <View className="px-5 py-6">
             {/* Header */}
             <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-2xl font-bold text-slate-800">My Profile</Text>
+              <Text className="text-2xl font-bold text-slate-700">My Profile</Text>
               <TouchableOpacity
                 onPress={fetchProfile}
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 items-center justify-center"
+                className="w-10 h-10 rounded-full items-center justify-center"
                 style={{
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 1 },
@@ -532,7 +528,7 @@ const Profile = () => {
               <>
                 {/* Profile Card */}
                 <View
-                  className="bg-white rounded-2xl border border-slate-200 p-5 mb-6"
+                  className="bg-white rounded-xl border border-slate-200 p-5 mb-6"
                   style={{
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 3 },
@@ -541,12 +537,12 @@ const Profile = () => {
                     elevation: 6,
                   }}
                 >
-                  <View className="flex-row items-center mb-4">
-                    <View className="w-[70px] h-[70px] rounded-full bg-orange-500 items-center justify-center mr-4">
+                  <View className="flex-row items-center mb-1">
+                    <View className="w-[70px] h-[70px] rounded-full bg-orange-400 items-center justify-center mr-4">
                       <Text className="text-white text-2xl font-bold">{getInitials()}</Text>
                     </View>
                     <View className="flex-1">
-                      <Text className="text-xl font-bold text-slate-800">
+                      <Text className="text-xl font-bold text-slate-700">
                         {profile.profile.firstName} {profile.profile.lastName}
                       </Text>
                       <Text className="text-slate-600 text-base">@{profile.user.username}</Text>
@@ -554,53 +550,52 @@ const Profile = () => {
                       <View className="flex-row items-center mt-2">
                         <View
                           className={`px-3 py-1 rounded-full flex-row items-center ${
-                            presenceStatus === "available" ? "bg-teal-500/20" : "bg-orange-500/20"
+                            presenceStatus === "available" ? "bg-teal-500/20" : "bg-orange-400/20"
                           }`}
                         >
                           <View className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getStatusColor(presenceStatus) }} />
-                          <Text className={`${presenceStatus === "available" ? "text-teal-500" : "text-orange-500"} text-xs font-bold`}>
+                          <Text className={`${presenceStatus === "available" ? "text-teal-500" : "text-orange-400"} text-xs font-bold`}>
                             {presenceStatus ? presenceStatus.toUpperCase() : "Offline"}
                           </Text>
                         </View>
+                        {presenceStatus === "away" && lastActiveAt && (
+                          <Text className="text-slate-600 text-sm italic ml-2">{formatAwayDuration(lastActiveAt, presenceStatus)}</Text>
+                        )}
                       </View>
                     </View>
                   </View>
-
-                  {presenceStatus === "away" && lastActiveAt && (
-                    <Text className="text-slate-600 text-sm italic mb-3">{formatAwayDuration(lastActiveAt, presenceStatus)}</Text>
-                  )}
 
                   <View className="h-px bg-slate-100 my-4" />
 
                   {/* Contact Info */}
                   <View>
                     <View className="flex-row items-center mb-4">
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                      <View className="w-10 h-10 rounded-md bg-orange-50 items-center justify-center mr-3">
                         <MaterialCommunityIcons name="email-outline" size={20} color="#f97316" />
                       </View>
                       <View>
                         <Text className="text-slate-600 text-xs font-medium mb-1">Email</Text>
-                        <Text className="text-slate-800 font-medium">{profile.user.email}</Text>
+                        <Text className="text-slate-600 font-medium">{profile.user.email}</Text>
                       </View>
                     </View>
 
                     <View className="flex-row items-center mb-4">
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                      <View className="w-10 h-10 rounded-md bg-orange-50 items-center justify-center mr-3">
                         <MaterialCommunityIcons name="phone-outline" size={20} color="#f97316" />
                       </View>
                       <View>
                         <Text className="text-slate-600 text-xs font-medium mb-1">Phone</Text>
-                        <Text className="text-slate-800 font-medium">{profile.profile.phoneNumber || "Not provided"}</Text>
+                        <Text className="text-slate-600 font-medium">{profile.profile.phoneNumber || "Not provided"}</Text>
                       </View>
                     </View>
 
                     <View className="flex-row items-center">
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
+                      <View className="w-10 h-10 rounded-md bg-orange-50 items-center justify-center mr-3">
                         <FontAwesome5 name="building" size={18} color="#f97316" />
                       </View>
                       <View>
                         <Text className="text-slate-600 text-xs font-medium mb-1">Company</Text>
-                        <Text className="text-slate-800 font-medium">
+                        <Text className="text-slate-600 font-medium">
                           {profile.company && profile.company.name ? profile.company.name : "Not assigned"}
                         </Text>
                       </View>
@@ -616,7 +611,7 @@ const Profile = () => {
                         animateButtonPress(editButtonScale);
                         setTimeout(openEditModal, 100);
                       }}
-                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
+                      className="flex-row items-center bg-white border border-slate-200 rounded-lg p-4 mb-4"
                       style={{
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
@@ -626,10 +621,10 @@ const Profile = () => {
                       }}
                       activeOpacity={0.8}
                     >
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
-                        <Feather name="edit-2" size={18} color="#f97316" />
+                      <View className="w-10 h-10 rounded-lg bg-orange-400 items-center justify-center mr-3">
+                        <Feather name="edit-2" size={18} color="#ffff" />
                       </View>
-                      <Text className="text-slate-800 font-bold text-base flex-1">Edit Profile</Text>
+                      <Text className="text-slate-600 font-semibold text-medium tracking-wider flex-1">Update Profile</Text>
                       <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
                   </Animated.View>
@@ -640,7 +635,7 @@ const Profile = () => {
                         animateButtonPress(passButtonScale);
                         setTimeout(openPassModal, 100);
                       }}
-                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4 mb-4"
+                      className="flex-row items-center bg-white border border-slate-200 rounded-lg p-4 mb-4"
                       style={{
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
@@ -650,10 +645,10 @@ const Profile = () => {
                       }}
                       activeOpacity={0.8}
                     >
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
-                        <Feather name="lock" size={18} color="#f97316" />
+                      <View className="w-10 h-10 rounded-lg bg-orange-400 items-center justify-center mr-3">
+                        <Feather name="lock" size={18} color="#ffff" />
                       </View>
-                      <Text className="text-slate-800 font-bold text-base flex-1">Change Password</Text>
+                      <Text className="text-slate-600 font-semibold text-medium tracking-wider flex-1">Change Password</Text>
                       <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
                   </Animated.View>
@@ -664,7 +659,7 @@ const Profile = () => {
                         animateButtonPress(signOutButtonScale);
                         setTimeout(openSignOutModal, 100);
                       }}
-                      className="flex-row items-center bg-white border border-slate-200 rounded-xl p-4"
+                      className="flex-row items-center bg-white border border-slate-200 rounded-lg p-4"
                       style={{
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
@@ -674,10 +669,10 @@ const Profile = () => {
                       }}
                       activeOpacity={0.8}
                     >
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
-                        <Feather name="log-out" size={18} color="#f97316" />
+                      <View className="w-10 h-10 rounded-lg bg-orange-400 items-center justify-center mr-3">
+                        <Feather name="log-out" size={18} color="#ffff" />
                       </View>
-                      <Text className="text-slate-800 font-bold text-base flex-1">Sign Out</Text>
+                      <Text className="text-slate-600 font-semibold text-medium tracking-wider flex-1">Sign Out</Text>
                       <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>
                   </Animated.View>
@@ -686,9 +681,9 @@ const Profile = () => {
             ) : (
               <View className="items-center justify-center py-10">
                 <Feather name="user-x" size={60} color="#d1d5db" />
-                <Text className="text-slate-800 text-lg font-bold mt-4">No profile data available</Text>
+                <Text className="text-slate-700 text-lg font-bold mt-4">No profile data available</Text>
                 <Text className="text-slate-600 text-center mt-2">We couldn't load your profile information</Text>
-                <TouchableOpacity onPress={fetchProfile} className="bg-orange-500 py-3 px-6 rounded-xl mt-6" activeOpacity={0.8}>
+                <TouchableOpacity onPress={fetchProfile} className="bg-orange-400 py-3 px-6 rounded-lg mt-6" activeOpacity={0.8}>
                   <Text className="text-white font-bold">Try Again</Text>
                 </TouchableOpacity>
               </View>
@@ -697,7 +692,11 @@ const Profile = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Edit Profile Modal */}
+      {/* 
+        --------------------------------------------------------
+        EDIT PROFILE MODAL
+        --------------------------------------------------------
+      */}
       {isEditModalVisible && (
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
@@ -708,8 +707,15 @@ const Profile = () => {
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
             style={{
               transform: [{ translateY: editModalAnim }],
-              maxHeight: "80%",
-              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "white",
+              borderTopLeftRadius: 10,
+              borderTopRightRadius: 10,
+              minHeight: height * 0.7,
+              maxHeight: Platform.OS === "ios" ? height * 0.7 : height * 0.85,
+              paddingBottom: Platform.OS === "ios" ? 0 : 20,
             }}
           >
             <View className="items-center py-3" {...editPanResponder.panHandlers}>
@@ -717,30 +723,27 @@ const Profile = () => {
             </View>
 
             <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
-              <Text className="text-lg font-bold text-slate-800">Edit Profile</Text>
-              <TouchableOpacity onPress={closeEditModal}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
+              <Text className="text-lg font-bold text-slate-700">Update Profile</Text>
             </View>
 
             <ScrollView className="px-5 py-4">
               {updateError ? (
-                <View className="p-4 bg-red-50 border border-red-200 rounded-xl mb-5">
+                <View className="p-4 bg-red-50 border border-red-200 rounded-lg mb-5">
                   <Text className="text-red-600 font-medium">{updateError}</Text>
                 </View>
               ) : null}
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Username</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
-                <TextInput className="flex-1 text-slate-800" value={username} onChangeText={setUsername} placeholderTextColor="#9ca3af" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" />
+                <TextInput className="flex-1 ml-2 text-slate-700" value={username} onChangeText={setUsername} placeholderTextColor="#9ca3af" />
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Email</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <MaterialCommunityIcons name="email-outline" size={18} color="#9ca3af" className="mr-2" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="email-outline" size={18} color="#9ca3af" />
                 <TextInput
-                  className="flex-1 text-slate-800"
+                  className="flex-1 ml-2 text-slate-700"
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -750,22 +753,22 @@ const Profile = () => {
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">First Name</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
-                <TextInput className="flex-1 text-slate-800" value={firstName} onChangeText={setFirstName} placeholderTextColor="#9ca3af" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" />
+                <TextInput className="flex-1 ml-2 text-slate-700" value={firstName} onChangeText={setFirstName} placeholderTextColor="#9ca3af" />
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Last Name</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <Feather name="user" size={18} color="#9ca3af" className="mr-2" />
-                <TextInput className="flex-1 text-slate-800" value={lastName} onChangeText={setLastName} placeholderTextColor="#9ca3af" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <Feather name="user" size={18} color="#9ca3af" />
+                <TextInput className="flex-1 ml-2 text-slate-700" value={lastName} onChangeText={setLastName} placeholderTextColor="#9ca3af" />
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Phone Number</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <MaterialCommunityIcons name="phone-outline" size={18} color="#9ca3af" className="mr-2" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="phone-outline" size={18} color="#9ca3af" />
                 <TextInput
-                  className="flex-1 text-slate-800"
+                  className="flex-1 ml-2 text-slate-700"
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
@@ -777,15 +780,23 @@ const Profile = () => {
                 {updating ? (
                   <ActivityIndicator size="small" color="#f97316" />
                 ) : (
-                  <View className="flex-row">
-                    <TouchableOpacity onPress={closeEditModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
-                      <Text className="text-slate-800 font-semibold">Cancel</Text>
-                    </TouchableOpacity>
+                  <View className="flex-col w-full ">
                     <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
-                      <TouchableOpacity onPress={handleUpdateProfile} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
-                        <Text className="text-white font-semibold">Save Changes</Text>
+                      <TouchableOpacity
+                        onPress={handleUpdateProfile}
+                        className="bg-orange-400 py-4 rounded-lg w-full items-center mb-3"
+                        activeOpacity={0.8}
+                      >
+                        <Text className="text-white font-semibold text-center">Save Changes</Text>
                       </TouchableOpacity>
                     </Animated.View>
+                    <TouchableOpacity
+                      onPress={closeEditModal}
+                      className="border-slate-200 border py-3.5 rounded-lg w-full items-center mb-1 "
+                      activeOpacity={0.8}
+                    >
+                      <Text className="text-slate-700 font-semibold text-center">Cancel</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -794,7 +805,11 @@ const Profile = () => {
         </View>
       )}
 
-      {/* Change Password Modal */}
+      {/* 
+        --------------------------------------------------------
+        CHANGE PASSWORD MODAL
+        --------------------------------------------------------
+      */}
       {isPassModalVisible && (
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
@@ -805,8 +820,15 @@ const Profile = () => {
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
             style={{
               transform: [{ translateY: passModalAnim }],
-              maxHeight: "80%",
-              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "white",
+              borderTopLeftRadius: 10,
+              borderTopRightRadius: 10,
+              minHeight: height * 0.7,
+              maxHeight: Platform.OS === "ios" ? height * 0.7 : height * 0.85,
+              paddingBottom: Platform.OS === "ios" ? 0 : 20,
             }}
           >
             <View className="items-center py-3" {...passPanResponder.panHandlers}>
@@ -814,25 +836,22 @@ const Profile = () => {
             </View>
 
             <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
-              <Text className="text-lg font-bold text-slate-800">Change Password</Text>
-              <TouchableOpacity onPress={closePassModal}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
+              <Text className="text-lg font-bold text-slate-700">Change Password</Text>
             </View>
 
             <ScrollView className="px-5 py-4">
               {passError ? (
-                <View className="p-4 bg-red-50 border border-red-200 rounded-xl mb-5">
+                <View className="p-4 bg-red-50 border border-red-200 rounded-lg mb-5">
                   <Text className="text-red-600 font-medium">{passError}</Text>
                 </View>
               ) : null}
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Current Password</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" />
                 <TextInput
                   secureTextEntry
-                  className="flex-1 text-slate-800"
+                  className="flex-1 ml-2 text-slate-700"
                   value={oldPassword}
                   onChangeText={setOldPassword}
                   placeholderTextColor="#9ca3af"
@@ -840,11 +859,11 @@ const Profile = () => {
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">New Password</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" />
                 <TextInput
                   secureTextEntry
-                  className="flex-1 text-slate-800"
+                  className="flex-1 ml-2 text-slate-700"
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholderTextColor="#9ca3af"
@@ -852,11 +871,11 @@ const Profile = () => {
               </View>
 
               <Text className="text-sm font-semibold text-slate-600 mb-2">Confirm New Password</Text>
-              <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3 mb-4">
-                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" className="mr-2" />
+              <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-3 mb-4">
+                <MaterialCommunityIcons name="lock-outline" size={18} color="#9ca3af" />
                 <TextInput
                   secureTextEntry
-                  className="flex-1 text-slate-800"
+                  className="flex-1 ml-2 text-slate-700"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholderTextColor="#9ca3af"
@@ -867,15 +886,23 @@ const Profile = () => {
                 {passUpdating ? (
                   <ActivityIndicator size="small" color="#f97316" />
                 ) : (
-                  <View className="flex-row">
-                    <TouchableOpacity onPress={closePassModal} className="py-3 px-5 rounded-xl border border-slate-200 mr-3" activeOpacity={0.8}>
-                      <Text className="text-slate-800 font-semibold">Cancel</Text>
-                    </TouchableOpacity>
+                  <View className="w-full">
                     <Animated.View style={{ transform: [{ scale: updatePassButtonScale }] }}>
-                      <TouchableOpacity onPress={handleChangePassword} className="bg-orange-500 py-3 px-5 rounded-xl" activeOpacity={0.8}>
+                      <TouchableOpacity
+                        onPress={handleChangePassword}
+                        className="bg-orange-400 py-4 rounded-lg w-full items-center mb-3"
+                        activeOpacity={0.8}
+                      >
                         <Text className="text-white font-semibold">Update Password</Text>
                       </TouchableOpacity>
                     </Animated.View>
+                    <TouchableOpacity
+                      onPress={closePassModal}
+                      className="border-slate-200 border py-3.5 rounded-lg w-full items-center mb-3"
+                      activeOpacity={0.8}
+                    >
+                      <Text className="text-slate-700 font-semibold">Cancel</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -884,7 +911,11 @@ const Profile = () => {
         </View>
       )}
 
-      {/* Sign Out Confirmation Modal */}
+      {/* 
+        --------------------------------------------------------
+        SIGN OUT CONFIRMATION MODAL
+        --------------------------------------------------------
+      */}
       {isSignOutModalVisible && (
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.5)", opacity: modalBgAnim }]}>
@@ -895,10 +926,19 @@ const Profile = () => {
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
             style={{
               transform: [{ translateY: signOutModalAnim }],
-              paddingBottom: Platform.OS === "ios" ? 30 : 20,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "white",
+              borderTopLeftRadius: 10,
+              borderTopRightRadius: 10,
+              minHeight: height * 0.7,
+              maxHeight: Platform.OS === "ios" ? height * 0.7 : height * 0.85,
+              paddingBottom: Platform.OS === "ios" ? 0 : 20,
             }}
+            {...signOutPanResponder.panHandlers}
           >
-            <View className="items-center py-3" {...signOutPanResponder.panHandlers}>
+            <View className="items-center py-3">
               <View className="w-10 h-1 bg-slate-200 rounded-full" />
             </View>
 
@@ -907,7 +947,7 @@ const Profile = () => {
                 <Feather name="log-out" size={28} color="#f97316" />
               </View>
 
-              <Text className="text-xl font-bold text-slate-800 mb-2">Sign Out</Text>
+              <Text className="text-xl font-bold text-slate-700 mb-2">Sign Out</Text>
               <Text className="text-slate-600 text-center mb-6">Are you sure you want to sign out of your account?</Text>
 
               <View className="w-full">
@@ -919,17 +959,17 @@ const Profile = () => {
                 ) : (
                   <>
                     <Animated.View style={{ transform: [{ scale: confirmSignOutButtonScale }] }}>
-                      <TouchableOpacity onPress={handleSignOut} className="bg-orange-500 py-3.5 rounded-xl w-full items-center mb-3" activeOpacity={0.8}>
+                      <TouchableOpacity onPress={handleSignOut} className="bg-orange-400 py-3.5 rounded-lg w-full items-center mb-3" activeOpacity={0.8}>
                         <Text className="text-white font-bold text-base">Yes, Sign Out</Text>
                       </TouchableOpacity>
                     </Animated.View>
 
                     <TouchableOpacity
                       onPress={closeSignOutModal}
-                      className="py-3.5 rounded-xl w-full items-center border border-slate-200"
+                      className="py-3.5 rounded-lg w-full items-center border border-slate-200"
                       activeOpacity={0.8}
                     >
-                      <Text className="text-slate-800 font-bold text-base">Cancel</Text>
+                      <Text className="text-slate-700 font-bold text-center">Cancel</Text>
                     </TouchableOpacity>
                   </>
                 )}

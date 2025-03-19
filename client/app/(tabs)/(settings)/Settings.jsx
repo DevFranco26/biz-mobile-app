@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  StyleSheet,
   Linking,
   Animated,
   PanResponder,
@@ -27,21 +26,8 @@ import { API_BASE_URL, WEBSITE_URL } from "../../../config/constant";
 import { MaterialIcons, Ionicons, Feather, FontAwesome5 } from "@expo/vector-icons";
 import io from "socket.io-client";
 
+// Same as your department page, define a min and max offset
 const { height } = Dimensions.get("window");
-
-// Define consistent colors to ensure they look the same on both platforms
-const COLORS = {
-  primary: "#f97316", // orange-500
-  primaryLight: "#ffedd5", // orange-50
-  primaryDark: "#c2410c", // orange-700
-  text: "#1e293b", // slate-800
-  textSecondary: "#64748b", // slate-500
-  textLight: "#94a3b8", // slate-400
-  border: "#e2e8f0", // slate-200
-  white: "#ffffff",
-  background: "#ffffff",
-  error: "#ef4444", // red-500
-};
 
 const Settings = () => {
   const router = useRouter();
@@ -52,8 +38,10 @@ const Settings = () => {
   const [showLockedModal, setShowLockedModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Animation for slide-up modal
-  const modalY = useRef(new Animated.Value(height)).current;
+  // Instead of starting from 'height', we'll start from a partial off-screen
+  // position to allow partial expansions as in the department page.
+  // (We keep modalOpacity for the background fade.)
+  const modalY = useRef(new Animated.Value(Platform.OS === "ios" ? 700 : 500)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
 
   // Animation for option press
@@ -72,26 +60,44 @@ const Settings = () => {
   // Individual option button animations
   const optionScales = useRef({}).current;
 
-  // Pan responder for draggable modal
+  // Here we replicate the "department" style panResponder for partial expansions:
+  // - If dragged > 100 downwards, close
+  // - If dragged upward < -50, we can lift it further
+  // - Otherwise snap back to 0
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gestureState) => {
+        // If dragging down, move it
         if (gestureState.dy > 0) {
           modalY.setValue(gestureState.dy);
+        }
+        // If dragging upward, allow partial expansions (like department)
+        else if (gestureState.dy < 0) {
+          const newPos = Math.max(gestureState.dy, -300); // clamp upward
+          modalY.setValue(newPos);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // If dragged down more than 100, close the modal
+          // If dragged down more than 100, close
           closeModal();
+        } else if (gestureState.dy < -50) {
+          // If user drags up above a threshold, partially expand more
+          Animated.spring(modalY, {
+            toValue: -300,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }).start();
         } else {
-          // Otherwise snap back to original position
+          // Snap back to the default "open" position
           Animated.spring(modalY, {
             toValue: 0,
+            tension: 50,
+            friction: 7,
             useNativeDriver: true,
-            bounciness: 8,
           }).start();
         }
       },
@@ -99,7 +105,7 @@ const Settings = () => {
   ).current;
 
   useEffect(() => {
-    // Initial animations
+    // Initial animations for the settings screen
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -117,34 +123,36 @@ const Settings = () => {
   }, []);
 
   const openModal = () => {
-    // Reset position before animation
-    modalY.setValue(height);
-    setShowLockedModal(true);
+    // Reset position before animation (like in department page)
+    modalY.setValue(Platform.OS === "ios" ? 700 : 500);
 
-    // Animate modal sliding up
+    setShowLockedModal(true);
+    // Animate the background fade-in and the slide up
     Animated.parallel([
-      Animated.timing(modalY, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
       Animated.timing(modalOpacity, {
         toValue: 1,
         duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modalY, {
+        toValue: 0,
+        tension: 60,
+        friction: 12,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
   const closeModal = () => {
+    // Animate background fade out and slide down
     Animated.parallel([
-      Animated.timing(modalY, {
-        toValue: height,
+      Animated.timing(modalOpacity, {
+        toValue: 0,
         duration: 300,
         useNativeDriver: true,
       }),
-      Animated.timing(modalOpacity, {
-        toValue: 0,
+      Animated.timing(modalY, {
+        toValue: Platform.OS === "ios" ? 700 : 500,
         duration: 300,
         useNativeDriver: true,
       }),
@@ -157,17 +165,15 @@ const Settings = () => {
   const animateButtonPress = (buttonRef) => {
     // Create a sequence for more natural bounce
     Animated.sequence([
-      // First quickly shrink
       Animated.timing(buttonRef, {
         toValue: 0.92,
         duration: 70,
         useNativeDriver: true,
       }),
-      // Then bounce back with spring for natural feel
       Animated.spring(buttonRef, {
         toValue: 1,
-        friction: 3, // Lower friction = more bounce
-        tension: 40, // Lower tension = softer spring
+        friction: 3,
+        tension: 40,
         useNativeDriver: true,
       }),
     ]).start();
@@ -225,41 +231,16 @@ const Settings = () => {
     };
   }, []);
 
-  // Extract needed values from the profile.
-  const userName = profile?.profile?.firstName || "User";
-  const userRole = (profile?.user?.role || "user").toLowerCase();
+  // Extract needed values from the profile
+  const firstName = profile?.profile?.firstName || "";
+  const lastName = profile?.profile?.lastName || "";
+  const userRole = (profile?.user?.role || "").toLowerCase();
   const companyName = profile?.company?.name || "Unknown Company";
   const subscriptionPlan = profile?.subscription?.plan?.name || "No Subscription";
   const planLower = subscriptionPlan.toLowerCase();
 
   // Improved option configuration with better grouping
   const optionsConfig = [
-    // Admin Management Group
-    {
-      title: "Companies",
-      route: "./superadmin-companies",
-      roles: ["superadmin"],
-      icon: "business",
-      iconType: "ionicons",
-      group: "Administration",
-    },
-    {
-      title: "Subscribers",
-      route: "./superadmin-subscribers",
-      roles: ["superadmin"],
-      icon: "people",
-      iconType: "ionicons",
-      group: "Administration",
-    },
-    {
-      title: "Subscription Plans",
-      route: "./superadmin-subscription-plans",
-      roles: ["superadmin"],
-      icon: "card",
-      iconType: "ionicons",
-      group: "Administration",
-    },
-
     // Team Management Group
     {
       title: "Departments",
@@ -280,11 +261,28 @@ const Settings = () => {
 
     // Schedule Management Group
     {
-      title: "Shift Schedules",
-      route: "./manage-schedules",
+      title: "Shift",
+      route: "./manage-shift",
       roles: ["admin", "superadmin"],
       icon: "calendar",
       iconType: "feather",
+      group: "Schedule Management",
+    },
+    {
+      title: "Schedules",
+      route: "./manage-shift-schedule",
+      roles: ["admin", "superadmin"],
+      icon: "calendar",
+      iconType: "feather",
+      group: "Schedule Management",
+    },
+
+    {
+      title: "Leave Requests",
+      route: "./manage-leaves",
+      roles: ["admin", "superadmin"],
+      icon: "calendar-outline",
+      iconType: "ionicons",
       group: "Schedule Management",
     },
     {
@@ -294,14 +292,6 @@ const Settings = () => {
       lockSubs: ["basic", "free"],
       icon: "map-pin",
       iconType: "feather",
-      group: "Schedule Management",
-    },
-    {
-      title: "Leave Requests",
-      route: "./manage-leaves",
-      roles: ["admin", "superadmin"],
-      icon: "calendar-outline",
-      iconType: "ionicons",
       group: "Schedule Management",
     },
 
@@ -340,10 +330,10 @@ const Settings = () => {
     },
   ];
 
-  // Filter options based on role.
+  // Filter options based on role
   let filteredOptions = [];
   if (userRole === "employee") {
-    filteredOptions = []; // Employees see no administrative options.
+    filteredOptions = []; // Employees see no administrative options
   } else if (userRole === "supervisor") {
     filteredOptions = optionsConfig.filter((option) => option.roles.includes("supervisor"));
   } else if (userRole === "admin") {
@@ -352,7 +342,7 @@ const Settings = () => {
     filteredOptions = optionsConfig;
   }
 
-  // Determine if an option should be locked based on subscription.
+  // Determine if an option should be locked based on subscription
   const isOptionLocked = (option) => {
     if (planLower === "free") return true;
     if (option.lockSubs && option.lockSubs.includes(planLower)) return true;
@@ -362,7 +352,6 @@ const Settings = () => {
   // Group options by their defined group
   const groupOptions = (options) => {
     const grouped = {};
-
     options.forEach((option) => {
       const group = option.group || "Other";
       if (!grouped[group]) {
@@ -370,7 +359,6 @@ const Settings = () => {
       }
       grouped[group].push(option);
     });
-
     return grouped;
   };
 
@@ -380,12 +368,12 @@ const Settings = () => {
   const getIconComponent = (icon, iconType) => {
     switch (iconType) {
       case "feather":
-        return <Feather name={icon} size={18} color={COLORS.primary} />;
+        return <Feather name={icon} size={18} color="#ffff" />;
       case "fontawesome5":
-        return <FontAwesome5 name={icon} size={18} color={COLORS.primary} />;
+        return <FontAwesome5 name={icon} size={18} color="#ffff" />;
       case "ionicons":
       default:
-        return <Ionicons name={icon} size={18} color={COLORS.primary} />;
+        return <Ionicons name={icon} size={18} color="#ffff" />;
     }
   };
 
@@ -403,14 +391,14 @@ const Settings = () => {
       // Animate the button press
       animateButtonPress(optionScales[index]);
 
-      // Navigate or show locked modal after animation
+      // Give 300ms so the bounce is visible before the modal or route
       setTimeout(() => {
         if (locked) {
           openModal();
         } else {
           router.push(route);
         }
-      }, 100);
+      }, 300);
     };
 
     return (
@@ -418,21 +406,30 @@ const Settings = () => {
         <TouchableOpacity
           onPress={handlePress}
           activeOpacity={0.8}
-          style={[
-            styles.optionButton,
-            {
-              opacity: locked ? 0.7 : 1,
-            },
-          ]}
+          className="flex-row items-center bg-[#ffffff] border border-[#e2e8f0] rounded-[12px] px-4 py-4 mb-4"
+          style={{
+            opacity: locked ? 0.7 : 1,
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 3,
+              },
+              android: {
+                elevation: 2,
+              },
+            }),
+          }}
         >
-          <View style={styles.iconContainer}>{getIconComponent(icon, iconType)}</View>
-          <Text style={styles.optionText}>{title}</Text>
+          <View className="w-10 h-10 rounded-md bg-orange-400 items-center justify-center mr-3">{getIconComponent(icon, iconType)}</View>
+          <Text className="text-medium font-semibold text-slate-700 flex-1">{title}</Text>
           {locked ? (
-            <View style={styles.lockIconContainer}>
-              <MaterialIcons name="lock" size={16} color={COLORS.primary} />
+            <View className="bg-[#ffedd5] rounded-[16px] p-1.5">
+              <MaterialIcons name="lock" size={16} color="#f97316" />
             </View>
           ) : (
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+            <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
           )}
         </TouchableOpacity>
       </Animated.View>
@@ -441,8 +438,9 @@ const Settings = () => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      {/* Root container using nativewind for background color */}
+      <SafeAreaView className="flex-1 bg-[#ffffff]">
         <Animated.View
           style={{
             flex: 1,
@@ -451,73 +449,106 @@ const Settings = () => {
           }}
         >
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerRow}>
-              <Text style={styles.headerTitle}>Settings</Text>
+          <View className="px-5 py-6 border-b" style={{ borderBottomColor: "#e2e8f0", borderBottomWidth: 1 }}>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-[24px] font-bold text-[#1e293b]">Settings</Text>
 
               <Animated.View style={{ transform: [{ scale: refreshButtonScale }] }}>
-                <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-                  <Feather name="refresh-cw" size={18} color={COLORS.primary} />
+                <TouchableOpacity
+                  onPress={handleRefresh}
+                  className="w-10 h-10 rounded-full items-center justify-center "
+                  style={Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 2,
+                    },
+                    android: {
+                      elevation: 2,
+                    },
+                  })}
+                >
+                  <Feather name="refresh-cw" size={18} color="#f97316" />
                 </TouchableOpacity>
               </Animated.View>
             </View>
 
             {/* Profile Card */}
-            <View style={styles.profileCard}>
-              <View style={styles.profileInfo}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+            <View
+              className="px-4 py-4 rounded-lg border border-[#e2e8f0] bg-[#ffffff] mb-2"
+              style={Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4.65,
+                },
+                android: {
+                  elevation: 6,
+                },
+              })}
+            >
+              <View className="flex-row items-center mb-3">
+                <View className="w-14 h-14 rounded-full bg-orange-400 items-center justify-center mr-3">
+                  <Text className="text-white text-[18px] font-bold">
+                    {firstName.charAt(0).toUpperCase()}
+                    {lastName.charAt(0).toUpperCase()}
+                  </Text>
                 </View>
 
-                <View>
-                  <Text style={styles.userName}>Hi, {userName}</Text>
-                  <View style={styles.userMetaRow}>
-                    <View style={styles.roleBadge}>
-                      <Text style={styles.roleText}>{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</Text>
+                <View className="ml-1">
+                  <Text className="text-xl font-bold text-slate-700 capitalize ">
+                    {firstName} {lastName}
+                  </Text>
+                  <View className="flex-row items-center mt-1">
+                    <View className="bg-orange-400 rounded-[12px] px-2 py-0.5 mr-2">
+                      <Text className="text-[12px] text-white font-[500]">{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</Text>
                     </View>
-                    <Text style={styles.companyText}>{companyName}</Text>
+                    <Text className="text-[14px] text-[#64748b]">{companyName}</Text>
                   </View>
                 </View>
               </View>
 
-              <View style={styles.subscriptionBanner}>
-                <Ionicons name="star" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-                <Text style={styles.subscriptionText}>
-                  Subscription: <Text style={styles.subscriptionPlan}>{subscriptionPlan}</Text>
+              <View className="p-3 rounded-[8px] bg-orange-100 flex-row items-center">
+                <Ionicons name="star" size={18} color="#f97316" style={{ marginRight: 8 }} />
+                <Text className="text-orange-700 text-[14px] flex-1">
+                  Subscription: <Text className="font-bold">{subscriptionPlan}</Text>
                 </Text>
                 <TouchableOpacity onPress={() => Linking.openURL(WEBSITE_URL)}>
-                  <Text style={styles.websiteLink}>Website</Text>
+                  <Text className="text-[12px] text-orange-700 font-bold">Website</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
+          {/* Main Content Area */}
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Loading profile...</Text>
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#94a3b8" />
+              <Text className="mt-4 text-slate-400">Loading profile...</Text>
             </View>
           ) : error ? (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
-              <Text style={styles.errorText}>{error}</Text>
+            <View className="flex-1 justify-center items-center p-5">
+              <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
+              <Text className="text-red-700 mt-4 mb-6 text-center">{error}</Text>
               <Animated.View style={{ transform: [{ scale: retryButtonScale }] }}>
                 <TouchableOpacity
                   onPress={() => {
                     animateButtonPress(retryButtonScale);
                     setTimeout(fetchProfile, 100);
                   }}
-                  style={styles.retryButton}
+                  className="bg-[#f97316] px-6 py-3 rounded-[12px]"
                 >
-                  <Text style={styles.retryButtonText}>Try Again</Text>
+                  <Text className="text-[#ffffff] font-semibold text-[16px]">Try Again</Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
           ) : filteredOptions.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Image source={require("../../../assets/images/icon.png")} style={styles.emptyIcon} resizeMode="contain" />
-              <Text style={styles.emptyTitle}>No Administrative Access</Text>
-              <Text style={styles.emptyDescription}>
+            <View className="flex-1 justify-center items-center p-5">
+              <Image source={require("../../../assets/images/icon.png")} className="w-20 h-20 rounded-[16px] mb-6" resizeMode="contain" />
+              <Text className="text-[18px] font-[500] mb-2 text-[#1e293b]">No Administrative Access</Text>
+              <Text className="text-center text-[#64748b]">
                 {userRole === "employee"
                   ? "You don't have access to administrative features."
                   : userRole === "supervisor"
@@ -526,11 +557,10 @@ const Settings = () => {
               </Text>
             </View>
           ) : (
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
-              {/* Render each group of options */}
+            <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
               {Object.keys(groupedOptions).map((groupName, groupIndex) => (
-                <View key={groupIndex} style={styles.optionGroup}>
-                  <Text style={styles.groupTitle}>{groupName}</Text>
+                <View key={groupIndex} className="mb-6">
+                  <Text className="text-sm font-medium mb-3 text-slate-500 uppercase">{groupName}</Text>
                   {groupedOptions[groupName].map((option, index) => (
                     <OptionRow key={index} option={option} index={`${groupName}-${index}`} />
                   ))}
@@ -543,26 +573,47 @@ const Settings = () => {
 
       {/* Slide-up Modal for Locked Features */}
       <Modal transparent visible={showLockedModal} onRequestClose={closeModal} animationType="none">
-        <Animated.View style={[styles.modalOverlay, { opacity: modalOpacity }]} onTouchEnd={closeModal}>
-          <Animated.View style={[styles.modalContainer, { transform: [{ translateY: modalY }] }]} {...panResponder.panHandlers}>
+        {/* Fade the background according to modalOpacity */}
+        <Animated.View className="flex-1 bg-[rgba(0,0,0,0.5)] justify-end" style={{ opacity: modalOpacity }} onTouchEnd={closeModal}>
+          <Animated.View
+            className="bg-white rounded-t-[10px] px-5 pt-5"
+            style={{
+              transform: [{ translateY: modalY }],
+              // This ensures a partial "department" style approach:
+              minHeight: height * 0.7,
+              maxHeight: Platform.OS === "ios" ? height * 0.7 : height * 0.85,
+              paddingBottom: Platform.OS === "ios" ? 0 : 20,
+            }}
+            {...panResponder.panHandlers}
+          >
             {/* Drag handle */}
-            <View style={styles.dragHandleContainer}>
-              <View style={styles.dragHandle} />
+            <View className="w-full items-center mb-5">
+              <View className="w-12 h-1 rounded-[2px] bg-slate-300" />
             </View>
 
-            <View style={styles.modalContent}>
-              <View style={styles.lockIconCircle}>
-                <Ionicons name="lock-closed" size={32} color={COLORS.primary} />
+            <View className="items-center mb-6 ">
+              <View className="w-16 h-16 rounded-lg bg-[#ffedd5] items-center justify-center mb-4">
+                <Ionicons name="lock-closed" size={32} color="#f97316" />
               </View>
 
-              <Text style={styles.modalTitle}>Feature Locked</Text>
-
-              <Text style={styles.modalDescription}>This feature is not available for {subscriptionPlan} plan</Text>
+              <Text className="text-[20px] font-bold mb-2 text-[#1e293b]">Feature Locked</Text>
+              <Text className="text-center text-slate-500 px-4">This feature is not available for {subscriptionPlan} plan</Text>
             </View>
 
             <Animated.View style={{ transform: [{ scale: primaryButtonScale }] }}>
               <TouchableOpacity
-                style={styles.primaryButton}
+                className="bg-orange-400 py-4 rounded-lg w-full items-center mb-3 "
+                style={Platform.select({
+                  ios: {
+                    shadowColor: "#f97316",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 4,
+                  },
+                  android: {
+                    elevation: 3,
+                  },
+                })}
                 onPress={() => {
                   animateButtonPress(primaryButtonScale);
                   setTimeout(() => {
@@ -571,19 +622,7 @@ const Settings = () => {
                   }, 100);
                 }}
               >
-                <Text style={styles.primaryButtonText}>Visit Website</Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <Animated.View style={{ transform: [{ scale: secondaryButtonScale }] }}>
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => {
-                  animateButtonPress(secondaryButtonScale);
-                  setTimeout(closeModal, 100);
-                }}
-              >
-                <Text style={styles.secondaryButtonText}>Maybe Later</Text>
+                <Text className="text-white text-center font-semibold  text-lg">Visit Website</Text>
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
@@ -592,333 +631,5 @@ const Settings = () => {
     </>
   );
 };
-
-// Explicit styles to ensure consistency across platforms
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: COLORS.text,
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.white,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  profileCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4.65,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  profileInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  avatarText: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
-  },
-  userMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  roleBadge: {
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
-  },
-  roleText: {
-    fontSize: 12,
-    color: COLORS.primaryDark,
-    fontWeight: "500",
-  },
-  companyText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  subscriptionBanner: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.primaryLight,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  subscriptionText: {
-    color: COLORS.primaryDark,
-    fontSize: 14,
-    flex: 1,
-  },
-  subscriptionPlan: {
-    fontWeight: "bold",
-  },
-  websiteLink: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: "bold",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    color: COLORS.textSecondary,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    color: COLORS.error,
-    marginTop: 16,
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  retryButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  retryButtonText: {
-    color: COLORS.white,
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: COLORS.text,
-  },
-  emptyDescription: {
-    textAlign: "center",
-    color: COLORS.textSecondary,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  scrollViewContent: {
-    paddingBottom: 30,
-  },
-  optionGroup: {
-    marginBottom: 24,
-  },
-  groupTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 12,
-    color: COLORS.textSecondary,
-    textTransform: "uppercase",
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  optionText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.text,
-    flex: 1,
-  },
-  lockIconContainer: {
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 16,
-    padding: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContainer: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: Platform.OS === "ios" ? 36 : 20,
-  },
-  dragHandleContainer: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  dragHandle: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.border,
-  },
-  modalContent: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  lockIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: COLORS.text,
-  },
-  modalDescription: {
-    textAlign: "center",
-    color: COLORS.textSecondary,
-    paddingHorizontal: 16,
-  },
-  primaryButton: {
-    width: "100%",
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  primaryButtonText: {
-    color: COLORS.white,
-    textAlign: "center",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  secondaryButton: {
-    width: "100%",
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: COLORS.text,
-    textAlign: "center",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});
 
 export default Settings;

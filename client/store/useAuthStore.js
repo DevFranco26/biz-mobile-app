@@ -8,9 +8,7 @@ const useAuthStore = create((set, get) => ({
   remember: false,
   login: async (token, remember = false) => {
     set({ token, remember });
-    if (remember) {
-      await SecureStore.setItemAsync("token", token);
-    }
+    await SecureStore.setItemAsync("token", token);
   },
   logout: async () => {
     set({ token: null });

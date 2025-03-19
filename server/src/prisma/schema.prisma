@@ -87,20 +87,22 @@ model UserPresence {
 }
 
 model Company {
-  id           String         @id @default(cuid())
-  name         String         @unique
-  userId       String         @unique
-  createdAt    DateTime       @default(now()) @db.Timestamptz
-  updatedAt    DateTime       @default(now()) @db.Timestamptz
-  country      String?
-  currency     String?
-  language     String?
-  Department   Department[]
-  User         User[]
-  Tax          Tax[]
-  Location     Location[]
-  Shift        Shift[]
-  Subscription Subscription[]
+  id            String          @id @default(cuid())
+  name          String          @unique
+  userId        String          @unique
+  createdAt     DateTime        @default(now()) @db.Timestamptz
+  updatedAt     DateTime        @default(now()) @db.Timestamptz
+  country       String?
+  currency      String?
+  language      String?
+  Department    Department[]
+  User          User[]
+  Tax           Tax[]
+  Location      Location[]
+  Shift         Shift[]
+  Subscription  Subscription[]
+  ShiftSchedule ShiftSchedule[]
+  Holiday       Holiday[]
 }
 
 model Department {
@@ -178,17 +180,6 @@ model Payment {
   updatedAt         DateTime @default(now()) @db.Timestamptz
 }
 
-model TimeLog {
-  id        String    @id @default(cuid())
-  userId    String
-  timeIn    DateTime  @db.Timestamptz
-  timeOut   DateTime? @db.Timestamptz
-  status    Boolean   @default(true)
-  createdAt DateTime  @default(now()) @db.Timestamptz
-  updatedAt DateTime  @default(now()) @db.Timestamptz
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model Location {
   id                  String                @id @default(cuid())
   companyId           String
@@ -220,50 +211,97 @@ model UserActivity {
 }
 
 model Shift {
-  id        String      @id @default(cuid())
-  companyId String
-  shiftName String
-  startTime DateTime    @db.Time
-  endTime   DateTime    @db.Time
-  createdAt DateTime    @default(now()) @db.Timestamptz
-  updatedAt DateTime    @default(now()) @db.Timestamptz
-  company   Company     @relation(fields: [companyId], references: [id])
-  UserShift UserShift[]
+  id                     String   @id @default(cuid())
+  companyId              String
+  shiftName              String
+  startTime              DateTime @db.Time
+  endTime                DateTime @db.Time
+  crossesMidnight        Boolean  @default(false)
+  differentialMultiplier Decimal  @default(1.0)
+  createdAt              DateTime @default(now()) @db.Timestamptz
+  updatedAt              DateTime @updatedAt @db.Timestamptz
+
+  company       Company         @relation(fields: [companyId], references: [id])
+  UserShift     UserShift[]
+  ShiftSchedule ShiftSchedule[]
+}
+
+model ShiftSchedule {
+  id                String    @id @default(cuid())
+  companyId         String
+  shiftId           String
+  recurrencePattern String
+  startDate         DateTime
+  endDate           DateTime?
+  assignedToAll     Boolean   @default(false)
+  assignedUserId    String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+  updatedAt         DateTime  @updatedAt @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
 }
 
 model UserShift {
-  id              String            @id @default(cuid())
-  userId          String
-  shiftId         String
-  assignedDate    DateTime          @db.Timestamptz
-  createdAt       DateTime          @default(now()) @db.Timestamptz
-  updatedAt       DateTime          @default(now()) @db.Timestamptz
+  id           String   @id @default(cuid())
+  userId       String
+  shiftId      String
+  assignedDate DateTime @db.Timestamptz
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
   user            User              @relation(fields: [userId], references: [id])
   shift           Shift             @relation(fields: [shiftId], references: [id])
   ShiftRecurrence ShiftRecurrence[]
 }
 
 model ShiftRecurrence {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   userShiftId       String
   recurrencePattern String
-  createdAt         DateTime  @default(now()) @db.Timestamptz
-  updatedAt         DateTime  @default(now()) @db.Timestamptz
-  userShift         UserShift @relation(fields: [userShiftId], references: [id])
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
+
+  userShift UserShift @relation(fields: [userShiftId], references: [id])
+}
+
+model TimeLog {
+  id        String    @id @default(cuid())
+  userId    String
+  timeIn    DateTime  @db.Timestamptz
+  timeOut   DateTime? @db.Timestamptz
+  status    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @default(now()) @db.Timestamptz
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  date        DateTime @db.Date
+  description String?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @default(now()) @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model Leave {
-  id         String   @id @default(cuid())
-  userId     String
-  approverId String?
-  leaveType  String
-  startDate  DateTime @db.Timestamptz
-  endDate    DateTime @db.Timestamptz
-  status     String   @default("pending")
-  createdAt  DateTime @default(now()) @db.Timestamptz
-  updatedAt  DateTime @default(now()) @db.Timestamptz
-  approver   User?    @relation("approver", fields: [approverId], references: [id])
-  User       User     @relation(fields: [userId], references: [id])
+  id               String   @id @default(cuid())
+  userId           String
+  approverId       String?
+  leaveType        String
+  startDate        DateTime @db.Timestamptz
+  endDate          DateTime @db.Timestamptz
+  status           String   @default("pending")
+  leaveReason      String?
+  approverComments String?
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @default(now()) @db.Timestamptz
+  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver         User?    @relation("approver", fields: [approverId], references: [id], onDelete: SetNull)
 }
 
 model SubscriptionPlan {

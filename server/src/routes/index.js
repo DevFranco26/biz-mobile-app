@@ -12,7 +12,11 @@ const userPresenceRoutes = require("@routes/Features/userPresenceRoutes");
 const leavesRoutes = require("@routes/Features/leaveRoutes");
 const locationRoutes = require("@routes/Features/locationRoutes");
 const payrollRoutes = require("@routes/Features/payrollRoutes");
+
+const shiftRoutes = require("@routes/Features/shiftRoutes");
 const shiftSchedulesRoutes = require("@routes/Features/shiftScheduleRoutes");
+const userShiftRoutes = require("@routes/Features/userShiftRoutes");
+
 const timeLogRoutes = require("@routes/Features/timeLogRoutes");
 const employeeLocationRestrictionRoutes = require("@routes/Features/employeeLocationRestrictionRoutes");
 
@@ -32,7 +36,11 @@ router.use("/presence", userPresenceRoutes);
 router.use("/leaves", leavesRoutes);
 router.use("/location", locationRoutes);
 router.use("/payroll", payrollRoutes);
+
+router.use("/shifts", shiftRoutes);
 router.use("/shiftschedules", shiftSchedulesRoutes);
+router.use("/usershifts", userShiftRoutes);
+
 router.use("/timelogs", timeLogRoutes);
 router.use("/employee-location-restriction", employeeLocationRestrictionRoutes);
 

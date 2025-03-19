@@ -25,7 +25,26 @@ import { Ionicons } from "@expo/vector-icons";
 
 const { height } = Dimensions.get("window");
 
-// Define all component functions outside of the main component
+/**
+ * Formats a DateTime string (e.g., "2025-03-17 08:00:32+08")
+ * into a user-friendly local string with date AND time,
+ * e.g. "Mar 17, 2025, 8:00 AM"
+ */
+const formatDateTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-US", {
+    month: "short", // e.g., "Mar"
+    day: "numeric", // e.g., "17"
+    year: "numeric", // e.g., "2025"
+    hour: "2-digit", // e.g., "08"
+    minute: "2-digit", // e.g., "00"
+    hour12: true, // show AM/PM
+  });
+};
+
+/**
+ * A small sub-component to display a status badge with an icon.
+ */
 const LeaveStatusBadge = ({ status }) => {
   let bgColor, textColor, icon;
 
@@ -46,8 +65,8 @@ const LeaveStatusBadge = ({ status }) => {
       icon = "time";
       break;
     default:
-      bgColor = "bg-gray-100";
-      textColor = "text-gray-800";
+      bgColor = "bg-slate-100";
+      textColor = "text-slate-800";
       icon = "help-circle";
   }
 
@@ -59,17 +78,10 @@ const LeaveStatusBadge = ({ status }) => {
   );
 };
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
+/**
+ * A small sub-component for the filter pill UI.
+ */
 const FilterOption = ({ label, isActive, onPress }) => {
-  // Button animation
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animatePress = () => {
@@ -95,15 +107,17 @@ const FilterOption = ({ label, isActive, onPress }) => {
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.8} className={`px-4 py-2 rounded-full mr-2 ${isActive ? "bg-orange-500" : "bg-gray-100"}`}>
-        <Text className={`text-sm font-medium ${isActive ? "text-white" : "text-gray-700"}`}>{label}</Text>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.8} className={`px-4 py-2 rounded-full mr-2 ${isActive ? "bg-orange-500" : "bg-slate-100"}`}>
+        <Text className={`text-sm font-medium ${isActive ? "text-white" : "text-slate-700"}`}>{label}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
+/**
+ * A small sub-component for each sort option row.
+ */
 const SortOption = ({ label, icon, onPress, isActive }) => {
-  // Button animation
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animatePress = () => {
@@ -131,21 +145,23 @@ const SortOption = ({ label, icon, onPress, isActive }) => {
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.8} className={`flex-row items-center p-4 ${isActive ? "bg-orange-50" : ""}`}>
         <Ionicons name={icon} size={20} color={isActive ? "#f97316" : "#6B7280"} style={{ marginRight: 12 }} />
-        <Text className={`text-base ${isActive ? "text-orange-500 font-medium" : "text-gray-700"}`}>{label}</Text>
+        <Text className={`text-base ${isActive ? "text-orange-500 font-medium" : "text-slate-700"}`}>{label}</Text>
         {isActive && <Ionicons name="checkmark" size={20} color="#f97316" style={{ marginLeft: "auto" }} />}
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
-// Empty list component defined outside the main component
+/**
+ * A small sub-component displayed when there's no data.
+ */
 const EmptyListComponent = ({ activeFilter }) => (
   <View className="flex-1 justify-center items-center py-10">
-    <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
+    <View className="w-16 h-16 rounded-full bg-slate-100 items-center justify-center mb-4">
       <Ionicons name="calendar-outline" size={28} color="#9CA3AF" />
     </View>
-    <Text className="text-gray-500 text-lg font-medium mb-1">No leave records</Text>
-    <Text className="text-gray-400 text-center px-10">
+    <Text className="text-slate-500 text-lg font-medium mb-1">No leave records</Text>
+    <Text className="text-slate-400 text-center px-10">
       {activeFilter === "all"
         ? "You don't have any leave records yet. Submit a leave request to get started."
         : `No ${activeFilter} leave requests found.`}
@@ -153,7 +169,10 @@ const EmptyListComponent = ({ activeFilter }) => (
   </View>
 );
 
-const LeavesApproval = () => {
+/**
+ * Main LeavesApproval screen component.
+ */
+export default function LeavesApproval() {
   const [leaves, setLeaves] = useState([]);
   const [filteredLeaves, setFilteredLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -163,14 +182,14 @@ const LeavesApproval = () => {
   const [sortOption, setSortOption] = useState("newest");
   const router = useRouter();
 
-  // Animation values
+  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const sortButtonScale = useRef(new Animated.Value(1)).current;
   const modalBgAnim = useRef(new Animated.Value(0)).current;
   const sortModalAnim = useRef(new Animated.Value(height)).current;
 
-  // Pan responder for sort modal
+  // Pan responder for the Sort Modal (allow swipe-down to close).
   const sortPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -181,10 +200,8 @@ const LeavesApproval = () => {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 100) {
-          // Close the modal if dragged down enough
           closeSortModal();
         } else {
-          // Snap back to original position
           Animated.spring(sortModalAnim, {
             toValue: 0,
             useNativeDriver: true,
@@ -194,6 +211,9 @@ const LeavesApproval = () => {
     })
   ).current;
 
+  /**
+   * Fetches leaves for the currently logged-in user.
+   */
   const fetchLeaves = async () => {
     setLoading(true);
     try {
@@ -223,15 +243,18 @@ const LeavesApproval = () => {
     }
   };
 
+  /**
+   * Filter and sort data based on active filter and sortOption.
+   */
   const applyFiltersAndSort = useCallback((data, filter, sort) => {
-    // First apply filter
     let result = [...data];
 
+    // Filter
     if (filter !== "all") {
       result = result.filter((item) => item.status.toLowerCase() === filter.toLowerCase());
     }
 
-    // Then apply sort
+    // Sort
     switch (sort) {
       case "newest":
         result.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
@@ -252,8 +275,10 @@ const LeavesApproval = () => {
     setFilteredLeaves(result);
   }, []);
 
+  /**
+   * On component mount, run initial animations and fetch data.
+   */
   useEffect(() => {
-    // Initial animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -270,15 +295,24 @@ const LeavesApproval = () => {
     fetchLeaves();
   }, []);
 
+  /**
+   * Re-apply filters whenever leaves, activeFilter, or sortOption changes.
+   */
   useEffect(() => {
     applyFiltersAndSort(leaves, activeFilter, sortOption);
   }, [leaves, activeFilter, sortOption, applyFiltersAndSort]);
 
+  /**
+   * For pull-to-refresh in the FlatList.
+   */
   const onRefresh = () => {
     setRefreshing(true);
     fetchLeaves();
   };
 
+  /**
+   * Opens the Sort Modal with a spring animation.
+   */
   const openSortModal = () => {
     setSortModalVisible(true);
     Animated.parallel([
@@ -296,6 +330,9 @@ const LeavesApproval = () => {
     ]).start();
   };
 
+  /**
+   * Closes the Sort Modal with a fade + timing animation.
+   */
   const closeSortModal = () => {
     Animated.parallel([
       Animated.timing(modalBgAnim, {
@@ -313,6 +350,9 @@ const LeavesApproval = () => {
     });
   };
 
+  /**
+   * Small bounce animation for the Sort button.
+   */
   const animateButtonPress = (buttonRef) => {
     Animated.sequence([
       Animated.timing(buttonRef, {
@@ -329,6 +369,9 @@ const LeavesApproval = () => {
     ]).start();
   };
 
+  /**
+   * Chooses an icon for the leave type.
+   */
   const getLeaveTypeIcon = (type) => {
     switch (type.toLowerCase()) {
       case "sick leave":
@@ -346,9 +389,11 @@ const LeavesApproval = () => {
     }
   };
 
-  // Define renderItem outside of any hooks or conditional logic
+  /**
+   * Renders each leave entry.
+   * Show separate rows for Start, End, Reason, and CreatedAt.
+   */
   const renderItem = ({ item }) => {
-    // Create a new ref for each item
     const itemScaleAnim = new Animated.Value(1);
 
     const animateItemPress = () => {
@@ -370,38 +415,53 @@ const LeavesApproval = () => {
     return (
       <Animated.View style={{ transform: [{ scale: itemScaleAnim }] }}>
         <TouchableOpacity onPress={animateItemPress} activeOpacity={0.9} className="mb-4 rounded-xl overflow-hidden bg-white" style={styles.cardShadow}>
-          <View className="p-4">
-            <View className="flex-row justify-between items-center mb-3">
+          <View className="p-2 bg-slate-50 rounded-lg">
+            {/* Row: Leave Type + Status Badge */}
+            <View className="flex-row justify-between items-center pb-4 border-b border-slate-200">
               <View className="flex-row items-center">
                 <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mr-3">
                   <Ionicons name={getLeaveTypeIcon(item.leaveType)} size={20} color="#f97316" />
                 </View>
-                <Text className="text-lg font-semibold text-gray-800">{item.leaveType}</Text>
+                <Text className="text-lg font-semibold text-slate-800">{item.leaveType}</Text>
               </View>
               <LeaveStatusBadge status={item.status} />
             </View>
 
-            <View className="bg-gray-50 rounded-lg p-3 mb-3">
-              <View className="flex-row items-center mb-2">
-                <Ionicons name="calendar-outline" size={16} color="#6B7280" className="mr-2" />
-                <Text className="text-gray-600 text-sm">
-                  {formatDate(item.startDate)} - {formatDate(item.endDate)}
-                </Text>
+            {/* Row(s): Start, End, Reason, CreatedAt */}
+            <View className="bg-slate-50 rounded-lg p-3 border-b border-slate-200">
+              {/* CreatedAt */}
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="time-outline" size={16} color="#6B7280" />
+                <Text className="text-slate-600 text-sm ml-2">Submitted: {formatDateTime(item.createdAt)}</Text>
               </View>
-
+              {/* Start Date/Time */}
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                <Text className="text-slate-600 text-sm ml-2 ">Start: {formatDateTime(item.startDate)}</Text>
+              </View>
+              {/* End Date/Time */}
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                <Text className="text-slate-600 text-sm ml-2">End: {formatDateTime(item.endDate)}</Text>
+              </View>
+              {/* Reason */}
               <View className="flex-row items-center">
-                <Ionicons name="time-outline" size={16} color="#6B7280" className="mr-2" />
-                <Text className="text-gray-600 text-sm">
-                  {new Date(item.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -
-                  {new Date(item.endDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </Text>
+                <Ionicons name="pencil-outline" size={16} color="#6B7280" />
+                <Text className="text-slate-600 text-sm ml-2">Reason: {item.leaveReason ? item.leaveReason : "No reason"}</Text>
               </View>
             </View>
 
+            {/* Approver (if any) */}
             {item.approver && item.approver.email && (
-              <View className="flex-row items-center">
-                <Ionicons name="person-outline" size={16} color="#6B7280" className="mr-2" />
-                <Text className="text-gray-600 text-sm">Approver: {item.approver.email}</Text>
+              <View className="bg-slate-50 rounded-lg p-3">
+                <View className="flex-row items-center mb-1">
+                  <Ionicons name="person-outline" size={16} color="#6B7280" />
+                  <Text className="text-slate-600 text-sm ml-1">Approver: {item.approver.email}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="pencil-outline" size={16} color="#6B7280" />
+                  <Text className="text-slate-600 text-sm ml-1">Comments: {item.approverComments}</Text>
+                </View>
               </View>
             )}
           </View>
@@ -420,8 +480,9 @@ const LeavesApproval = () => {
         }}
       >
         <View className="px-4 pb-2">
+          {/* Header */}
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-2xl font-bold text-gray-800">Leave History</Text>
+            <Text className="text-2xl font-bold text-slate-800">Leave History</Text>
             <Animated.View style={{ transform: [{ scale: sortButtonScale }] }}>
               <TouchableOpacity
                 onPress={() => {
@@ -429,16 +490,17 @@ const LeavesApproval = () => {
                   setTimeout(openSortModal, 100);
                 }}
                 activeOpacity={0.8}
-                className="w-10 h-10 rounded-full bg-white border border-gray-200 items-center justify-center"
+                className="w-10 h-10 rounded-full bg-white border border-slate-200 items-center justify-center"
                 style={styles.buttonShadow}
               >
                 <Ionicons name="options-outline" size={20} color="#4B5563" />
               </TouchableOpacity>
             </Animated.View>
           </View>
-          <Text className="text-gray-500 mb-4">View all your leave requests and their status</Text>
 
-          {/* Filter options */}
+          <Text className="text-slate-500 mb-4">View all your leave requests and their status</Text>
+
+          {/* Filter pills */}
           <View className="flex-row mb-4">
             <FilterOption label="All" isActive={activeFilter === "all"} onPress={() => setActiveFilter("all")} />
             <FilterOption label="Pending" isActive={activeFilter === "pending"} onPress={() => setActiveFilter("pending")} />
@@ -447,6 +509,7 @@ const LeavesApproval = () => {
           </View>
         </View>
 
+        {/* Main content: list or loading */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#f97316" />
@@ -477,8 +540,9 @@ const LeavesApproval = () => {
               transform: [{ translateY: sortModalAnim }],
               paddingBottom: Platform.OS === "ios" ? 30 : 20,
             }}
+            {...sortPanResponder.panHandlers}
           >
-            <View className="items-center py-3" {...sortPanResponder.panHandlers}>
+            <View className="items-center py-3">
               <View className="w-10 h-1 bg-slate-200 rounded-full" />
             </View>
 
@@ -533,7 +597,7 @@ const LeavesApproval = () => {
       )}
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   cardShadow: {
@@ -557,5 +621,3 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 });
-
-export default LeavesApproval;

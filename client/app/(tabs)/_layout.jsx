@@ -1,3 +1,4 @@
+// app/(tabs)/profile.jsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -93,7 +94,7 @@ const TabIcon = ({ name, size, focused, isAvatar = false, initials = "U" }) => {
   // Interpolate background color for smooth transition
   const bgColorInterpolation = bgOpacity.interpolate({
     inputRange: [0, 1],
-    outputRange: ["rgba(249, 115, 22, 0)", "rgba(249, 115, 22, 1)"],
+    outputRange: ["rgba(251,146,60,0)", "rgba(251,146,60,1)"],
   });
 
   return (
@@ -377,7 +378,7 @@ const TabsLayout = () => {
                 },
               }),
             },
-            tabBarActiveTintColor: "#f97316",
+            tabBarActiveTintColor: "#fb923c",
             tabBarInactiveTintColor: "#94a3b8",
             tabBarLabelStyle: {
               fontSize: 10,
@@ -442,7 +443,7 @@ const TabsLayout = () => {
 
             <View className="items-center mb-6">
               <View className="w-16 h-16 rounded-full bg-orange-100 items-center justify-center mb-4">
-                <Ionicons name="lock-closed" size={32} color="#f97316" />
+                <Ionicons name="lock-closed" size={32} color="#fb923c" />
               </View>
 
               <Text className="text-xl font-bold mb-2 text-slate-800">Feature Locked</Text>
@@ -451,13 +452,13 @@ const TabsLayout = () => {
             </View>
 
             <TouchableOpacity
-              className="w-full bg-orange-500 py-4 rounded-xl mb-3"
+              className="w-full bg-orange-400 py-4 rounded-xl mb-3"
               onPress={() => {
                 closeModal();
                 Linking.openURL(WEBSITE_URL);
               }}
               style={{
-                shadowColor: "#f97316",
+                shadowColor: "#fb923c",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 4,

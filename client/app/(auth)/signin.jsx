@@ -285,8 +285,8 @@ export default function SignIn() {
                 {/* Logo/Header - Always visible */}
                 <View className="items-center mb-6">
                   <View className="flex-row justify-center items-center">
-                    <Image source={require("../../assets/images/icon.png")} style={{ width: 50, height: 50 }} resizeMode="contain" className="mr-3" />
-                    <Text className="text-6xl text-orange-500 font-extrabold">BizBuddy</Text>
+                    <Image source={require("../../assets/images/icon.png")} style={{ width: 50, height: 50 }} resizeMode="contain" className=" mb-4" />
+                    <Text className="text-6xl text-orange-400 font-extrabold">BizBuddy</Text>
                   </View>
 
                   {/* Only the description and version fade out */}
@@ -311,11 +311,11 @@ export default function SignIn() {
                     <View>
                       <View className="mb-7">
                         <Text className="mb-3 font-medium text-slate-600">Email</Text>
-                        <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-4 mb-2">
+                        <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-4 mb-2">
                           <MaterialCommunityIcons name="email-outline" size={20} color="#f97316" style={{ marginRight: 10 }} />
                           <TextInput
                             placeholder="Enter your email"
-                            className="flex-1 text-slate-800"
+                            className="flex-1 text-slate-700"
                             onChangeText={setEmail}
                             value={email}
                             autoCapitalize="none"
@@ -345,7 +345,7 @@ export default function SignIn() {
                         <TouchableOpacity
                           onPress={handleEmailSubmit}
                           disabled={loading}
-                          className="bg-orange-500 py-4 rounded-xl mt-2"
+                          className="bg-orange-400 py-4 rounded-lg mt-2"
                           style={styles.buttonShadow}
                           activeOpacity={0.8}
                         >
@@ -365,12 +365,12 @@ export default function SignIn() {
                         <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 16 }}>
                           <TouchableOpacity
                             onPress={handleBiometricSignIn}
-                            className="flex-row items-center justify-center py-4 px-5 rounded-xl border border-slate-200"
+                            className="flex-row items-center justify-center py-4 px-5 rounded-lg border border-slate-200"
                             style={styles.buttonShadow}
                             activeOpacity={0.8}
                           >
                             <Ionicons name="finger-print-outline" size={22} color="#f97316" style={{ marginRight: 8 }} />
-                            <Text className="font-medium text-slate-800">Sign in with biometrics</Text>
+                            <Text className="font-medium text-slate-700">Sign in with biometrics</Text>
                           </TouchableOpacity>
                         </Animated.View>
                       )}
@@ -382,11 +382,11 @@ export default function SignIn() {
                     <View>
                       <View className="flex-row items-center mb-7">
                         <TouchableOpacity onPress={goBackToEmail} className="mr-4">
-                          <View className="w-10 h-10 rounded-full border border-slate-200 items-center justify-center">
+                          <View className="w-10 h-10 rounded-full  items-center justify-center">
                             <Ionicons name="arrow-back" size={18} color="#f97316" />
                           </View>
                         </TouchableOpacity>
-                        <Text className="text-xl font-bold text-slate-800">Select your company</Text>
+                        <Text className="text-xl font-bold text-slate-700">Select your company</Text>
                       </View>
 
                       <View className="mb-7">
@@ -394,8 +394,8 @@ export default function SignIn() {
                           <TouchableOpacity
                             key={user.companyId}
                             onPress={() => setSelectedCompanyId(user.companyId)}
-                            className={`p-4 mb-4 rounded-xl border ${
-                              selectedCompanyId === user.companyId ? "border-orange-500" : "border-slate-200"
+                            className={`p-4 mb-4 rounded-lg border ${
+                              selectedCompanyId === user.companyId ? "border-orange-400" : "border-slate-200"
                             } bg-white`}
                             style={[styles.cardShadow, selectedCompanyId === user.companyId && styles.selectedCardShadow]}
                             activeOpacity={0.7}
@@ -409,7 +409,7 @@ export default function SignIn() {
                                 <FontAwesome5 name="building" size={18} color={selectedCompanyId === user.companyId ? "#f97316" : "#64748b"} />
                               </View>
                               <View className="flex-1">
-                                <Text className="font-semibold text-base text-slate-800">{user.companyName}</Text>
+                                <Text className="font-semibold text-base text-slate-700">{user.companyName}</Text>
                                 <View className="flex-row items-center mt-2">
                                   <View className={`px-3 py-1 rounded-full ${selectedCompanyId === user.companyId ? "bg-orange-50" : "bg-slate-100"}`}>
                                     <Text className={`text-xs ${selectedCompanyId === user.companyId ? "text-orange-800" : "text-slate-600"} font-medium`}>
@@ -419,7 +419,7 @@ export default function SignIn() {
                                 </View>
                               </View>
                               {selectedCompanyId === user.companyId && (
-                                <View className="w-8 h-8 rounded-full bg-orange-500 items-center justify-center">
+                                <View className="w-8 h-8 rounded-full bg-orange-400 items-center justify-center">
                                   <Ionicons name="checkmark" size={16} color="#fff" />
                                 </View>
                               )}
@@ -430,12 +430,12 @@ export default function SignIn() {
 
                       <View className="mb-7">
                         <Text className="mb-3 font-medium text-slate-600">Password</Text>
-                        <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-4">
+                        <View className="flex-row items-center border border-slate-200 bg-white rounded-lg px-4 py-4">
                           <MaterialCommunityIcons name="lock-outline" size={20} color="#f97316" style={{ marginRight: 10 }} />
                           <TextInput
                             secureTextEntry={!showPassword}
                             placeholder="Enter password"
-                            className="flex-1 text-slate-800"
+                            className="flex-1 text-slate-700"
                             value={password}
                             onChangeText={setPassword}
                             placeholderTextColor="#9ca3af"
@@ -478,7 +478,7 @@ export default function SignIn() {
                         <TouchableOpacity
                           onPress={handleSignInWithPassword}
                           disabled={loading}
-                          className="bg-orange-500 py-4 rounded-xl mt-2"
+                          className="bg-orange-400 py-4 rounded-lg mt-2"
                           style={styles.buttonShadow}
                           activeOpacity={0.8}
                         >

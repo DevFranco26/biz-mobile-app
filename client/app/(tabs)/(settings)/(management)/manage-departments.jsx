@@ -1,4 +1,5 @@
-// app/(tabs)(settings)/(management)/Departments.jsx
+// app/(tabs)(settings)/(management)/manage-departments.jsx
+
 import { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -17,31 +18,30 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { Ionicons, Feather, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, Feather, FontAwesome5, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DropDownPicker from "react-native-dropdown-picker";
 import { API_BASE_URL } from "../../../../config/constant";
 
-// Get screen dimensions for modal sizing
 const { height } = Dimensions.get("window");
 
-// Define consistent colors
+// Same color palette you’ve been using
 const COLORS = {
-  primary: "#f97316", // orange-500
-  primaryLight: "#ffedd5", // orange-50
-  primaryDark: "#c2410c", // orange-700
-  text: "#1e293b", // slate-800
-  textSecondary: "#64748b", // slate-500
-  textLight: "#94a3b8", // slate-400
-  border: "#e2e8f0", // slate-200
+  primary: "#f97316",
+  primaryLight: "#ffedd5",
+  primaryDark: "#c2410c",
+  text: "#1e293b",
+  textSecondary: "#64748b",
+  textLight: "#94a3b8",
+  border: "#e2e8f0",
   white: "#ffffff",
   background: "#ffffff",
-  error: "#ef4444", // red-500
-  success: "#10b981", // emerald-500
-  card: "#f1f5f9", // slate-100
+  error: "#ef4444",
+  success: "#10b981",
+  card: "#f1f5f9",
 };
 
-const Departments = () => {
+export default function Departments() {
   const router = useRouter();
   const [token, setToken] = useState(null);
   const [departments, setDepartments] = useState([]);
@@ -50,91 +50,66 @@ const Departments = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // States for creating/editing a department
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  // For the "actions" modal
+  const [actionsModalVisible, setActionsModalVisible] = useState(false);
+  const [actionsDepartment, setActionsDepartment] = useState(null);
+
+  // Which section is open/expanded in the modal? "edit", "members", "delete", or null
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  // Department form fields
   const [deptName, setDeptName] = useState("");
   const [selectedSupervisorId, setSelectedSupervisorId] = useState("");
 
-  // States for assigning users (regular members)
+  // Manage members
   const [currentUsers, setCurrentUsers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
+
+  // For "Add Member" dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownItems, setDropdownItems] = useState([]);
 
-  // State for expanded sections in the actions modal
-  const [expandedSection, setExpandedSection] = useState(null); // 'edit', 'delete', 'members'
-  const [actionsModalVisible, setActionsModalVisible] = useState(false);
-  const [actionsDepartment, setActionsDepartment] = useState(null);
-  const actionsModalY = useRef(new Animated.Value(Platform.OS === "ios" ? 700 : 500)).current;
+  // For "Edit Department" => supervisor dropdown
+  const [supervisorDropdownOpen, setSupervisorDropdownOpen] = useState(false);
+  const [supervisorOptions, setSupervisorOptions] = useState([]);
 
-  // Animation values
+  // For card "bounce" effect
+  const cardScales = useRef({}).current;
+
+  // Animations for page
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
-  const cardScales = useRef({}).current;
+
+  // For the bottom-sheet modal
   const modalBgAnim = useRef(new Animated.Value(0)).current;
+  const actionsModalY = useRef(new Animated.Value(Platform.OS === "ios" ? 700 : 500)).current;
+
+  // For "delete" + "cancel" button press animations
   const deleteButtonScale = useRef(new Animated.Value(1)).current;
   const cancelButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Regular expression validation: only alphanumeric characters and spaces
-  const validateDeptName = (name) => {
-    const regex = /^[a-zA-Z0-9 ]+$/;
-    return regex.test(name);
-  };
+  // For "Add Department" button bounce
+  const addButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Open the actions modal for a department
-  const openActionsModal = (dept) => {
-    setActionsDepartment(dept);
-    setDeptName(dept.name);
-    setSelectedSupervisorId(dept.supervisor ? dept.supervisor.id : "");
-    setExpandedSection(null);
-
-    // Reset position before animation
-    actionsModalY.setValue(Platform.OS === "ios" ? 700 : 500);
-    setActionsModalVisible(true);
-
-    // Animate modal sliding up and background fading in
-    Animated.parallel([
-      Animated.timing(modalBgAnim, {
-        toValue: 1,
-        duration: 300,
+  // Animate any pressed button
+  const animateButtonPress = (scaleRef) => {
+    Animated.sequence([
+      Animated.timing(scaleRef, {
+        toValue: 0.95,
+        duration: 70,
         useNativeDriver: true,
       }),
-      Animated.spring(actionsModalY, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
+      Animated.spring(scaleRef, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Load users for the department if needed
-    if (dept) {
-      loadUsersForDepartment(dept);
-    }
   };
 
-  // Close the actions modal
-  const closeActionsModal = () => {
-    Animated.parallel([
-      Animated.timing(modalBgAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(actionsModalY, {
-        toValue: Platform.OS === "ios" ? 700 : 500,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setActionsModalVisible(false);
-      setExpandedSection(null);
-    });
-  };
-
-  // PanResponder for the actions modal
+  // PanResponder for bottom sheet
   const actionsPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -171,15 +146,11 @@ const Departments = () => {
     })
   ).current;
 
-  // Recalculate current members when users or actionsDepartment change
-  useEffect(() => {
-    if (actionsDepartment) {
-      loadUsersForDepartment(actionsDepartment);
-    }
-  }, [users, actionsDepartment]);
+  // Basic validation for dept name
+  const validateDeptName = (name) => /^[a-zA-Z0-9 ]+$/.test(name);
 
   useEffect(() => {
-    // Initial animations
+    // Fade + Slide on mount
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -207,6 +178,7 @@ const Departments = () => {
     initialize();
   }, []);
 
+  // Fetch departments
   const fetchDepartments = async (authToken) => {
     setLoading(true);
     try {
@@ -226,6 +198,7 @@ const Departments = () => {
     setLoading(false);
   };
 
+  // Fetch all users
   const fetchUsers = async (authToken) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/employee`, {
@@ -243,6 +216,7 @@ const Departments = () => {
     }
   };
 
+  // Pull to refresh
   const onRefresh = async () => {
     if (!token) return;
     setRefreshing(true);
@@ -251,23 +225,134 @@ const Departments = () => {
     setRefreshing(false);
   };
 
-  const animateButtonPress = (scale) => {
-    Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 0.95,
-        duration: 70,
+  // Render each department with bounce effect
+  const renderDepartment = ({ item, index }) => {
+    if (!cardScales[index]) {
+      cardScales[index] = new Animated.Value(1);
+    }
+    const memberCount = users.filter((user) => user.department && user.department.id === item.id).length;
+
+    return (
+      <Animated.View style={{ transform: [{ scale: cardScales[index] }] }}>
+        <TouchableOpacity
+          onPress={() => {
+            animateButtonPress(cardScales[index]);
+            setTimeout(() => openActionsModal(item), 100);
+          }}
+          activeOpacity={0.8}
+          className="p-4 mb-3 rounded-lg bg-slate-50"
+        >
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <View className="flex flex-row justify justify-between ">
+                <Text className="text-base font-semibold text-slate-700 capitalize">{item.name}</Text>
+                <View className="mt-2 flex-row items-center mb-auto">
+                  <Feather name="user" size={14} color="#64748b" />
+                  <Text className="ml-1 text-xs text-slate-500">{memberCount} members</Text>
+                </View>
+              </View>
+
+              {item.supervisor ? (
+                <View className="flex-row items-center mt-1 -ml-1">
+                  <View className="bg-orange-400 rounded-lg py-1 px-2 mr-1">
+                    <Text className="text-xs text-white">Supervisor</Text>
+                  </View>
+                  <Text className="text-sm text-slate-600 my-auto">{item.supervisor.email}</Text>
+                </View>
+              ) : (
+                <Text className="text-sm text-slate-500 italic mt-1">No supervisor assigned</Text>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  // Open the "actions" modal
+  const openActionsModal = (dept) => {
+    setActionsDepartment(dept || null);
+
+    if (dept) {
+      // existing department => load fields
+      setDeptName(dept.name);
+      setSelectedSupervisorId(dept.supervisor ? dept.supervisor.id : "");
+      loadUsersForDepartment(dept);
+    } else {
+      // new department => blank
+      setDeptName("");
+      setSelectedSupervisorId("");
+      setCurrentUsers([]);
+      setAvailableUsers([]);
+      setSelectedUserId(null);
+      setDropdownItems([]);
+    }
+
+    // Rebuild the "supervisorOptions"
+    const supOptions = [
+      { label: "No Supervisor", value: "" },
+      ...users
+        .filter((u) => u.role.toLowerCase() === "supervisor")
+        .map((u) => ({
+          label: u.email,
+          value: u.id,
+        })),
+    ];
+    setSupervisorOptions(supOptions);
+
+    setExpandedSection(null);
+    setActionsModalVisible(true);
+
+    actionsModalY.setValue(Platform.OS === "ios" ? 700 : 500);
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 1,
+        duration: 300,
         useNativeDriver: true,
       }),
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
+      Animated.spring(actionsModalY, {
+        toValue: 0,
+        tension: 60,
+        friction: 12,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
-  // Save department (create or update) including supervisor assignment.
+  // Close the modal
+  const closeActionsModal = () => {
+    Animated.parallel([
+      Animated.timing(modalBgAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(actionsModalY, {
+        toValue: Platform.OS === "ios" ? 700 : 500,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setActionsModalVisible(false);
+      setExpandedSection(null);
+    });
+  };
+
+  // Re-fill the "currentUsers" and "availableUsers" (like your original code)
+  const loadUsersForDepartment = (dept) => {
+    const current = users.filter((user) => user.department && user.department.id === dept.id);
+    const available = users.filter((user) => (!user.department || user.department.id !== dept.id) && user.role !== "superadmin");
+    setCurrentUsers(current);
+    setAvailableUsers(available);
+    const ddData = available.map((user) => ({
+      label: user.email,
+      value: user.id,
+    }));
+    setDropdownItems(ddData);
+    setSelectedUserId(null);
+  };
+
+  // Save (edit / create) department
   const handleSaveDepartment = async () => {
     if (!deptName.trim()) {
       Alert.alert("Validation Error", "Department name is required.");
@@ -278,27 +363,35 @@ const Departments = () => {
       return;
     }
     if (!token) return;
+
     try {
+      const payload = {
+        name: deptName.trim(),
+        supervisorId: selectedSupervisorId || null,
+      };
+
       let url, method;
-      const body = { name: deptName.trim(), supervisorId: selectedSupervisorId || null };
-      if (actionsDepartment) {
+      if (actionsDepartment?.id) {
+        // update
         url = `${API_BASE_URL}/api/departments/update/${actionsDepartment.id}`;
         method = "PUT";
       } else {
+        // create
         url = `${API_BASE_URL}/api/departments/create`;
         method = "POST";
       }
+
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
-        Alert.alert("Success", actionsDepartment ? "Department updated successfully." : "Department created successfully.");
+        Alert.alert("Success", actionsDepartment?.id ? "Department updated successfully." : "Department created successfully.");
         closeActionsModal();
         fetchDepartments(token);
         fetchUsers(token);
@@ -311,9 +404,92 @@ const Departments = () => {
     }
   };
 
-  // Delete a department
+  // ***** KEY PART: Immediate local updates for add/remove members *****
+
+  // Add user => local update, then optionally re-fetch
+  const handleAssignUser = async () => {
+    if (!selectedUserId) {
+      Alert.alert("Validation Error", "Please select a user to add.");
+      return;
+    }
+    try {
+      const url = `${API_BASE_URL}/api/departments/${actionsDepartment.id}/assign-users`;
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userIds: [selectedUserId] }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        Alert.alert("Success", "User added to department successfully.");
+
+        // 1) Immediate local update:
+        const userObj = availableUsers.find((u) => u.id === selectedUserId);
+        if (userObj) {
+          setCurrentUsers((prev) => [...prev, userObj]);
+          setAvailableUsers((prev) => prev.filter((u) => u.id !== selectedUserId));
+        }
+        setSelectedUserId(null);
+
+        // 2) Optionally re-fetch so everything is eventually in sync:
+        fetchDepartments(token);
+        fetchUsers(token);
+        // DO NOT re-run loadUsersForDepartment(actionsDepartment) right away,
+        // or it might pull stale data from the server and overwrite your local update.
+      } else {
+        Alert.alert("Error", data.error || "Failed to add user.");
+      }
+    } catch (error) {
+      console.error("Error assigning user:", error);
+      Alert.alert("Error", "An unexpected error occurred.");
+    }
+  };
+
+  // Remove user => local update, then optionally re-fetch
+  const handleRemoveUser = async (userId) => {
+    try {
+      const url = `${API_BASE_URL}/api/departments/${actionsDepartment.id}/remove-users`;
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userIds: [userId] }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        Alert.alert("Success", data.message || "User removed successfully.");
+
+        // 1) Immediate local update:
+        const userObj = currentUsers.find((u) => u.id === userId);
+        if (userObj) {
+          setAvailableUsers((prev) => [...prev, userObj]);
+          setCurrentUsers((prev) => prev.filter((u) => u.id !== userId));
+        }
+
+        // 2) Re-fetch for total sync
+        fetchDepartments(token);
+        fetchUsers(token);
+        // Again, skip calling loadUsersForDepartment immediately,
+        // to avoid pulling any stale data from the server.
+      } else {
+        Alert.alert("Error", data.error || "Failed to remove user.");
+      }
+    } catch (error) {
+      console.error("Error removing user:", error);
+      Alert.alert("Error", "An unexpected error occurred.");
+    }
+  };
+
+  // Delete department
   const handleDeleteDepartment = async () => {
     if (!actionsDepartment || !token) return;
+
     try {
       setDeleting(true);
       const res = await fetch(`${API_BASE_URL}/api/departments/delete/${actionsDepartment.id}`, {
@@ -337,137 +513,7 @@ const Departments = () => {
     }
   };
 
-  // --- Load current members and available users for a department ---
-  const loadUsersForDepartment = (dept) => {
-    // Compare using dept.id against user.department.id
-    const current = users.filter((user) => user.department && user.department.id === dept.id);
-    // Available users: those who do NOT have a department or whose department id is different, and not superadmin
-    const available = users.filter((user) => (!user.department || user.department.id !== dept.id) && user.role !== "superadmin");
-    setCurrentUsers(current);
-    setAvailableUsers(available);
-    const dropdownData = available.map((user) => ({
-      label: user.email,
-      value: user.id,
-    }));
-    setDropdownItems(dropdownData);
-    setSelectedUserId(null);
-  };
-
-  const handleAssignUser = async () => {
-    if (selectedUserId === null) {
-      Alert.alert("Validation Error", "Please select a user to add.");
-      return;
-    }
-    try {
-      const url = `${API_BASE_URL}/api/departments/${actionsDepartment.id}/assign-users`;
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userIds: [selectedUserId] }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        Alert.alert("Success", "User added to department successfully.");
-        await fetchDepartments(token);
-        await fetchUsers(token);
-        loadUsersForDepartment(actionsDepartment);
-      } else {
-        Alert.alert("Error", data.error || "Failed to add user.");
-      }
-    } catch (error) {
-      console.error("Error assigning user:", error);
-      Alert.alert("Error", "An unexpected error occurred.");
-    }
-  };
-
-  const handleRemoveUser = async (userId, userEmail) => {
-    try {
-      const url = `${API_BASE_URL}/api/departments/${actionsDepartment.id}/remove-users`;
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userIds: [userId] }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        Alert.alert("Success", data.message || "User removed successfully.");
-        fetchDepartments(token);
-        fetchUsers(token);
-        loadUsersForDepartment(actionsDepartment);
-      } else {
-        Alert.alert("Error", data.error || "Failed to remove user.");
-      }
-    } catch (error) {
-      console.error("Error removing user:", error);
-      Alert.alert("Error", "An unexpected error occurred.");
-    }
-  };
-
-  // --- Render Department Item ---
-  const renderDepartment = ({ item, index }) => {
-    if (!cardScales[index]) {
-      cardScales[index] = new Animated.Value(1);
-    }
-    // Compute member count directly from the users array
-    const memberCount = users.filter((user) => user.department && user.department.id === item.id).length;
-    return (
-      <Animated.View style={{ transform: [{ scale: cardScales[index] }] }}>
-        <View className="p-4 mb-3 rounded-lg bg-slate-100">
-          <View className="flex-row justify-between items-center">
-            <View className="flex-1">
-              <Text className="text-lg font-semibold text-slate-800">{item.name}</Text>
-              {item.supervisor ? (
-                <View className="flex-row items-center mt-1">
-                  <View className="bg-orange-50 rounded-full px-2 py-0.5 mr-2">
-                    <Text className="text-xs text-orange-700">Supervisor</Text>
-                  </View>
-                  <Text className="text-sm text-slate-600">
-                    {item.supervisor.profile.firstName} {item.supervisor.profile.lastName}
-                  </Text>
-                </View>
-              ) : (
-                <Text className="text-sm text-slate-500 italic mt-1">No supervisor assigned</Text>
-              )}
-            </View>
-            <View className="flex-row">
-              <TouchableOpacity
-                onPress={() => {
-                  animateButtonPress(cardScales[index]);
-                  setTimeout(() => openActionsModal(item), 100);
-                }}
-                className="w-9 h-9 rounded-full bg-slate-200 items-center justify-center"
-              >
-                <Feather name="more-vertical" size={16} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          {/* Show member count computed from users */}
-          <View className="mt-2 flex-row items-center">
-            <Feather name="user" size={14} color={COLORS.textSecondary} />
-            <Text className="ml-1 text-xs text-slate-500">{memberCount} members</Text>
-          </View>
-        </View>
-      </Animated.View>
-    );
-  };
-
-  // --- Supervisor Options for the Edit Modal ---
-  const supervisorOptions = [
-    { label: "No Supervisor", value: "" },
-    ...users
-      .filter((user) => user.role.toLowerCase() === "supervisor")
-      .map((user) => ({
-        label: `${user.profile.firstName} ${user.profile.lastName} (${user.email})`,
-        value: user.id,
-      })),
-  ];
-
+  // Render the main UI
   return (
     <SafeAreaView className="flex-1 bg-white">
       <Animated.View
@@ -480,29 +526,23 @@ const Departments = () => {
         {/* Header */}
         <View className="px-4 py-3 flex-row items-center border-b border-slate-200">
           <TouchableOpacity onPress={() => router.back()} className="mr-3">
-            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+            <Ionicons name="chevron-back" size={24} color="#404040" />
           </TouchableOpacity>
-          <Text className="text-xl font-bold text-slate-800">Settings</Text>
+          <Text className="text-xl font-bold text-slate-700">Settings</Text>
         </View>
 
         {/* Title and Add Button */}
         <View className="px-4 py-4 flex-row justify-between items-center">
-          <Text className="text-2xl font-bold text-slate-800">Department List</Text>
-          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <Text className="text-2xl font-bold text-slate-700">Department List</Text>
+          <Animated.View style={{ transform: [{ scale: addButtonScale }] }}>
             <TouchableOpacity
               onPress={() => {
-                animateButtonPress(buttonScale);
-                setTimeout(() => {
-                  setActionsDepartment(null);
-                  setDeptName("");
-                  setSelectedSupervisorId("");
-                  setExpandedSection("edit");
-                  openActionsModal({ name: "", id: null });
-                }, 100);
+                animateButtonPress(addButtonScale);
+                setTimeout(() => openActionsModal(null), 100);
               }}
-              className="w-10 h-10 rounded-full bg-orange-500 items-center justify-center shadow-sm"
+              className="w-10 h-10 rounded-lg items-center justify-center "
             >
-              <Ionicons name="add" size={24} color="white" />
+              <Ionicons name="add" size={24} color={"#404040"} />
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -510,7 +550,7 @@ const Departments = () => {
         {/* Department List */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color={COLORS.primary} />
+            <ActivityIndicator size="large" color={"#cbd5e1"} />
             <Text className="mt-4 text-slate-500">Loading departments...</Text>
           </View>
         ) : (
@@ -519,10 +559,10 @@ const Departments = () => {
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderDepartment}
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={"#cbd5e1"} tintColor={"#cbd5e1"} />}
             ListEmptyComponent={
               <View className="flex-1 justify-center items-center py-16">
-                <Ionicons name="git-branch-outline" size={48} color={COLORS.textLight} />
+                <Ionicons name="git-branch-outline" size={48} color="#94a3b8" />
                 <Text className="mt-4 text-slate-500 text-center">No departments found.</Text>
                 <Text className="text-slate-400 text-center">Add your first department by tapping the + button.</Text>
               </View>
@@ -530,10 +570,12 @@ const Departments = () => {
           />
         )}
 
-        {/* Department Actions Modal with Collapsible Sections */}
+        {/* Bottom Sheet Actions Modal */}
         {actionsModalVisible && (
           <View className="absolute inset-0">
+            {/* Dim backdrop */}
             <Animated.View className="absolute inset-0 bg-black/50" style={{ opacity: modalBgAnim }} onTouchEnd={closeActionsModal} />
+            {/* Actual Bottom Sheet */}
             <Animated.View
               style={{
                 transform: [{ translateY: actionsModalY }],
@@ -542,286 +584,132 @@ const Departments = () => {
                 left: 0,
                 right: 0,
                 backgroundColor: "white",
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                maxHeight: height * 0.85,
-                paddingBottom: Platform.OS === "ios" ? 30 : 20,
+                borderTopLeftRadius: 10,
+                borderTopRightRadius: 10,
+                minHeight: height * 0.7,
+                maxHeight: Platform.OS === "ios" ? height * 0.7 : height * 0.85,
+                paddingBottom: Platform.OS === "ios" ? 0 : 20,
               }}
             >
               <View className="items-center py-3" {...actionsPanResponder.panHandlers}>
-                <View className="w-10 h-1 bg-slate-200 rounded-full" />
+                <View className="w-10 h-1 bg-slate-200 rounded-lg" />
               </View>
               <View className="flex-row justify-between items-center px-5 pb-4 border-b border-slate-100">
-                <Text className="text-lg font-bold text-slate-800">{actionsDepartment?.id ? "Department Actions" : "Add Department"}</Text>
-                <TouchableOpacity onPress={closeActionsModal}>
-                  <Ionicons name="close" size={24} color="#64748b" />
-                </TouchableOpacity>
+                <Text className="text-lg font-bold text-slate-700">{actionsDepartment?.id ? "Department Actions" : "Add Department"}</Text>
               </View>
+
               <ScrollView className="px-5 py-4">
-                {actionsDepartment?.id && <Text className="text-slate-500 mb-6">{actionsDepartment?.name}</Text>}
-
-                {/* Edit Department Section */}
+                {/* If we have an existing department => show action menu first. Otherwise, show "Edit" form to create new. */}
                 {actionsDepartment?.id ? (
-                  <TouchableOpacity
-                    onPress={() => setExpandedSection(expandedSection === "edit" ? null : "edit")}
-                    className="flex-row items-center justify-between p-4 mb-3 bg-slate-50 rounded-xl"
-                  >
-                    <View className="flex-row items-center">
-                      <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
-                        <Feather name="edit-2" size={18} color={COLORS.primary} />
-                      </View>
-                      <Text className="text-slate-800 font-medium">Edit Department</Text>
-                    </View>
-                    <MaterialIcons
-                      name={expandedSection === "edit" ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                      size={24}
-                      color={COLORS.textSecondary}
-                    />
-                  </TouchableOpacity>
-                ) : null}
-
-                {/* Edit Department Expanded Content */}
-                {(expandedSection === "edit" || !actionsDepartment?.id) && (
-                  <View className="bg-white rounded-xl p-4 mb-4 border border-slate-100">
-                    <View className="mb-4">
-                      <Text className="text-sm font-semibold text-slate-600 mb-2">
-                        Department Name <Text className="text-red-500">*</Text>
-                      </Text>
-                      <View className="flex-row items-center border border-slate-200 bg-white rounded-xl px-4 py-3">
-                        <FontAwesome5 name="building" size={18} color="#9ca3af" />
-                        <TextInput
-                          className="flex-1 ml-2 text-slate-800"
-                          value={deptName}
-                          onChangeText={setDeptName}
-                          placeholder="e.g., Sales, Marketing, IT"
-                          placeholderTextColor="#9CA3AF"
-                        />
-                      </View>
-                      <Text className="text-xs text-slate-500 mt-1">Only alphanumeric characters and spaces are allowed.</Text>
-                    </View>
-
-                    <View className="mb-6">
-                      <Text className="text-sm font-semibold text-slate-600 mb-2">Assign Supervisor:</Text>
-                      <DropDownPicker
-                        open={dropdownOpen}
-                        value={selectedSupervisorId}
-                        items={supervisorOptions}
-                        setOpen={setDropdownOpen}
-                        setValue={setSelectedSupervisorId}
-                        setItems={() => {}}
-                        placeholder="Select Supervisor"
-                        style={{
-                          backgroundColor: "#F8FAFC",
-                          borderColor: "#E2E8F0",
-                          minHeight: 48,
-                          borderWidth: 1,
-                          borderRadius: 12,
-                        }}
-                        dropDownContainerStyle={{
-                          backgroundColor: "#F8FAFC",
-                          borderColor: "#E2E8F0",
-                          borderRadius: 12,
-                        }}
-                        textStyle={{
-                          fontSize: 14,
-                          color: "#1E293B",
-                        }}
-                        placeholderStyle={{
-                          color: "#9CA3AF",
-                        }}
-                        zIndex={11000}
-                        zIndexInverse={1000}
-                        dropDownDirection="BOTTOM"
-                        listMode="SCROLLVIEW"
-                        scrollViewProps={{ nestedScrollEnabled: true }}
-                        ListItemComponent={({ item }) => <Text className="text-base">{item.label}</Text>}
-                        Icon={() => <Ionicons name="chevron-down" size={20} color="#374151" />}
-                      />
-                    </View>
-
-                    {/* Action Button */}
-                    <View className="flex-row justify-center mt-4">
-                      <TouchableOpacity onPress={handleSaveDepartment} className="bg-orange-500 py-3.5 px-8 rounded-xl">
-                        <Text className="text-white font-bold text-base">{actionsDepartment?.id ? "Save Changes" : "Create Department"}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {/* Manage Members Section */}
-                {actionsDepartment?.id && (
                   <>
-                    <TouchableOpacity
-                      onPress={() => setExpandedSection(expandedSection === "members" ? null : "members")}
-                      className="flex-row items-center justify-between p-4 mb-3 bg-slate-50 rounded-xl"
-                    >
-                      <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mr-3">
-                          <Feather name="users" size={18} color={COLORS.primary} />
-                        </View>
-                        <Text className="text-slate-800 font-medium">Manage Members</Text>
-                      </View>
-                      <MaterialIcons
-                        name={expandedSection === "members" ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                        size={24}
-                        color={COLORS.textSecondary}
-                      />
-                    </TouchableOpacity>
+                    {/* If expandedSection is null => main action menu */}
+                    {!expandedSection && (
+                      <>
+                        {/* "Edit" */}
+                        <TouchableOpacity
+                          onPress={() => setExpandedSection("edit")}
+                          className="flex-row items-center justify-between p-4 mb-3 bg-slate-50 rounded-lg"
+                        >
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-md bg-orange-400 items-center justify-center mr-3">
+                              <Feather name="edit-2" size={18} color="#ffff" />
+                            </View>
+                            <Text className="text-slate-700 font-medium">Edit Department</Text>
+                          </View>
+                          <MaterialIcons name="keyboard-arrow-right" size={24} color="#64748b" />
+                        </TouchableOpacity>
 
-                    {/* Manage Members Expanded Content */}
+                        {/* "Manage Members" */}
+                        <TouchableOpacity
+                          onPress={() => setExpandedSection("members")}
+                          className="flex-row items-center justify-between p-4 mb-3 bg-slate-50 rounded-lg"
+                        >
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-md bg-orange-400 items-center justify-center mr-3">
+                              <Feather name="users" size={18} color="#ffff" />
+                            </View>
+                            <Text className="text-slate-700 font-medium">Manage Members</Text>
+                          </View>
+                          <MaterialIcons name="keyboard-arrow-right" size={24} color="#64748b" />
+                        </TouchableOpacity>
+
+                        {/* "Delete" */}
+                        <TouchableOpacity
+                          onPress={() => setExpandedSection("delete")}
+                          className="flex-row items-center justify-between p-4 mb-3 bg-slate-50 rounded-lg"
+                        >
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-md bg-orange-400 items-center justify-center mr-3">
+                              <Feather name="trash-2" size={18} color="#ffff" />
+                            </View>
+                            <Text className="text-slate-700 font-medium">Delete Department</Text>
+                          </View>
+                          <MaterialIcons name="keyboard-arrow-right" size={24} color="#64748b" />
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* Expand: Edit Department */}
+                    {expandedSection === "edit" && (
+                      <View className="bg-slate-50 rounded-lg p-4 mb-4">
+                        <Text className="text-lg font-bold text-slate-700 mb-3">Edit Department</Text>
+                        {renderEditDepartmentForm()}
+                      </View>
+                    )}
+
+                    {/* Expand: Manage Members */}
                     {expandedSection === "members" && (
-                      <View className="bg-white rounded-xl p-4 mb-4 border border-slate-100">
-                        {/* Current Users Section */}
-                        <Text className="text-sm font-semibold text-slate-600 mb-2">Current Members:</Text>
-                        {currentUsers.length > 0 ? (
-                          <View className="bg-slate-50 rounded-lg p-2 mb-6">
-                            {currentUsers.map((user) => (
-                              <View key={user.id} className="flex-row items-center justify-between py-2 px-2 border-b border-slate-100">
-                                <View className="flex-row items-center flex-1">
-                                  <View className="w-8 h-8 rounded-full bg-orange-100 items-center justify-center mr-3">
-                                    <Text className="text-orange-700 font-medium">{user.profile.firstName.charAt(0)}</Text>
-                                  </View>
-                                  <View className="flex-1">
-                                    <Text className="text-slate-800 font-medium">
-                                      {user.profile.firstName} {user.profile.lastName}
-                                    </Text>
-                                    <Text className="text-xs text-slate-500">{user.email}</Text>
-                                  </View>
-                                </View>
-                                <TouchableOpacity onPress={() => handleRemoveUser(user.id, user.email)} className="p-2">
-                                  <Feather name="x-circle" size={18} color={COLORS.error} />
-                                </TouchableOpacity>
-                              </View>
-                            ))}
+                      <View className="bg-slate-50 rounded-lg p-4 mb-4">
+                        <Text className="text-lg font-bold text-slate-700 mb-3">Manage Members</Text>
+                        {renderManageMembersSection()}
+                      </View>
+                    )}
+
+                    {/* Expand: Delete Department */}
+                    {expandedSection === "delete" && (
+                      <View className="bg-slate-50 rounded-lg p-4 mb-4">
+                        {deleting ? (
+                          <View className="items-center py-4">
+                            <ActivityIndicator size="large" color={COLORS.primary} />
+                            <Text className="text-slate-600 mt-3">Deleting department...</Text>
                           </View>
                         ) : (
-                          <View className="bg-slate-50 rounded-lg p-4 items-center mb-6">
-                            <Text className="text-slate-500">No members assigned to this department.</Text>
-                          </View>
+                          <>
+                            <Text className="text-lg font-bold text-slate-700 mb-2 text-center">Delete Department</Text>
+                            <Text className="text-slate-600 text-center mb-6">Are you sure you want to delete {actionsDepartment.name} department?</Text>
+                            <Animated.View style={{ transform: [{ scale: deleteButtonScale }] }}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  animateButtonPress(deleteButtonScale);
+                                  setTimeout(() => handleDeleteDepartment(), 100);
+                                }}
+                                className="bg-orange-400 py-3.5 rounded-lg w-full items-center mb-3"
+                              >
+                                <Text className="text-white font-bold text-base">Yes, Delete</Text>
+                              </TouchableOpacity>
+                            </Animated.View>
+                            <Animated.View style={{ transform: [{ scale: cancelButtonScale }] }}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  animateButtonPress(cancelButtonScale);
+                                  setTimeout(() => setExpandedSection(null), 100);
+                                }}
+                                className="border border-slate-200 py-3.5 rounded-lg w-full items-center"
+                              >
+                                <Text className="text-slate-600 font-bold text-base">Cancel</Text>
+                              </TouchableOpacity>
+                            </Animated.View>
+                          </>
                         )}
-
-                        {/* Add Member Section */}
-                        <Text className="text-sm font-semibold text-slate-600 mb-2">Add Member:</Text>
-                        <View className="mb-6">
-                          <DropDownPicker
-                            open={dropdownOpen}
-                            value={selectedUserId}
-                            items={dropdownItems}
-                            setOpen={setDropdownOpen}
-                            setValue={setSelectedUserId}
-                            setItems={setDropdownItems}
-                            placeholder="Select User"
-                            style={{
-                              backgroundColor: "#F8FAFC",
-                              borderColor: "#E2E8F0",
-                              minHeight: 48,
-                              borderRadius: 12,
-                            }}
-                            dropDownContainerStyle={{
-                              backgroundColor: "#F8FAFC",
-                              borderColor: "#E2E8F0",
-                              borderRadius: 12,
-                            }}
-                            textStyle={{
-                              fontSize: 14,
-                              color: "#1E293B",
-                            }}
-                            placeholderStyle={{
-                              color: "#9CA3AF",
-                            }}
-                            zIndex={3000}
-                            zIndexInverse={1000}
-                            listMode="SCROLLVIEW"
-                            scrollViewProps={{
-                              nestedScrollEnabled: true,
-                            }}
-                            ListEmptyComponent={() => (
-                              <View className="p-3 items-center">
-                                <Text className="text-slate-500">No available users to add</Text>
-                              </View>
-                            )}
-                          />
-                        </View>
-
-                        {/* Action Button */}
-                        <View className="flex-row justify-center mt-4">
-                          <TouchableOpacity
-                            onPress={handleAssignUser}
-                            className="bg-orange-500 py-3.5 px-8 rounded-xl"
-                            disabled={!selectedUserId}
-                            style={{ opacity: selectedUserId ? 1 : 0.6 }}
-                          >
-                            <Text className="text-white font-bold text-base">Add Member</Text>
-                          </TouchableOpacity>
-                        </View>
                       </View>
                     )}
                   </>
-                )}
-
-                {/* Delete Department Section */}
-                {actionsDepartment?.id && (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => setExpandedSection(expandedSection === "delete" ? null : "delete")}
-                      className="flex-row items-center justify-between p-4 mb-3 bg-red-50 rounded-xl"
-                    >
-                      <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mr-3">
-                          <Feather name="trash-2" size={18} color={COLORS.error} />
-                        </View>
-                        <Text className="text-red-600 font-medium">Delete Department</Text>
-                      </View>
-                      <MaterialIcons name={expandedSection === "delete" ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} color={COLORS.error} />
-                    </TouchableOpacity>
-
-                    {/* Delete Department Expanded Content */}
-                    {expandedSection === "delete" && (
-                      <View className="bg-white rounded-xl p-4 mb-4 border border-red-100">
-                        <View className="items-center py-4">
-                          <View className="w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4">
-                            <Feather name="trash-2" size={28} color={COLORS.error} />
-                          </View>
-                          <Text className="text-xl font-bold text-slate-800 mb-2">Delete Department</Text>
-                          <Text className="text-slate-600 text-center mb-2">Are you sure you want to delete this department?</Text>
-                          <Text className="text-slate-500 text-center mb-6">{actionsDepartment?.name}</Text>
-                          <View className="w-full">
-                            {deleting ? (
-                              <View className="items-center py-4">
-                                <ActivityIndicator size="large" color={COLORS.primary} />
-                                <Text className="text-slate-600 mt-3">Deleting department...</Text>
-                              </View>
-                            ) : (
-                              <>
-                                <Animated.View style={{ transform: [{ scale: deleteButtonScale }] }}>
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      animateButtonPress(deleteButtonScale);
-                                      setTimeout(() => handleDeleteDepartment(), 100);
-                                    }}
-                                    className="bg-red-500 py-3.5 rounded-xl w-full items-center mb-3"
-                                  >
-                                    <Text className="text-white font-bold text-base">Yes, Delete Department</Text>
-                                  </TouchableOpacity>
-                                </Animated.View>
-                                <Animated.View style={{ transform: [{ scale: cancelButtonScale }] }}>
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      animateButtonPress(cancelButtonScale);
-                                      setTimeout(() => setExpandedSection(null), 100);
-                                    }}
-                                    className="py-3.5 rounded-xl w-full items-center border border-slate-200"
-                                  >
-                                    <Text className="text-slate-800 font-bold text-base">Cancel</Text>
-                                  </TouchableOpacity>
-                                </Animated.View>
-                              </>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-                    )}
-                  </>
+                ) : (
+                  // Creating a new department => skip straight to "Edit Department" form
+                  <View className="bg-slate-50 rounded-lg p-4 mb-4">
+                    <Text className="text-lg font-bold text-slate-700 mb-3">Add Department</Text>
+                    {renderEditDepartmentForm()}
+                  </View>
                 )}
               </ScrollView>
             </Animated.View>
@@ -830,6 +718,171 @@ const Departments = () => {
       </Animated.View>
     </SafeAreaView>
   );
-};
 
-export default Departments;
+  // === RENDER SUB-SECTIONS ===
+
+  function renderEditDepartmentForm() {
+    return (
+      <>
+        {/* Department Name */}
+        <View className="mb-4">
+          <Text className="text-sm font-semibold text-slate-600 mb-2">
+            Department Name <Text className="text-red-500">*</Text>
+          </Text>
+          <View className="flex-row items-center bg-white rounded-lg px-4 py-3">
+            <FontAwesome5 name="building" size={18} color="#9ca3af" />
+            <TextInput
+              className="flex-1 ml-2 text-slate-700"
+              value={deptName}
+              onChangeText={setDeptName}
+              placeholder="e.g. Sales, Marketing, IT"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+          <Text className="text-xs text-slate-500 mt-1">Only letters, numbers, and spaces are allowed.</Text>
+        </View>
+
+        {/* Supervisor Dropdown */}
+        <View className="mb-6">
+          <Text className="text-sm font-semibold text-slate-600 mb-2">Supervisor:</Text>
+          <DropDownPicker
+            open={supervisorDropdownOpen}
+            value={selectedSupervisorId}
+            items={supervisorOptions}
+            setOpen={setSupervisorDropdownOpen}
+            setValue={setSelectedSupervisorId}
+            setItems={setSupervisorOptions}
+            placeholder="Select Supervisor"
+            style={{
+              backgroundColor: "#ffff",
+              borderColor: "#ffff",
+              minHeight: 48,
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: "#ffff",
+              borderColor: "#ffff",
+            }}
+            textStyle={{
+              fontSize: 14,
+              color: "#404040",
+            }}
+            placeholderStyle={{
+              color: "#404040",
+            }}
+            zIndex={11000}
+            zIndexInverse={1000}
+            dropDownDirection="BOTTOM"
+            listMode="SCROLLVIEW"
+            scrollViewProps={{ nestedScrollEnabled: true }}
+            Icon={() => <Ionicons name="chevron-down" size={20} color="#374151" />}
+          />
+        </View>
+
+        {/* Save Button */}
+        <TouchableOpacity onPress={handleSaveDepartment} className="bg-orange-400 py-3.5 rounded-lg w-full items-center mb-3">
+          <Text className="text-white font-bold text-base">{actionsDepartment?.id ? "Save Changes" : "Create Department"}</Text>
+        </TouchableOpacity>
+
+        {/* If editing existing => show a "Cancel" button to go back to main menu */}
+        {actionsDepartment?.id && (
+          <TouchableOpacity onPress={() => setExpandedSection(null)} className="border border-slate-200 py-3.5 rounded-lg w-full items-center">
+            <Text className="text-slate-600 font-bold text-base">Cancel</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  }
+
+  function renderManageMembersSection() {
+    return (
+      <>
+        {/* Current Members */}
+        <Text className="text-sm font-semibold text-slate-600 mb-2">Current Members:</Text>
+        {currentUsers.length > 0 ? (
+          <View className="bg-slate-50 rounded-lg p-2 mb-6">
+            {currentUsers.map((user) => (
+              <View key={user.id} className="flex-row items-center justify-between py-2 px-2 bg-white rounded-lg mb-2">
+                <View className="flex-row items-center">
+                  <View className="rounded-lg bg-orange-100 items-center justify-center mr-3">
+                    <Text className="text-orange-700 font-medium capitalize p-2">
+                      {user.profile.firstName.charAt(0)}
+                      {user.profile.lastName.charAt(0)}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text className="text-slate-700 font-medium capitalize">
+                      {user.profile.firstName} {user.profile.lastName}
+                    </Text>
+                    <Text className="text-xs text-slate-500">{user.email}</Text>
+                    <Text className="text-xs text-slate-500">{user.username}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => handleRemoveUser(user.id)} className="p-2">
+                  <Feather name="minus" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View className="bg-slate-50 rounded-lg p-4 items-center mb-6">
+            <Text className="text-slate-500">No members assigned to this department.</Text>
+          </View>
+        )}
+
+        {/* Add Member */}
+        <Text className="text-sm font-semibold text-slate-600 mb-2">Add Member:</Text>
+        <View className="mb-6">
+          <DropDownPicker
+            open={dropdownOpen}
+            value={selectedUserId}
+            items={dropdownItems}
+            setOpen={setDropdownOpen}
+            setValue={setSelectedUserId}
+            setItems={setDropdownItems}
+            placeholder="Select User"
+            style={{
+              backgroundColor: "#ffff",
+              borderColor: "#ffff",
+              minHeight: 48,
+              borderRadius: 12,
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: "#ffff",
+              borderColor: "#ffff",
+              borderRadius: 12,
+            }}
+            textStyle={{
+              fontSize: 14,
+              color: "#3f3f46",
+            }}
+            placeholderStyle={{
+              color: "#3f3f46",
+            }}
+            zIndex={3000}
+            zIndexInverse={1000}
+            listMode="SCROLLVIEW"
+            scrollViewProps={{ nestedScrollEnabled: true }}
+            ListEmptyComponent={() => (
+              <View className="p-3 items-center">
+                <Text className="text-slate-500">No available users to add</Text>
+              </View>
+            )}
+          />
+        </View>
+        <TouchableOpacity
+          onPress={handleAssignUser}
+          className="bg-orange-400 py-3.5 rounded-lg w-full items-center mb-3"
+          disabled={!selectedUserId}
+          style={{ opacity: selectedUserId ? 1 : 0.6 }}
+        >
+          <Text className="text-white font-bold text-base">Add Member</Text>
+        </TouchableOpacity>
+
+        {/* Cancel Button => return to actions menu */}
+        <TouchableOpacity onPress={() => setExpandedSection(null)} className="border border-slate-200 py-3.5 rounded-lg w-full items-center">
+          <Text className="text-slate-600 font-bold text-base">Done</Text>
+        </TouchableOpacity>
+      </>
+    );
+  }
+}

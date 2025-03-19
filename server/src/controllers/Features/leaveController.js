@@ -4,7 +4,9 @@ const { prisma } = require("@config/connection");
 
 const submitLeaveRequest = async (req, res) => {
   try {
-    const { type, fromDate, toDate, approverId } = req.body; // Removed "reason"
+    // Destructure 'leaveReason' as well
+    const { type, fromDate, toDate, approverId, leaveReason } = req.body;
+
     if (!type || !fromDate || !toDate || !approverId) {
       return res.status(400).json({ message: "All fields are required." });
     }
@@ -16,7 +18,6 @@ const submitLeaveRequest = async (req, res) => {
         role: { in: ["admin", "supervisor", "superadmin"] },
       },
     });
-
     if (!approver) {
       return res.status(400).json({ message: "Invalid approver selected." });
     }
@@ -35,6 +36,7 @@ const submitLeaveRequest = async (req, res) => {
         startDate: new Date(fromDate).toISOString(),
         endDate: new Date(toDate).toISOString(),
         status: "pending",
+        leaveReason,
       },
     });
 
@@ -62,8 +64,14 @@ const getUserLeaves = async (req, res) => {
       },
       orderBy: { startDate: "desc" },
     });
+
+    // <-- ADDED for ISO fix
     const formattedLeaves = leaves.map((leave) => ({
       ...leave,
+      startDate: leave.startDate.toISOString(),
+      endDate: leave.endDate.toISOString(),
+      createdAt: leave.createdAt.toISOString(),
+      updatedAt: leave.updatedAt.toISOString(),
       approver: leave.approver
         ? {
             ...leave.approver,
@@ -73,7 +81,11 @@ const getUserLeaves = async (req, res) => {
           }
         : null,
     }));
-    return res.status(200).json({ message: "User leaves retrieved successfully.", data: formattedLeaves });
+
+    return res.status(200).json({
+      message: "User leaves retrieved successfully.",
+      data: formattedLeaves,
+    });
   } catch (error) {
     console.error("Error in getUserLeaves:", error);
     return res.status(500).json({ message: "Internal server error." });
@@ -97,8 +109,14 @@ const getPendingLeavesForApprover = async (req, res) => {
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // <-- ADDED for ISO fix
     const formattedLeaves = leaves.map((leave) => ({
       ...leave,
+      startDate: leave.startDate.toISOString(),
+      endDate: leave.endDate.toISOString(),
+      createdAt: leave.createdAt.toISOString(),
+      updatedAt: leave.updatedAt.toISOString(),
       requester: leave.User
         ? {
             ...leave.User,
@@ -106,6 +124,7 @@ const getPendingLeavesForApprover = async (req, res) => {
           }
         : null,
     }));
+
     return res.status(200).json({ message: "Pending leaves retrieved successfully.", data: formattedLeaves });
   } catch (error) {
     console.error("Error in getPendingLeavesForApprover:", error);
@@ -116,17 +135,34 @@ const getPendingLeavesForApprover = async (req, res) => {
 const approveLeave = async (req, res) => {
   try {
     const leaveId = req.params.id;
+    // Pull approverComments from req.body (optional)
+    const { approverComments } = req.body;
+
     const leave = await prisma.leave.findFirst({
       where: { id: leaveId, approverId: req.user.id, status: "pending" },
     });
     if (!leave) {
       return res.status(404).json({ message: "Leave request not found or already processed." });
     }
+
+    // Update with optional approverComments
     const updatedLeave = await prisma.leave.update({
       where: { id: leaveId },
-      data: { status: "approved" },
+      data: {
+        status: "approved",
+        approverComments, // <--- include comments if provided
+      },
     });
-    return res.status(200).json({ message: "Leave approved successfully.", data: updatedLeave });
+
+    const finalLeave = {
+      ...updatedLeave,
+      startDate: updatedLeave.startDate.toISOString(),
+      endDate: updatedLeave.endDate.toISOString(),
+      createdAt: updatedLeave.createdAt.toISOString(),
+      updatedAt: updatedLeave.updatedAt.toISOString(),
+    };
+
+    return res.status(200).json({ message: "Leave approved successfully.", data: finalLeave });
   } catch (error) {
     console.error("Error in approveLeave:", error);
     return res.status(500).json({ message: "Internal server error." });
@@ -136,18 +172,34 @@ const approveLeave = async (req, res) => {
 const rejectLeave = async (req, res) => {
   try {
     const leaveId = req.params.id;
-    // Removed rejectionReason from req.body and its validation
+    // Pull approverComments from req.body (optional)
+    const { approverComments } = req.body;
+
     const leave = await prisma.leave.findFirst({
       where: { id: leaveId, approverId: req.user.id, status: "pending" },
     });
     if (!leave) {
       return res.status(404).json({ message: "Leave request not found or already processed." });
     }
+
+    // Update with optional approverComments
     const updatedLeave = await prisma.leave.update({
       where: { id: leaveId },
-      data: { status: "rejected" },
+      data: {
+        status: "rejected",
+        approverComments, // <--- include comments if provided
+      },
     });
-    return res.status(200).json({ message: "Leave rejected successfully.", data: updatedLeave });
+
+    const finalLeave = {
+      ...updatedLeave,
+      startDate: updatedLeave.startDate.toISOString(),
+      endDate: updatedLeave.endDate.toISOString(),
+      createdAt: updatedLeave.createdAt.toISOString(),
+      updatedAt: updatedLeave.updatedAt.toISOString(),
+    };
+
+    return res.status(200).json({ message: "Leave rejected successfully.", data: finalLeave });
   } catch (error) {
     console.error("Error in rejectLeave:", error);
     return res.status(500).json({ message: "Internal server error." });
@@ -181,6 +233,26 @@ const getApprovers = async (req, res) => {
   }
 };
 
+const deleteLeave = async (req, res) => {
+  try {
+    const leaveId = req.params.id;
+    // Verify that the leave exists and that it belongs to the current approver.
+    const leave = await prisma.leave.findFirst({
+      where: { id: leaveId, approverId: req.user.id },
+    });
+    if (!leave) {
+      return res.status(404).json({ message: "Leave request not found." });
+    }
+    await prisma.leave.delete({
+      where: { id: leaveId },
+    });
+    return res.status(200).json({ message: "Leave deleted successfully." });
+  } catch (error) {
+    console.error("Error in deleteLeave:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 const getLeavesForApprover = async (req, res) => {
   try {
     const { status } = req.query;
@@ -204,15 +276,24 @@ const getLeavesForApprover = async (req, res) => {
       },
       orderBy: { startDate: "desc" },
     });
+
+    // <-- ADDED for ISO fix
     const formattedLeaves = leaves.map((leave) => ({
       ...leave,
+      startDate: leave.startDate.toISOString(),
+      endDate: leave.endDate.toISOString(),
+      createdAt: leave.createdAt.toISOString(),
+      updatedAt: leave.updatedAt.toISOString(),
       requester: leave.User
         ? {
             ...leave.User,
+            email: leave.User.email,
+            username: leave.User.username,
             name: leave.User.profile ? `${leave.User.profile.firstName || ""} ${leave.User.profile.lastName || ""}`.trim() : leave.User.username,
           }
         : null,
     }));
+
     return res.status(200).json({ message: "Leaves retrieved successfully.", data: formattedLeaves });
   } catch (error) {
     console.error("Error in getLeavesForApprover:", error);
@@ -228,4 +309,5 @@ module.exports = {
   rejectLeave,
   getApprovers,
   getLeavesForApprover,
+  deleteLeave,
 };

@@ -1,4 +1,4 @@
-// src/routes/Features/leavesRoutes.js
+// src/routes/Features/leaveRoutes.js
 
 const express = require("express");
 const router = express.Router();
@@ -12,6 +12,7 @@ const {
   rejectLeave,
   getApprovers,
   getLeavesForApprover,
+  deleteLeave,
 } = require("@controllers/Features/leaveController");
 
 router.post("/submit", authenticate, authorizeRoles("employee", "admin", "supervisor", "superadmin"), submitLeaveRequest);
@@ -21,5 +22,6 @@ router.get("/", authenticate, authorizeRoles("admin", "supervisor", "superadmin"
 router.put("/:id/approve", authenticate, authorizeRoles("admin", "supervisor", "superadmin"), approveLeave);
 router.put("/:id/reject", authenticate, authorizeRoles("admin", "supervisor", "superadmin"), rejectLeave);
 router.get("/approvers", authenticate, authorizeRoles("employee", "admin", "supervisor", "superadmin"), getApprovers);
+router.delete("/:id", authenticate, authorizeRoles("admin", "supervisor", "superadmin"), deleteLeave);
 
 module.exports = router;
